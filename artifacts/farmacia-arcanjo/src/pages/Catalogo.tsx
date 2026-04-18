@@ -1,261 +1,270 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 
-interface Produto {
-  id: number;
-  nome: string;
-  categoria: string;
-  descricao: string;
-  preco: string;
-  emoji: string;
-  tags: string[];
-}
+const SENHA_ADMIN = "arcanjo2026";
 
-const PRODUTOS: Produto[] = [
-  {
-    id: 1,
-    nome: "Florax Adulto",
-    categoria: "Intestino",
-    descricao: "Probiótico para reequilíbrio da flora intestinal em adultos.",
-    preco: "R$ 10,00",
-    emoji: "🦠",
-    tags: ["probiótico", "flora", "intestino", "digestão"],
-  },
-  {
-    id: 2,
-    nome: "Neogermina",
-    categoria: "Intestino",
-    descricao: "Probiótico com Bacillus clausii. Restaura a flora intestinal.",
-    preco: "R$ 6,00",
-    emoji: "💊",
-    tags: ["probiótico", "flora", "intestino", "diarreia"],
-  },
-  {
-    id: 3,
-    nome: "Rehidralin",
-    categoria: "Hidratação",
-    descricao: "Sais de reidratação oral para reposição de líquidos e eletrólitos.",
-    preco: "R$ 6,00",
-    emoji: "💧",
-    tags: ["reidratação", "sais", "diarreia", "desidratação"],
-  },
-  {
-    id: 4,
-    nome: "Leite de Magnésia Gastrimec 80ml",
-    categoria: "Estômago",
-    descricao: "Antiácido e laxante suave. Alivia azia, indigestão e prisão de ventre.",
-    preco: "R$ 12,00",
-    emoji: "🥛",
-    tags: ["antiácido", "laxante", "azia", "estômago", "magnésia"],
-  },
-  {
-    id: 5,
-    nome: "Extrato Aquoso de Própolis 20ml",
-    categoria: "Imunidade",
-    descricao: "Própolis natural com propriedades antioxidantes e imunoestimulantes.",
-    preco: "R$ 24,99",
-    emoji: "🍯",
-    tags: ["própolis", "imunidade", "natural", "antioxidante"],
-  },
-  {
-    id: 6,
-    nome: "Óleo Mineral Laxante Teuto 100ml",
-    categoria: "Intestino",
-    descricao: "Laxante lubrificante para alívio da constipação intestinal.",
-    preco: "R$ 12,82",
-    emoji: "🫙",
-    tags: ["laxante", "constipação", "prisão de ventre", "intestino"],
-  },
-  {
-    id: 7,
-    nome: "Tandene",
-    categoria: "Dor",
-    descricao: "Cafeína + carisoprodol + diclofenaco + paracetamol. Alívio de dores musculares.",
-    preco: "R$ 23,00",
-    emoji: "💊",
-    tags: ["dor", "muscular", "analgésico", "anti-inflamatório", "relaxante"],
-  },
-  {
-    id: 8,
-    nome: "Pantoprazol Sódico 40mg",
-    categoria: "Estômago",
-    descricao: "Inibidor de bomba de prótons para gastrite e refluxo. 30 comprimidos.",
-    preco: "R$ 15,00",
-    emoji: "💊",
-    tags: ["gastrite", "refluxo", "azia", "estômago", "pantoprazol"],
-  },
-  {
-    id: 9,
-    nome: "Omeprazol 20mg 56 cápsulas",
-    categoria: "Estômago",
-    descricao: "Protetor gástrico para azia, refluxo e gastrite. 56 cápsulas.",
-    preco: "R$ 20,00",
-    emoji: "💊",
-    tags: ["gastrite", "refluxo", "azia", "estômago", "omeprazol"],
-  },
-  {
-    id: 10,
-    nome: "Simeticona Antigases 75mg/ml",
-    categoria: "Estômago",
-    descricao: "Antiespumante para alívio de gases e flatulência. Suspensão oral.",
-    preco: "R$ 5,00",
-    emoji: "🌬️",
-    tags: ["gases", "flatulência", "estômago", "simeticona"],
-  },
-  {
-    id: 11,
-    nome: "Lactugold Xarope 120ml",
-    categoria: "Intestino",
-    descricao: "Laxativo à base de lactulose para constipação intestinal. Frasco 120ml.",
-    preco: "R$ 22,00",
-    emoji: "🍶",
-    tags: ["laxante", "lactulose", "constipação", "intestino", "prisão de ventre"],
-  },
+const PRODUTOS_INICIAIS = [
+  { id: 1, nome: "Florax Adulto", preco: 10.00, categoria: "Intestino", emoji: "🦠", desc: "Probiótico para flora intestinal" },
+  { id: 2, nome: "Neogermina", preco: 6.00, categoria: "Intestino", emoji: "💊", desc: "Regulador intestinal" },
+  { id: 3, nome: "Rehidralin", preco: 6.00, categoria: "Hidratação", emoji: "💧", desc: "Sais para reidratação oral" },
+  { id: 4, nome: "Leite de Magnésia Gastrimec 80ml", preco: 12.00, categoria: "Estômago", emoji: "🥛", desc: "Antiácido e laxante suave" },
+  { id: 5, nome: "Extrato Aquoso de Própolis 20ml", preco: 24.99, categoria: "Imunidade", emoji: "🍯", desc: "Fortalece a imunidade naturalmente" },
+  { id: 6, nome: "Óleo Mineral Laxante Teuto 100ml", preco: 12.82, categoria: "Intestino", emoji: "🌿", desc: "Laxante suave e eficaz" },
+  { id: 7, nome: "Tandene", preco: 23.00, categoria: "Dor", emoji: "💆", desc: "Analgésico e relaxante muscular" },
+  { id: 8, nome: "Pantoprazol Sódico 40mg 30 comp.", preco: 15.00, categoria: "Estômago", emoji: "🛡️", desc: "Protetor gástrico" },
+  { id: 9, nome: "Omeprazol 20mg 56 cápsulas", preco: 20.00, categoria: "Estômago", emoji: "💊", desc: "Genérico para gastrite e refluxo" },
+  { id: 10, nome: "Simeticona Antigases 75mg/ml", preco: 5.00, categoria: "Estômago", emoji: "💨", desc: "Alivia gases e cólicas" },
+  { id: 11, nome: "Lactugold Xarope 120ml", preco: 22.00, categoria: "Intestino", emoji: "🍶", desc: "Suplemento alimentar laxante" },
 ];
 
-const CATEGORIAS = ["Todas", ...Array.from(new Set(PRODUTOS.map((p) => p.categoria)))];
+const EMOJIS = ["💊","🌿","🍯","💧","🦠","🌡️","❤️","🩺","🧴","☀️","👶","🍶","🛡️","💆","🥛","💨","🍊","🧪"];
 
-const WHATSAPP_NUMBER = "5588993375650";
-
-export default function Catalogo() {
+export default function CatalogoAdmin() {
+  const [produtos, setProdutos] = useState(() => {
+    try {
+      const saved = localStorage.getItem("farmacia_produtos");
+      return saved ? JSON.parse(saved) : PRODUTOS_INICIAIS;
+    } catch { return PRODUTOS_INICIAIS; }
+  });
+  const [modo, setModo] = useState("catalogo");
+  const [senha, setSenha] = useState("");
+  const [erroSenha, setErroSenha] = useState(false);
+  const [pedido, setPedido] = useState([]);
+  const [categoriaFiltro, setCategoriaFiltro] = useState("Todos");
   const [busca, setBusca] = useState("");
-  const [categoria, setCategoria] = useState("Todas");
+  const [editando, setEditando] = useState(null);
+  const [form, setForm] = useState({ nome: "", preco: "", categoria: "", emoji: "💊", desc: "" });
+  const [msgSucesso, setMsgSucesso] = useState("");
 
-  const filtrados = useMemo(() => {
-    return PRODUTOS.filter((p) => {
-      const matchBusca =
-        !busca ||
-        p.nome.toLowerCase().includes(busca.toLowerCase()) ||
-        p.descricao.toLowerCase().includes(busca.toLowerCase()) ||
-        p.tags.some((t) => t.toLowerCase().includes(busca.toLowerCase()));
-      const matchCat = categoria === "Todas" || p.categoria === categoria;
-      return matchBusca && matchCat;
-    });
-  }, [busca, categoria]);
+  useEffect(() => {
+    try { localStorage.setItem("farmacia_produtos", JSON.stringify(produtos)); } catch {}
+  }, [produtos]);
 
-  const fazerPedido = (produto: Produto) => {
-    const msg = encodeURIComponent(
-      `Olá! Gostaria de fazer um pedido pela Farmácia Arcanjo.\n\nProduto: ${produto.nome}\nPreço: ${produto.preco}\n\nPor favor, confirme a disponibilidade. Obrigado!`
-    );
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
-  };
+  const categorias = ["Todos", ...Array.from(new Set(produtos.map(p => p.categoria)))];
 
-  return (
-    <div className="flex flex-col gap-4 p-1">
-      <div className="bg-gradient-to-r from-accent/10 to-primary/10 rounded-xl p-4 border border-accent/20">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xl">🏪</span>
-          <h2 className="font-semibold text-foreground">Catálogo de Produtos</h2>
+  const produtosFiltrados = produtos.filter(p => {
+    const matchCat = categoriaFiltro === "Todos" || p.categoria === categoriaFiltro;
+    const matchBusca = busca === "" || p.nome.toLowerCase().includes(busca.toLowerCase());
+    return matchCat && matchBusca;
+  });
+
+  function login() {
+    if (senha === SENHA_ADMIN) { setModo("admin"); setErroSenha(false); setSenha(""); }
+    else { setErroSenha(true); }
+  }
+
+  function abrirForm(produto = null) {
+    if (produto) {
+      setEditando(produto.id);
+      setForm({ nome: produto.nome, preco: produto.preco, categoria: produto.categoria, emoji: produto.emoji, desc: produto.desc });
+    } else {
+      setEditando(null);
+      setForm({ nome: "", preco: "", categoria: "", emoji: "💊", desc: "" });
+    }
+    setModo("form");
+  }
+
+  function salvarProduto() {
+    if (!form.nome || !form.preco) return;
+    if (editando) {
+      setProdutos(prev => prev.map(p => p.id === editando ? { ...p, ...form, preco: parseFloat(form.preco) } : p));
+      setMsgSucesso("Produto atualizado! ✅");
+    } else {
+      const novo = { ...form, preco: parseFloat(form.preco), id: Date.now() };
+      setProdutos(prev => [...prev, novo]);
+      setMsgSucesso("Produto adicionado! ✅");
+    }
+    setTimeout(() => setMsgSucesso(""), 2000);
+    setModo("admin");
+  }
+
+  function deletarProduto(id) {
+    setProdutos(prev => prev.filter(p => p.id !== id));
+    setMsgSucesso("Produto removido! ✅");
+    setTimeout(() => setMsgSucesso(""), 2000);
+  }
+
+  function togglePedido(produto) {
+    setPedido(prev => prev.find(p => p.id === produto.id) ? prev.filter(p => p.id !== produto.id) : [...prev, produto]);
+  }
+
+  function enviarWhatsApp() {
+    const lista = pedido.map(p => `• ${p.nome} — R$${p.preco.toFixed(2)}`).join("\n");
+    const msg = `Olá! Vi o catálogo da Farmácia Arcanjo e gostaria de:\n\n${lista}\n\nPoderia confirmar disponibilidade e entrega? 😊`;
+    window.open(`https://wa.me/5588993375650?text=${encodeURIComponent(msg)}`, "_blank");
+  }
+
+  // TELA DE LOGIN
+  if (modo === "login") return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #1b5e20, #2e7d32)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Nunito', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{ background: "#fff", borderRadius: 24, padding: 32, width: "100%", maxWidth: 340, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ fontSize: 48 }}>🔒</div>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1b5e20", margin: "8px 0 4px" }}>Área Admin</h2>
+          <p style={{ fontSize: 13, color: "#888", margin: 0 }}>Farmácia Arcanjo</p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {PRODUTOS.length} produtos disponíveis · Peça pelo WhatsApp
-        </p>
+        <input
+          type="password"
+          value={senha}
+          onChange={e => setSenha(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && login()}
+          placeholder="Digite a senha"
+          style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: erroSenha ? "2px solid #e53935" : "2px solid #e0e0e0", fontSize: 15, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 8 }}
+        />
+        {erroSenha && <p style={{ color: "#e53935", fontSize: 12, margin: "0 0 8px" }}>Senha incorreta!</p>}
+        <button onClick={login} style={{ width: "100%", padding: 13, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #2e7d32, #43a047)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 10 }}>
+          Entrar
+        </button>
+        <button onClick={() => setModo("catalogo")} style={{ width: "100%", padding: 10, borderRadius: 12, border: "none", background: "#f5f5f5", color: "#666", fontSize: 14, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+          ← Voltar ao catálogo
+        </button>
+      </div>
+    </div>
+  );
+
+  // TELA ADMIN
+  if (modo === "admin") return (
+    <div style={{ minHeight: "100vh", background: "#f5f5f5", fontFamily: "'Nunito', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{ background: "linear-gradient(135deg, #1b5e20, #2e7d32)", padding: "20px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0 }}>⚙️ Gerenciar Produtos</h1>
+          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, margin: "2px 0 0" }}>{produtos.length} produtos cadastrados</p>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            + Novo
+          </button>
+          <button onClick={() => setModo("catalogo")} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            👁️ Ver
+          </button>
+        </div>
       </div>
 
-      <div className="space-y-3 sticky top-0 bg-background pb-2 z-10">
-        <div className="relative">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          <input
-            type="search"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar produto..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-card text-foreground text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary placeholder:text-muted-foreground transition-all"
-          />
-        </div>
-
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {CATEGORIAS.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategoria(cat)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-all shrink-0 ${
-                categoria === cat
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card border-border text-foreground hover:bg-muted"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {filtrados.length === 0 ? (
-        <div className="text-center py-12">
-          <span className="text-4xl">🔍</span>
-          <p className="text-muted-foreground text-sm mt-2">Nenhum produto encontrado</p>
-          <p className="text-xs text-muted-foreground mt-1">Tente outro termo ou categoria</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {filtrados.map((produto) => (
-            <div
-              key={produto.id}
-              className="bg-card border border-border rounded-xl p-4 flex items-start gap-3 hover:shadow-md transition-shadow"
-            >
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-2xl shrink-0">
-                {produto.emoji}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-foreground text-sm leading-tight">
-                      {produto.nome}
-                    </h3>
-                    <span className="inline-block mt-0.5 text-[10px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                      {produto.categoria}
-                    </span>
-                  </div>
-                  <span className="font-bold text-base text-primary shrink-0">
-                    {produto.preco}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  {produto.descricao}
-                </p>
-                <button
-                  onClick={() => fazerPedido(produto)}
-                  className="mt-2.5 w-full py-2 rounded-lg bg-[#25D366] text-white text-xs font-semibold flex items-center justify-center gap-1.5 hover:bg-[#22C35E] active:scale-[0.98] transition-all shadow-sm"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
-                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                  </svg>
-                  Pedir pelo WhatsApp
-                </button>
-              </div>
-            </div>
-          ))}
+      {msgSucesso && (
+        <div style={{ background: "#e8f5e9", padding: "10px 16px", textAlign: "center", color: "#2e7d32", fontWeight: 700, fontSize: 14 }}>
+          {msgSucesso}
         </div>
       )}
 
-      <div className="bg-card border border-border rounded-xl p-4 mt-2 text-center">
-        <p className="text-xs text-muted-foreground mb-2">
-          Produto não encontrado na lista? Fale conosco!
-        </p>
-        <button
-          onClick={() => {
-            const msg = encodeURIComponent(
-              "Olá! Gostaria de consultar sobre um produto que não encontrei no catálogo da Farmácia Arcanjo."
-            );
-            window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
-          }}
-          className="py-2 px-6 rounded-lg bg-[#25D366] text-white text-xs font-semibold flex items-center justify-center gap-1.5 mx-auto hover:bg-[#22C35E] active:scale-[0.98] transition-all"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
-            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-          </svg>
-          Consultar pelo WhatsApp
+      <div style={{ padding: 16 }}>
+        {produtos.map(p => (
+          <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+            <span style={{ fontSize: 28 }}>{p.emoji}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>{p.nome}</div>
+              <div style={{ fontSize: 13, color: "#2e7d32", fontWeight: 700 }}>R${p.preco.toFixed(2)}</div>
+              <div style={{ fontSize: 11, color: "#888" }}>{p.categoria}</div>
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={() => abrirForm(p)} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>✏️</button>
+              <button onClick={() => deletarProduto(p.id)} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#ffebee", color: "#c62828", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>🗑️</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // TELA FORM
+  if (modo === "form") return (
+    <div style={{ minHeight: "100vh", background: "#f5f5f5", fontFamily: "'Nunito', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{ background: "linear-gradient(135deg, #1b5e20, #2e7d32)", padding: "20px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+        <button onClick={() => setModo("admin")} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: "50%", width: 36, height: 36, fontSize: 18, cursor: "pointer" }}>←</button>
+        <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0 }}>{editando ? "✏️ Editar Produto" : "➕ Novo Produto"}</h1>
+      </div>
+
+      <div style={{ padding: 16 }}>
+        <div style={{ background: "#fff", borderRadius: 20, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "block", marginBottom: 6 }}>Nome do produto *</label>
+          <input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Dipirona 500mg" style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: "2px solid #e0e0e0", fontSize: 14, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 14 }} />
+
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "block", marginBottom: 6 }}>Preço (R$) *</label>
+          <input value={form.preco} onChange={e => setForm(f => ({ ...f, preco: e.target.value }))} placeholder="Ex: 12.90" type="number" step="0.01" style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: "2px solid #e0e0e0", fontSize: 14, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 14 }} />
+
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "block", marginBottom: 6 }}>Categoria</label>
+          <input value={form.categoria} onChange={e => setForm(f => ({ ...f, categoria: e.target.value }))} placeholder="Ex: Dor, Estômago, Vitaminas..." style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: "2px solid #e0e0e0", fontSize: 14, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 14 }} />
+
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "block", marginBottom: 6 }}>Descrição curta</label>
+          <input value={form.desc} onChange={e => setForm(f => ({ ...f, desc: e.target.value }))} placeholder="Ex: Para dor de cabeça e febre" style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: "2px solid #e0e0e0", fontSize: 14, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box", marginBottom: 14 }} />
+
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "block", marginBottom: 8 }}>Emoji do produto</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
+            {EMOJIS.map(e => (
+              <button key={e} onClick={() => setForm(f => ({ ...f, emoji: e }))} style={{ width: 40, height: 40, borderRadius: 10, border: form.emoji === e ? "3px solid #2e7d32" : "2px solid #e0e0e0", background: form.emoji === e ? "#e8f5e9" : "#fff", fontSize: 20, cursor: "pointer" }}>{e}</button>
+            ))}
+          </div>
+
+          <button onClick={salvarProduto} disabled={!form.nome || !form.preco} style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: (!form.nome || !form.preco) ? "#e0e0e0" : "linear-gradient(135deg, #2e7d32, #43a047)", color: (!form.nome || !form.preco) ? "#aaa" : "#fff", fontSize: 15, fontWeight: 800, cursor: (!form.nome || !form.preco) ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            {editando ? "💾 Salvar alterações" : "✅ Adicionar produto"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // TELA CATÁLOGO (pública)
+  return (
+    <div style={{ minHeight: "100vh", background: "#f0faf4", fontFamily: "'Nunito', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+      <div style={{ background: "linear-gradient(135deg, #1b5e20, #2e7d32, #388e3c)", padding: "24px 20px 28px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -20, right: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+        <div style={{ textAlign: "center", position: "relative" }}>
+          <div style={{ fontSize: 36, marginBottom: 4 }}>💊</div>
+          <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 800, margin: 0 }}>Farmácia Arcanjo</h1>
+          <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, margin: "3px 0 14px" }}>📍 Meruoca, Ceará · (88) 99337-5650</p>
+          <div style={{ position: "relative", maxWidth: 320, margin: "0 auto" }}>
+            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14 }}>🔍</span>
+            <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar produto..." style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 24, border: "none", fontSize: 13, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" }} />
+          </div>
+        </div>
+        <button onClick={() => setModo("login")} style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: 20, padding: "6px 12px", fontSize: 11, cursor: "pointer", fontFamily: "'Nunito', sans-serif", fontWeight: 700 }}>
+          ⚙️ Admin
         </button>
       </div>
+
+      <div style={{ padding: "12px 16px 0", overflowX: "auto" }}>
+        <div style={{ display: "flex", gap: 8, paddingBottom: 4, minWidth: "max-content" }}>
+          {categorias.map(cat => (
+            <button key={cat} onClick={() => setCategoriaFiltro(cat)} style={{ padding: "7px 16px", borderRadius: 20, border: "none", background: categoriaFiltro === cat ? "#2e7d32" : "#fff", color: categoriaFiltro === cat ? "#fff" : "#555", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", boxShadow: "0 1px 6px rgba(0,0,0,0.08)", whiteSpace: "nowrap" }}>{cat}</button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: "12px 16px 100px" }}>
+        <p style={{ color: "#aaa", fontSize: 12, margin: "0 0 10px" }}>{produtosFiltrados.length} produto(s)</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {produtosFiltrados.map(p => {
+            const sel = pedido.find(x => x.id === p.id);
+            return (
+              <div key={p.id} onClick={() => togglePedido(p)} style={{ background: "#fff", borderRadius: 16, padding: 14, boxShadow: sel ? "0 0 0 2px #2e7d32, 0 4px 12px rgba(46,125,50,0.15)" : "0 2px 8px rgba(0,0,0,0.07)", cursor: "pointer", border: sel ? "2px solid #2e7d32" : "2px solid transparent", position: "relative", transition: "all 0.2s" }}>
+                {sel && <div style={{ position: "absolute", top: 8, right: 8, width: 20, height: 20, borderRadius: "50%", background: "#2e7d32", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff", fontWeight: 700 }}>✓</div>}
+                <div style={{ fontSize: 26, marginBottom: 6 }}>{p.emoji}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 3 }}>{p.nome}</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "#2e7d32", marginBottom: 3 }}>R${p.preco.toFixed(2)}</div>
+                <div style={{ fontSize: 10, color: "#888" }}>{p.desc}</div>
+                <div style={{ marginTop: 6, fontSize: 10, color: "#2e7d32", fontWeight: 700, background: "#e8f5e9", borderRadius: 6, padding: "2px 7px", display: "inline-block" }}>{p.categoria}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {pedido.length > 0 && (
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", padding: "14px 20px", boxShadow: "0 -4px 20px rgba(0,0,0,0.12)", borderRadius: "20px 20px 0 0" }}>
+          <div style={{ maxWidth: 480, margin: "0 auto" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#333" }}>🛒 {pedido.length} item(s)</span>
+              <span onClick={() => setPedido([])} style={{ fontSize: 12, color: "#e53935", cursor: "pointer", fontWeight: 700 }}>Limpar</span>
+            </div>
+            <button onClick={enviarWhatsApp} style={{ width: "100%", padding: 14, borderRadius: 16, border: "none", background: "linear-gradient(135deg, #25d366, #128c7e)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "'Nunito', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <span style={{ fontSize: 20 }}>📲</span> Pedir pelo WhatsApp
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
