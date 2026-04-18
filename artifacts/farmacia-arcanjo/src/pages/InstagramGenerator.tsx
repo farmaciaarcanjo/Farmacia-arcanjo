@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const GEMINI_API_KEY = "AIzaSyAY7F-FU-kwBS7WbwOGWSiU6OG";
+const GEMINI_API_KEY = "AIzaSyAY7F-FU-kwBS7WbwOGWSiU6OGu9sLFRtY";
 
 const POST_TYPES = [
   { value: "promocao", label: "Promoção / Oferta" },
