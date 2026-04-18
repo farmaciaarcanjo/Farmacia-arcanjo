@@ -25,5 +25,17 @@ timeoutMs = 20000
 VITE_GEMINI_API_KEY = "AIzaSyAY7F-FU-kwBS7WbwOGWSiU6OG"
 
 [[ports]]
+localPort = 8080
+externalPort = 8080
+
+[[ports]]
+localPort = 8081
+externalPort = 8081
+
+[[ports]]
 localPort = 26127
 externalPort = 80
+
+[[ports]]
+localPort = 26128
+externalPort = 3000
