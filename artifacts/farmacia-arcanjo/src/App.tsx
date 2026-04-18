@@ -90,7 +90,7 @@ function AppContent() {
 
       <footer className="bg-card border-t border-border py-2">
         <p className="text-center text-[10px] text-muted-foreground">
-          Farmácia Arcanjo · Meruoca-CE · (88) 99999-9999
+          Farmácia Arcanjo · Meruoca-CE · (88) 99337-5650
         </p>
       </footer>
     </div>

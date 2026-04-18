@@ -156,7 +156,7 @@ const PRODUTOS: Produto[] = [
 
 const CATEGORIAS = ["Todas", ...Array.from(new Set(PRODUTOS.map((p) => p.categoria)))];
 
-const WHATSAPP_NUMBER = "5588999999999";
+const WHATSAPP_NUMBER = "5588993375650";
 
 export default function Catalogo() {
   const [busca, setBusca] = useState("");

@@ -19,7 +19,7 @@ Você ajuda clientes com informações sobre:
 - Pedidos e disponibilidade de produtos
 - Dicas de saúde e prevenção
 
-Quando não souber de algo específico do estoque, oriente o cliente a ligar ou enviar mensagem via WhatsApp: (88) 99999-9999.
+Quando não souber de algo específico do estoque, oriente o cliente a ligar ou enviar mensagem via WhatsApp: (88) 99337-5650.
 NUNCA dê diagnósticos médicos ou substitua a consulta com um profissional de saúde.
 Sempre recomende consultar um farmacêutico ou médico para questões de saúde específicas.
 Seja conciso e direto nas respostas, porém sempre com simpatia.`;
@@ -112,7 +112,7 @@ export default function ChatbotLara() {
           id: crypto.randomUUID(),
           role: "assistant",
           content:
-            "Ops! Ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou entre em contato pelo WhatsApp: (88) 99999-9999.",
+            "Ops! Ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou entre em contato pelo WhatsApp: (88) 99337-5650.",
           timestamp: new Date(),
         },
       ]);
