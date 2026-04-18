@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Farmácia Arcanjo"
+version = "1.0.0"
+id = "artifacts/farmacia-arcanjo"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26127
+
+[services.development]
+run = "pnpm --filter @workspace/farmacia-arcanjo run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/farmacia-arcanjo", "run", "build" ]
+publicDir = "artifacts/farmacia-arcanjo/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26127"
+BASE_PATH = "/"
