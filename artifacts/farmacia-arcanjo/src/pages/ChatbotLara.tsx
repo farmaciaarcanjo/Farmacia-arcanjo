@@ -7,7 +7,7 @@ interface Message {
   timestamp: Date;
 }
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_API_KEY = "AIzaSyAY7F-FU-kwBS7WbwOGWSiU6OG";
 
 const SYSTEM_PROMPT = `Você é Lara, a assistente virtual da Farmácia Arcanjo, localizada em Meruoca-CE. 
 Você é simpática, prestativa, profissional e fala português brasileiro.
