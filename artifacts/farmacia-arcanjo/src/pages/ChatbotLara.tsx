@@ -12,6 +12,20 @@ const GEMINI_API_KEY = "AIzaSyAY7F-FU-kwBS7WbwOGWSiU6OGu9sLFRtY";
 
 const CATALOGO_TEXTO = resumoCatalogo(PRODUTOS_INICIAIS);
 
+const PROMOCOES = PRODUTOS_INICIAIS.filter(
+  (p) => typeof p.desc === "string" && p.desc.includes("PROMOÇÃO")
+);
+
+const MENSAGEM_BOAS_VINDAS =
+  "Olá! Sou a Lara, assistente virtual da Farmácia Arcanjo 💊\n\n" +
+  (PROMOCOES.length > 0
+    ? "🔥 *Ofertas da Semana:*\n" +
+      PROMOCOES.map(
+        (p) => `• ${p.nome} — ${p.desc.replace("🔥 PROMOÇÃO: ", "")}`
+      ).join("\n") +
+      "\n\nComo posso te ajudar hoje? Posso indicar produtos pelo seu sintoma! 😊"
+    : "Como posso te ajudar hoje?");
+
 const SYSTEM_PROMPT = `Você é Lara, a assistente virtual da Farmácia Arcanjo, localizada em Meruoca-CE.
 Você é simpática, prestativa, profissional e fala português brasileiro.
 
@@ -37,8 +51,7 @@ export default function ChatbotLara() {
     {
       id: "welcome",
       role: "assistant",
-      content:
-        "Olá! Sou a Lara, assistente virtual da Farmácia Arcanjo 💊 Como posso te ajudar hoje?",
+      content: MENSAGEM_BOAS_VINDAS,
       timestamp: new Date(),
     },
   ]);
