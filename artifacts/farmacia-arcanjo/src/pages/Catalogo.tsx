@@ -227,6 +227,34 @@ export default function CatalogoAdmin() {
         </div>
       </div>
 
+      {categoriaFiltro === "Todos" && busca === "" && produtos.some(p => typeof p.desc === "string" && p.desc.includes("PROMOÇÃO")) && (
+        <div style={{ padding: "16px 16px 4px" }}>
+          <div style={{ background: "linear-gradient(135deg, #fff4e6, #ffe4cc)", borderRadius: 16, padding: "14px 14px 12px", border: "2px solid #ff8c00", boxShadow: "0 4px 16px rgba(255,140,0,0.15)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <span style={{ fontSize: 22 }}>🔥</span>
+              <div style={{ flex: 1 }}>
+                <h2 style={{ fontSize: 15, fontWeight: 800, color: "#cc5500", margin: 0 }}>Ofertas da Semana</h2>
+                <p style={{ fontSize: 10, color: "#aa6600", margin: 0 }}>Aproveite enquanto durar o estoque!</p>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "thin" }}>
+              {produtos.filter(p => typeof p.desc === "string" && p.desc.includes("PROMOÇÃO")).map(p => {
+                const sel = pedido.find(x => x.id === p.id);
+                return (
+                  <div key={`promo-${p.id}`} onClick={() => togglePedido(p)} style={{ background: "#fff", borderRadius: 14, padding: 12, minWidth: 140, maxWidth: 140, boxShadow: sel ? "0 0 0 2px #2e7d32" : "0 2px 8px rgba(255,107,0,0.2)", border: sel ? "2px solid #2e7d32" : "2px solid #ff8c00", cursor: "pointer", position: "relative", flexShrink: 0 }}>
+                    {sel && <div style={{ position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: "50%", background: "#2e7d32", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 700 }}>✓</div>}
+                    <div style={{ fontSize: 22, marginBottom: 4 }}>{p.emoji}</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.2, marginBottom: 3, minHeight: 26 }}>{p.nome}</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "#ff6b00", marginBottom: 2 }}>R${p.preco.toFixed(2)}</div>
+                    <div style={{ fontSize: 9, color: "#cc5500", fontWeight: 700, lineHeight: 1.2 }}>{p.desc.replace("🔥 ", "")}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ padding: "12px 16px 100px" }}>
         <p style={{ color: "#aaa", fontSize: 12, margin: "0 0 10px" }}>{produtosFiltrados.length} produto(s)</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
