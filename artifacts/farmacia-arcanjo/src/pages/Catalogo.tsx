@@ -1,66 +1,8 @@
 import { useState, useEffect } from "react";
+import { PRODUTOS_INICIAIS, VERSAO_CATALOGO } from "../data/produtos";
 
 const SENHA_ADMIN = "arcanjo2026";
-const VERSAO_CATALOGO = "v2-2026-04";
 
-const PRODUTOS_INICIAIS = [
-  // ANALGÉSICOS
-  { id: 1, nome: "Aberalgina", preco: 3.50, categoria: "Analgésicos", emoji: "💊", desc: "Analgésico" },
-  { id: 2, nome: "Belspan composto", preco: 18.50, categoria: "Analgésicos", emoji: "💊", desc: "Analgésico composto" },
-  { id: 3, nome: "Cetoprofeno 150mg", preco: 15.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
-  { id: 4, nome: "Colchicina", preco: 14.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório para gota" },
-  { id: 5, nome: "Diclofenaco 50mg Altefar", preco: 7.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
-  { id: 6, nome: "Diclofenaco 50mg Cimed", preco: 7.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
-  { id: 7, nome: "Dipirona 500mg/ml", preco: 4.50, categoria: "Analgésicos", emoji: "💊", desc: "Analgésico e antitérmico" },
-  { id: 8, nome: "Dipirona Medquímica 1g", preco: 13.00, categoria: "Analgésicos", emoji: "💊", desc: "Analgésico e antitérmico" },
-  { id: 9, nome: "Ibuprofeno gotas", preco: 9.50, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório em gotas" },
-  { id: 10, nome: "Ibupril 400mg", preco: 15.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
-  { id: 11, nome: "Naproxeno sódico", preco: 23.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
-  { id: 12, nome: "Nimesulida 100mg Globo", preco: 5.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
-  { id: 13, nome: "Nimesulida 100mg Vitamedic", preco: 5.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
-  { id: 14, nome: "Nimesulida gotas", preco: 8.00, categoria: "Analgésicos", emoji: "💊", desc: "🔥 PROMOÇÃO: leve 2 por R$8,00" },
-  { id: 15, nome: "Piroxicam 20mg", preco: 14.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
-  { id: 16, nome: "Tandene", preco: 23.00, categoria: "Analgésicos", emoji: "💆", desc: "Analgésico e relaxante muscular" },
-  { id: 17, nome: "Tandriflan", preco: 18.00, categoria: "Analgésicos", emoji: "💊", desc: "Analgésico" },
-  { id: 18, nome: "Tyflen 750mg", preco: 13.00, categoria: "Analgésicos", emoji: "💊", desc: "Analgésico" },
-
-  // ANTIGRIPAIS
-  { id: 19, nome: "Paracetamol gotas", preco: 6.00, categoria: "Antigripais", emoji: "🤧", desc: "Antitérmico em gotas" },
-  { id: 20, nome: "Paracetamol gotas laranja", preco: 6.00, categoria: "Antigripais", emoji: "🍊", desc: "Antitérmico sabor laranja" },
-
-  // ANTI-HIPERTENSIVOS
-  { id: 21, nome: "Atenolol 25mg", preco: 6.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 22, nome: "Atenolol 50mg", preco: 7.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 23, nome: "Anlodipino 5mg", preco: 5.50, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 24, nome: "Carvedilol 3,125mg", preco: 12.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão e coração" },
-  { id: 25, nome: "Carvedilol 6,25mg", preco: 10.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão e coração" },
-  { id: 26, nome: "Clortalidona 50mg", preco: 17.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Diurético para pressão" },
-  { id: 27, nome: "Espironolactona 25mg", preco: 20.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Diurético" },
-  { id: 28, nome: "Furosemida 40mg", preco: 8.50, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Diurético" },
-  { id: 29, nome: "Hidroclorotiazida 25mg", preco: 5.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Diurético para pressão" },
-  { id: 30, nome: "Losartana 50mg", preco: 10.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "🔥 PROMOÇÃO: leve 3 por R$10,00" },
-  { id: 31, nome: "Enalapril 10mg", preco: 10.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 32, nome: "Enalapril 20mg", preco: 12.50, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 33, nome: "Doxazosina 2mg", preco: 18.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 34, nome: "Doxazosina 4mg", preco: 30.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 35, nome: "Neo fedipina 10mg", preco: 21.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 36, nome: "Neo fedipina 20mg", preco: 18.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 37, nome: "Olmesartana 20mg", preco: 45.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 38, nome: "Olmesartana + HCTZ 20+12,5mg", preco: 45.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Pressão alta com diurético" },
-  { id: 39, nome: "Olmesartana + HCTZ 40+12,5mg", preco: 54.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Pressão alta com diurético" },
-  { id: 40, nome: "Olmesartana + HCTZ 40+25mg", preco: 45.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Pressão alta com diurético" },
-  { id: 41, nome: "Renalapril 20mg", preco: 14.94, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 42, nome: "Rivaroxabana 15mg", preco: 36.50, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Anticoagulante" },
-  { id: 43, nome: "Metropolol 50mg", preco: 40.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão e coração" },
-  { id: 44, nome: "Vertizan 10mg", preco: 18.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para tontura e vertigem" },
-
-  // ANTIDIABÉTICOS
-  { id: 45, nome: "Metformina", preco: 12.50, categoria: "Antidiabéticos", emoji: "🩸", desc: "Para controle da glicemia" },
-  { id: 46, nome: "Metformina 850mg", preco: 13.50, categoria: "Antidiabéticos", emoji: "🩸", desc: "Para controle da glicemia" },
-  { id: 47, nome: "Glibenclamida 5mg", preco: 5.00, categoria: "Antidiabéticos", emoji: "🩸", desc: "Para diabetes tipo 2" },
-  { id: 48, nome: "Glicazida 30mg", preco: 22.00, categoria: "Antidiabéticos", emoji: "🩸", desc: "Para diabetes tipo 2" },
-  { id: 49, nome: "Glicazida 60mg", preco: 40.00, categoria: "Antidiabéticos", emoji: "🩸", desc: "Para diabetes tipo 2" },
-];
 
 const EMOJIS = ["💊","🌿","🍯","💧","🦠","🌡️","❤️","🩺","🧴","☀️","👶","🍶","🛡️","💆","🥛","💨","🍊","🧪"];
 
