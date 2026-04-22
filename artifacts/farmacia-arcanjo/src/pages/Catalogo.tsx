@@ -232,13 +232,19 @@ export default function CatalogoAdmin() {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {produtosFiltrados.map(p => {
             const sel = pedido.find(x => x.id === p.id);
+            const emPromocao = typeof p.desc === "string" && p.desc.includes("PROMOÇÃO");
             return (
-              <div key={p.id} onClick={() => togglePedido(p)} style={{ background: "#fff", borderRadius: 16, padding: 14, boxShadow: sel ? "0 0 0 2px #2e7d32, 0 4px 12px rgba(46,125,50,0.15)" : "0 2px 8px rgba(0,0,0,0.07)", cursor: "pointer", border: sel ? "2px solid #2e7d32" : "2px solid transparent", position: "relative", transition: "all 0.2s" }}>
+              <div key={p.id} onClick={() => togglePedido(p)} style={{ background: "#fff", borderRadius: 16, padding: 14, boxShadow: sel ? "0 0 0 2px #2e7d32, 0 4px 12px rgba(46,125,50,0.15)" : emPromocao ? "0 2px 12px rgba(255,140,0,0.18)" : "0 2px 8px rgba(0,0,0,0.07)", cursor: "pointer", border: sel ? "2px solid #2e7d32" : emPromocao ? "2px solid #ff8c00" : "2px solid transparent", position: "relative", transition: "all 0.2s", overflow: "hidden" }}>
+                {emPromocao && (
+                  <div style={{ position: "absolute", top: 0, left: 0, background: "linear-gradient(135deg, #ff6b00, #ff8c00)", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: "0 0 10px 0", letterSpacing: 0.5, textTransform: "uppercase", boxShadow: "0 2px 6px rgba(255,107,0,0.35)" }}>
+                    🔥 Promoção
+                  </div>
+                )}
                 {sel && <div style={{ position: "absolute", top: 8, right: 8, width: 20, height: 20, borderRadius: "50%", background: "#2e7d32", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff", fontWeight: 700 }}>✓</div>}
-                <div style={{ fontSize: 26, marginBottom: 6 }}>{p.emoji}</div>
+                <div style={{ fontSize: 26, marginBottom: 6, marginTop: emPromocao ? 14 : 0 }}>{p.emoji}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 3 }}>{p.nome}</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "#2e7d32", marginBottom: 3 }}>R${p.preco.toFixed(2)}</div>
-                <div style={{ fontSize: 10, color: "#888" }}>{p.desc}</div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: emPromocao ? "#ff6b00" : "#2e7d32", marginBottom: 3 }}>R${p.preco.toFixed(2)}</div>
+                <div style={{ fontSize: 10, color: emPromocao ? "#ff6b00" : "#888", fontWeight: emPromocao ? 700 : 400 }}>{p.desc}</div>
                 <div style={{ marginTop: 6, fontSize: 10, color: "#2e7d32", fontWeight: 700, background: "#e8f5e9", borderRadius: 6, padding: "2px 7px", display: "inline-block" }}>{p.categoria}</div>
               </div>
             );
