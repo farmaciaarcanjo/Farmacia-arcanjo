@@ -64,8 +64,8 @@ export default function ChatbotLara() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = async () => {
-    const trimmed = input.trim();
+  const sendMessage = async (textoOverride?: string) => {
+    const trimmed = (textoOverride ?? input).trim();
     if (!trimmed || loading) return;
 
     const userMessage: Message = {
@@ -218,6 +218,26 @@ export default function ChatbotLara() {
                 <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:300ms]"></span>
               </div>
             </div>
+          </div>
+        )}
+        {messages.length === 1 && !loading && (
+          <div className="flex flex-wrap gap-2 mt-3 px-1">
+            {[
+              "🤕 Tô com dor de cabeça",
+              "🔥 Azia e queimação",
+              "💩 Tô com diarreia",
+              "🤧 Sintomas de gripe",
+              "💊 Quero ver as ofertas",
+              "🕐 Qual o horário?",
+            ].map((sugestao) => (
+              <button
+                key={sugestao}
+                onClick={() => sendMessage(sugestao.replace(/^[^\s]+\s/, ""))}
+                className="text-xs bg-card border border-primary/30 text-primary px-3 py-1.5 rounded-full font-medium hover:bg-primary hover:text-primary-foreground active:scale-95 transition-all shadow-xs"
+              >
+                {sugestao}
+              </button>
+            ))}
           </div>
         )}
         <div ref={messagesEndRef} />
