@@ -14,7 +14,7 @@ const CATEGORIAS = ["Todos", ...Array.from(new Set(PRODUTOS_INICIAIS.map(p => p.
 export default function CatalogoAdmin() {
   const [produtos, setProdutos] = useState<Produto[]>(() => {
     try {
-      const saved = localStorage.getItem("farmacia_produtos_v2");
+      const saved =localStorage.getItem("farmacia_produtos_v3") ;
       return saved ? JSON.parse(saved) : PRODUTOS_INICIAIS;
     } catch { return PRODUTOS_INICIAIS; }
   });
@@ -29,7 +29,7 @@ export default function CatalogoAdmin() {
   const [msgSucesso, setMsgSucesso] = useState("");
 
   useEffect(() => {
-    try { localStorage.setItem("farmacia_produtos_v2", JSON.stringify(produtos)); } catch {}
+    try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(produtos)); } catch {}
   }, [produtos]);
 
   const produtosFiltrados = produtos.filter(p => {
