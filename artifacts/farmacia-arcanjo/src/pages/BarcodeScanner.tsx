@@ -14,10 +14,10 @@ interface BarcodeScannerProps {
   produtos: Produto[];
   onSalvar: (produto: Produto) => void;
 }
-
-const categorias = [
-  "Analgésicos","Anti-inflamatórios","Antibióticos","Antigripais",
-  "Vitaminas","Dermocosméticos","Genéricos","Outros"
+  const categorias = [
+  "Analgésicos","Anti-inflamatórios","Antibióticos","Antialérgicos",
+  "Antigripais","Vitaminas e Suplementos","Dermocosméticos","Perfumaria",
+  "Higiene Pessoal","Genéricos","Manipulados","Outros"
 ];
 
 const formVazio = (codigo = ""): Produto => ({
