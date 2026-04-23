@@ -6,8 +6,7 @@
 // 1. Crie o arquivo CadastroClientes.tsx na pasta de componentes
 // 2. Cole este código
 // 3. No Admin.tsx importe:
-//    import CadastroClientes from './CadastroClientes'
-//    <CadastroClientes />
+
 // ============================================================
 
 import { useState, useEffect, useMemo } from "react";
