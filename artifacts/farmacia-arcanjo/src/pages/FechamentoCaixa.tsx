@@ -4,7 +4,7 @@ interface Produto {
   id: string;
   nome: string;
   preco: number;
-  quantidade: number;
+  estoque?: number;
 }
 
 interface Props {
@@ -36,7 +36,7 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
   const [fechado, setFechado] = useState(false);
 
   const produtosFiltrados = produtos.filter(
-    (p) => p.nome.toLowerCase().includes(busca.toLowerCase()) && p.quantidade > 0
+    (p) => p.nome.toLowerCase().includes(busca.toLowerCase()) && (p.estoque ?? 1) > 0
   );
 
   const total = itens.reduce((acc, i) => acc + i.produto.preco * i.qtd, 0);
@@ -61,7 +61,7 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
   function finalizarVenda() {
     const novos = produtos.map((p) => {
       const item = itens.find((i) => i.produto.id === p.id);
-      if (item) return { ...p, quantidade: p.quantidade - item.qtd };
+      if (item) return { ...p, quantidade: (p.estoque ?? 0) - item.qtd };
       return p;
     });
     onAtualizarEstoque(novos);
