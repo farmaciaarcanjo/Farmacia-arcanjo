@@ -8,8 +8,6 @@ interface Message {
   timestamp: Date;
 }
 
-const GEMINI_API_KEY = "AIzaSyAY7F-FU-kwBS7WbwOGWSiU6OGu9sLFRtY";
-
 const CATALOGO_TEXTO = resumoCatalogo(PRODUTOS_INICIAIS);
 
 const PROMOCOES = PRODUTOS_INICIAIS.filter(
@@ -87,27 +85,18 @@ export default function ChatbotLara() {
       const conversationHistory = [...messages, userMessage]
         .filter((m) => m.id !== "welcome")
         .map((m) => ({
-          role: m.role === "user" ? "user" : "model",
-          parts: [{ text: m.content }],
+          role: m.role,
+          content: m.content,
         }));
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            system_instruction: {
-              parts: [{ text: SYSTEM_PROMPT }],
-            },
-            contents: conversationHistory,
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 512,
-            },
-          }),
-        }
-      );
+      const response = await fetch("/api/lara", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemPrompt: SYSTEM_PROMPT,
+          messages: conversationHistory,
+        }),
+      });
 
       if (!response.ok) {
         throw new Error("Erro na API");
@@ -115,7 +104,7 @@ export default function ChatbotLara() {
 
       const data = await response.json();
       const text =
-        data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+        data?.content ||
         "Desculpe, não consegui processar sua mensagem. Tente novamente.";
 
       const assistantMessage: Message = {
