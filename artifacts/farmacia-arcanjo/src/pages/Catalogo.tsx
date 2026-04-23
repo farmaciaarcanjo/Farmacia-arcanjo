@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { PRODUTOS_INICIAIS, VERSAO_CATALOGO, calcularPreco, Produto } from "../data/produtos";
 import BarcodeScanner from "./BarcodeScanner";
-
+import RelatorioPedidos from "./RelatorioPedidos";
 const SENHA_ADMIN = "arcanjo2026";
 const WHATSAPP = "5588993375650";
 
@@ -155,6 +155,8 @@ export default function CatalogoAdmin() {
     }
   }}
 />
+        <RelatorioPedidos />
+📝
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Novo</button>
           <button onClick={() => setModo("catalogo")} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>👁️ Ver</button>
