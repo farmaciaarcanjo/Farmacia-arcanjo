@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { PRODUTOS_INICIAIS, VERSAO_CATALOGO, calcularPreco, Produto } from "../data/produtos";
 import BarcodeScanner from "./BarcodeScanner";
 import RelatorioPedidos from "./RelatorioPedidos";
+import CadastroClientes from "./CadastroClientes";
 const SENHA_ADMIN = "arcanjo2026";
 const WHATSAPP = "5588993375650";
 
@@ -155,7 +156,7 @@ export default function CatalogoAdmin() {
     }
   }}
 />
-        <RelatorioPedidos />
+        <RelatorioPedidos /><CadastroClientes />
 📝
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Novo</button>
