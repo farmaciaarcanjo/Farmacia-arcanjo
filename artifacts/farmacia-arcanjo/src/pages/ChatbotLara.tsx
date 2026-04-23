@@ -157,10 +157,20 @@ export default function ChatbotLara() {
           </div>
           <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-primary rounded-full"></span>
         </div>
-        <div>
+        <div className="flex-1">
           <p className="font-semibold text-sm">Lara</p>
           <p className="text-xs text-primary-foreground/70">Assistente Virtual</p>
         </div>
+        <a
+          href={`https://wa.me/5588993375650?text=${encodeURIComponent(
+            "Olá! Estou no app da Farmácia Arcanjo e gostaria de falar com o farmacêutico 😊"
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-xs transition-all active:scale-95"
+        >
+          💬 Farmacêutico
+        </a>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/30">
@@ -244,7 +254,7 @@ export default function ChatbotLara() {
             className="flex-1 bg-transparent resize-none outline-none text-sm text-foreground placeholder:text-muted-foreground max-h-[120px] py-1"
           />
           <button
-            onClick={sendMessage}
+            onClick={() => sendMessage()}
             disabled={!input.trim() || loading}
             className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary/90 transition-all active:scale-95"
             aria-label="Enviar"

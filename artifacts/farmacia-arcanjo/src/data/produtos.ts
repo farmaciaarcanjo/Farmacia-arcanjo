@@ -2,12 +2,14 @@ export interface Produto {
   id: number;
   nome: string;
   preco: number;
+  precoOriginal?: number;
   categoria: string;
   emoji: string;
   desc: string;
+  prescricao?: boolean;
 }
 
-export const VERSAO_CATALOGO = "v3-2026-04";
+export const VERSAO_CATALOGO = "v4-2026-04";
 
 export const PRODUTOS_INICIAIS: Produto[] = [
   // ANALGÉSICOS
@@ -24,7 +26,7 @@ export const PRODUTOS_INICIAIS: Produto[] = [
   { id: 11, nome: "Naproxeno sódico", preco: 23.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
   { id: 12, nome: "Nimesulida 100mg Globo", preco: 5.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
   { id: 13, nome: "Nimesulida 100mg Vitamedic", preco: 5.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
-  { id: 14, nome: "Nimesulida gotas", preco: 8.00, categoria: "Analgésicos", emoji: "💊", desc: "🔥 PROMOÇÃO: leve 2 por R$8,00" },
+  { id: 14, nome: "Nimesulida gotas", preco: 8.00, precoOriginal: 12.00, categoria: "Analgésicos", emoji: "💊", desc: "🔥 PROMOÇÃO: LEVE 2 por R$8,00" },
   { id: 15, nome: "Piroxicam 20mg", preco: 14.00, categoria: "Analgésicos", emoji: "💊", desc: "Anti-inflamatório" },
   { id: 16, nome: "Tandene", preco: 23.00, categoria: "Analgésicos", emoji: "💆", desc: "Analgésico e relaxante muscular" },
   { id: 17, nome: "Tandriflan", preco: 18.00, categoria: "Analgésicos", emoji: "💊", desc: "Analgésico" },
@@ -44,7 +46,7 @@ export const PRODUTOS_INICIAIS: Produto[] = [
   { id: 27, nome: "Espironolactona 25mg", preco: 20.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Diurético" },
   { id: 28, nome: "Furosemida 40mg", preco: 8.50, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Diurético" },
   { id: 29, nome: "Hidroclorotiazida 25mg", preco: 5.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Diurético para pressão" },
-  { id: 30, nome: "Losartana 50mg", preco: 10.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "🔥 PROMOÇÃO: leve 3 por R$10,00" },
+  { id: 30, nome: "Losartana 50mg", preco: 10.00, precoOriginal: 15.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "🔥 PROMOÇÃO: LEVE 3 por R$10,00" },
   { id: 31, nome: "Enalapril 10mg", preco: 10.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
   { id: 32, nome: "Enalapril 20mg", preco: 12.50, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
   { id: 33, nome: "Doxazosina 2mg", preco: 18.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
@@ -56,7 +58,7 @@ export const PRODUTOS_INICIAIS: Produto[] = [
   { id: 39, nome: "Olmesartana + HCTZ 40+12,5mg", preco: 54.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Pressão alta com diurético" },
   { id: 40, nome: "Olmesartana + HCTZ 40+25mg", preco: 45.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Pressão alta com diurético" },
   { id: 41, nome: "Renalapril 20mg", preco: 14.94, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão alta" },
-  { id: 42, nome: "Rivaroxabana 15mg", preco: 36.50, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Anticoagulante" },
+  { id: 42, nome: "Rivaroxabana 15mg", preco: 36.50, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Anticoagulante", prescricao: true },
   { id: 43, nome: "Metropolol 50mg", preco: 40.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para pressão e coração" },
   { id: 44, nome: "Vertizan 10mg", preco: 18.00, categoria: "Anti-hipertensivos", emoji: "❤️", desc: "Para tontura e vertigem" },
 
@@ -68,20 +70,20 @@ export const PRODUTOS_INICIAIS: Produto[] = [
   { id: 49, nome: "Glicazida 60mg", preco: 40.00, categoria: "Antidiabéticos", emoji: "🩸", desc: "Para diabetes tipo 2" },
 
   // ANTIBIÓTICOS
-  { id: 50, nome: "Amoxicilina 500mg", preco: 20.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico" },
-  { id: 51, nome: "Amoxicilina + clavulanato 875mg", preco: 90.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico com clavulanato" },
-  { id: 52, nome: "Amoxicilina + clavulanato suspensão", preco: 45.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico em suspensão" },
-  { id: 53, nome: "Azitromicina 500mg", preco: 13.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico" },
-  { id: 54, nome: "Azitromicina suspensão", preco: 45.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico em suspensão" },
-  { id: 55, nome: "Cefalexina 250mg", preco: 26.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico" },
-  { id: 56, nome: "Cefalexina 500mg", preco: 16.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico" },
-  { id: 57, nome: "Cetoconazol 200mg", preco: 8.00, categoria: "Antibióticos", emoji: "💊", desc: "Antifúngico" },
-  { id: 58, nome: "Ciprofloxacino 500mg", preco: 16.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico" },
-  { id: 59, nome: "Fluconazol 1 cápsula", preco: 3.00, categoria: "Antibióticos", emoji: "💊", desc: "Antifúngico (1 cáps)" },
-  { id: 60, nome: "Fluconazol 2 cápsulas", preco: 8.00, categoria: "Antibióticos", emoji: "💊", desc: "Antifúngico (2 cáps)" },
-  { id: 61, nome: "Meracilina", preco: 24.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico" },
-  { id: 62, nome: "Policlavumoxil", preco: 82.99, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico de amplo espectro" },
-  { id: 63, nome: "Tetraciclina 500mg", preco: 5.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico" },
+  { id: 50, nome: "Amoxicilina 500mg", preco: 20.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico", prescricao: true },
+  { id: 51, nome: "Amoxicilina + clavulanato 875mg", preco: 90.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico com clavulanato", prescricao: true },
+  { id: 52, nome: "Amoxicilina + clavulanato suspensão", preco: 45.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico em suspensão", prescricao: true },
+  { id: 53, nome: "Azitromicina 500mg", preco: 13.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico", prescricao: true },
+  { id: 54, nome: "Azitromicina suspensão", preco: 45.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico em suspensão", prescricao: true },
+  { id: 55, nome: "Cefalexina 250mg", preco: 26.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico", prescricao: true },
+  { id: 56, nome: "Cefalexina 500mg", preco: 16.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico", prescricao: true },
+  { id: 57, nome: "Cetoconazol 200mg", preco: 8.00, categoria: "Antibióticos", emoji: "💊", desc: "Antifúngico", prescricao: true },
+  { id: 58, nome: "Ciprofloxacino 500mg", preco: 16.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico", prescricao: true },
+  { id: 59, nome: "Fluconazol 1 cápsula", preco: 3.00, categoria: "Antibióticos", emoji: "💊", desc: "Antifúngico (1 cáps)", prescricao: true },
+  { id: 60, nome: "Fluconazol 2 cápsulas", preco: 8.00, categoria: "Antibióticos", emoji: "💊", desc: "Antifúngico (2 cáps)", prescricao: true },
+  { id: 61, nome: "Meracilina", preco: 24.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico", prescricao: true },
+  { id: 62, nome: "Policlavumoxil", preco: 82.99, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico de amplo espectro", prescricao: true },
+  { id: 63, nome: "Tetraciclina 500mg", preco: 5.00, categoria: "Antibióticos", emoji: "💊", desc: "Antibiótico", prescricao: true },
 
   // COLESTEROL
   { id: 64, nome: "Ciprofibrato 100mg", preco: 24.88, categoria: "Colesterol", emoji: "🫀", desc: "Para triglicerídeos" },
@@ -93,7 +95,7 @@ export const PRODUTOS_INICIAIS: Produto[] = [
   { id: 68, nome: "Colírio Geolab", preco: 14.34, categoria: "Colírios", emoji: "👁️", desc: "Lubrificante ocular" },
   { id: 69, nome: "Colírio Neo Brasil", preco: 17.45, categoria: "Colírios", emoji: "👁️", desc: "Lubrificante ocular" },
   { id: 70, nome: "Colírio Teuto", preco: 13.20, categoria: "Colírios", emoji: "👁️", desc: "Lubrificante ocular" },
-  { id: 71, nome: "Timolol 5mg/ml", preco: 16.00, categoria: "Colírios", emoji: "👁️", desc: "Para pressão ocular / glaucoma" },
+  { id: 71, nome: "Timolol 5mg/ml", preco: 16.00, categoria: "Colírios", emoji: "👁️", desc: "Para pressão ocular / glaucoma", prescricao: true },
   { id: 72, nome: "Otomixyn", preco: 10.00, categoria: "Colírios", emoji: "👂", desc: "Solução otológica" },
 
   // DIGESTIVOS
@@ -133,7 +135,7 @@ export const PRODUTOS_INICIAIS: Produto[] = [
   { id: 102, nome: "Hemorroydina", preco: 26.20, categoria: "Pomadas", emoji: "🧴", desc: "Para hemorroidas" },
   { id: 103, nome: "Hervirax (aciclovir)", preco: 10.00, categoria: "Pomadas", emoji: "🧴", desc: "Para herpes labial" },
   { id: 104, nome: "Lidocaína", preco: 17.00, categoria: "Pomadas", emoji: "🧴", desc: "Anestésico tópico" },
-  { id: 105, nome: "Minoxidil", preco: 60.00, categoria: "Pomadas", emoji: "🧴", desc: "Para crescimento capilar" },
+  { id: 105, nome: "Minoxidil", preco: 60.00, categoria: "Pomadas", emoji: "🧴", desc: "Para crescimento capilar", prescricao: true },
   { id: 106, nome: "Oncicrem-A", preco: 10.35, categoria: "Pomadas", emoji: "🧴", desc: "Antifúngico para unhas" },
   { id: 107, nome: "Promergan", preco: 14.00, categoria: "Pomadas", emoji: "🧴", desc: "Antialérgico tópico" },
   { id: 108, nome: "Sulfadiazina de prata", preco: 16.00, categoria: "Pomadas", emoji: "🧴", desc: "Para queimaduras e feridas" },

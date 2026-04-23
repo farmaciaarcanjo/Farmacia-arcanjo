@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
-import { PRODUTOS_INICIAIS, VERSAO_CATALOGO } from "../data/produtos";
+import { PRODUTOS_INICIAIS, VERSAO_CATALOGO, type Produto } from "../data/produtos";
 
 const SENHA_ADMIN = "arcanjo2026";
 
+interface ItemPedido extends Produto {
+  quantidade: number;
+}
 
 const EMOJIS = ["💊","🌿","🍯","💧","🦠","🌡️","❤️","🩺","🧴","☀️","👶","🍶","🛡️","💆","🥛","💨","🍊","🧪"];
 
 export default function CatalogoAdmin() {
-  const [produtos, setProdutos] = useState(() => {
+  const [produtos, setProdutos] = useState<Produto[]>(() => {
     try {
       const versaoSalva = localStorage.getItem("farmacia_versao");
       const saved = localStorage.getItem("farmacia_produtos");
@@ -19,18 +22,18 @@ export default function CatalogoAdmin() {
       return saved ? JSON.parse(saved) : PRODUTOS_INICIAIS;
     } catch { return PRODUTOS_INICIAIS; }
   });
-  const [modo, setModo] = useState("catalogo");
+  const [modo, setModo] = useState<"catalogo" | "login" | "admin" | "form">("catalogo");
   const [senha, setSenha] = useState("");
   const [erroSenha, setErroSenha] = useState(false);
-  const [pedido, setPedido] = useState([]);
+  const [pedido, setPedido] = useState<ItemPedido[]>([]);
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todos");
   const [busca, setBusca] = useState("");
-  const [editando, setEditando] = useState(null);
-  const [form, setForm] = useState({ nome: "", preco: "", categoria: "", emoji: "💊", desc: "" });
+  const [editando, setEditando] = useState<number | null>(null);
+  const [form, setForm] = useState<{ nome: string; preco: string; categoria: string; emoji: string; desc: string }>({ nome: "", preco: "", categoria: "", emoji: "💊", desc: "" });
   const [msgSucesso, setMsgSucesso] = useState("");
 
   useEffect(() => {
-    try { localStorage.setItem("farmacia_produtos", JSON.stringify(produtos)); } catch {}
+    try { localStorage.setItem("farmacia_produtos", JSON.stringify(produtos)); } catch { /* ignore */ }
   }, [produtos]);
 
   const categorias = ["Todos", ...Array.from(new Set(produtos.map(p => p.categoria)))];
@@ -46,10 +49,10 @@ export default function CatalogoAdmin() {
     else { setErroSenha(true); }
   }
 
-  function abrirForm(produto = null) {
+  function abrirForm(produto: Produto | null = null) {
     if (produto) {
       setEditando(produto.id);
-      setForm({ nome: produto.nome, preco: produto.preco, categoria: produto.categoria, emoji: produto.emoji, desc: produto.desc });
+      setForm({ nome: produto.nome, preco: String(produto.preco), categoria: produto.categoria, emoji: produto.emoji, desc: produto.desc });
     } else {
       setEditando(null);
       setForm({ nome: "", preco: "", categoria: "", emoji: "💊", desc: "" });
@@ -63,7 +66,7 @@ export default function CatalogoAdmin() {
       setProdutos(prev => prev.map(p => p.id === editando ? { ...p, ...form, preco: parseFloat(form.preco) } : p));
       setMsgSucesso("Produto atualizado! ✅");
     } else {
-      const novo = { ...form, preco: parseFloat(form.preco), id: Date.now() };
+      const novo: Produto = { ...form, preco: parseFloat(form.preco), id: Date.now() };
       setProdutos(prev => [...prev, novo]);
       setMsgSucesso("Produto adicionado! ✅");
     }
@@ -71,19 +74,43 @@ export default function CatalogoAdmin() {
     setModo("admin");
   }
 
-  function deletarProduto(id) {
+  function deletarProduto(id: number) {
     setProdutos(prev => prev.filter(p => p.id !== id));
     setMsgSucesso("Produto removido! ✅");
     setTimeout(() => setMsgSucesso(""), 2000);
   }
 
-  function togglePedido(produto) {
-    setPedido(prev => prev.find(p => p.id === produto.id) ? prev.filter(p => p.id !== produto.id) : [...prev, produto]);
+  function adicionarAoPedido(produto: Produto, e?: React.MouseEvent) {
+    if (e) e.stopPropagation();
+    setPedido(prev => {
+      const existente = prev.find(p => p.id === produto.id);
+      if (existente) {
+        return prev.map(p => p.id === produto.id ? { ...p, quantidade: p.quantidade + 1 } : p);
+      }
+      return [...prev, { ...produto, quantidade: 1 }];
+    });
   }
 
+  function diminuirQuantidade(produtoId: number, e?: React.MouseEvent) {
+    if (e) e.stopPropagation();
+    setPedido(prev => {
+      const existente = prev.find(p => p.id === produtoId);
+      if (!existente) return prev;
+      if (existente.quantidade <= 1) return prev.filter(p => p.id !== produtoId);
+      return prev.map(p => p.id === produtoId ? { ...p, quantidade: p.quantidade - 1 } : p);
+    });
+  }
+
+  function quantidadeNoPedido(produtoId: number): number {
+    return pedido.find(p => p.id === produtoId)?.quantidade ?? 0;
+  }
+
+  const totalPedido = pedido.reduce((sum, p) => sum + p.preco * p.quantidade, 0);
+  const totalItens = pedido.reduce((sum, p) => sum + p.quantidade, 0);
+
   function enviarWhatsApp() {
-    const lista = pedido.map(p => `• ${p.nome} — R$${p.preco.toFixed(2)}`).join("\n");
-    const msg = `Olá! Vi o catálogo da Farmácia Arcanjo e gostaria de:\n\n${lista}\n\nPoderia confirmar disponibilidade e entrega? 😊`;
+    const lista = pedido.map(p => `• ${p.quantidade}× ${p.nome} — R$${(p.preco * p.quantidade).toFixed(2)}`).join("\n");
+    const msg = `Olá! Vi o catálogo da Farmácia Arcanjo e gostaria de:\n\n${lista}\n\n*Total: R$${totalPedido.toFixed(2)}*\n\nPoderia confirmar disponibilidade e entrega? 😊`;
     window.open(`https://wa.me/5588993375650?text=${encodeURIComponent(msg)}`, "_blank");
   }
 
@@ -198,6 +225,61 @@ export default function CatalogoAdmin() {
     </div>
   );
 
+  // Componente de card de produto reutilizável
+  const renderCard = (p: Produto, compact = false) => {
+    const qtd = quantidadeNoPedido(p.id);
+    const sel = qtd > 0;
+    const emPromocao = typeof p.desc === "string" && p.desc.includes("PROMOÇÃO");
+    const tamanhoEmoji = compact ? 22 : 26;
+    const tamanhoNome = compact ? 11 : 13;
+    const tamanhoPreco = compact ? 14 : 14;
+    const corPreco = emPromocao ? "#ff6b00" : "#2e7d32";
+
+    return (
+      <div style={{ background: "#fff", borderRadius: compact ? 14 : 16, padding: compact ? 12 : 14, boxShadow: sel ? "0 0 0 2px #2e7d32, 0 4px 12px rgba(46,125,50,0.15)" : emPromocao ? "0 2px 12px rgba(255,140,0,0.18)" : "0 2px 8px rgba(0,0,0,0.07)", border: sel ? "2px solid #2e7d32" : emPromocao ? "2px solid #ff8c00" : "2px solid transparent", position: "relative", transition: "all 0.2s", overflow: "hidden", minWidth: compact ? 140 : undefined, maxWidth: compact ? 140 : undefined, flexShrink: compact ? 0 : undefined }}>
+        {emPromocao && (
+          <div style={{ position: "absolute", top: 0, left: 0, background: "linear-gradient(135deg, #ff6b00, #ff8c00)", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: "0 0 10px 0", letterSpacing: 0.5, textTransform: "uppercase", boxShadow: "0 2px 6px rgba(255,107,0,0.35)" }}>
+            🔥 Promoção
+          </div>
+        )}
+        <div style={{ fontSize: tamanhoEmoji, marginBottom: 6, marginTop: emPromocao ? 14 : 0 }}>{p.emoji}</div>
+        <div style={{ fontSize: tamanhoNome, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 3, minHeight: compact ? 26 : undefined }}>{p.nome}</div>
+
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 3, flexWrap: "wrap" }}>
+          {p.precoOriginal && (
+            <span style={{ textDecoration: "line-through", color: "#999", fontSize: 11, fontWeight: 600 }}>R${p.precoOriginal.toFixed(2)}</span>
+          )}
+          <span style={{ fontSize: tamanhoPreco, fontWeight: 800, color: corPreco }}>R${p.preco.toFixed(2)}</span>
+        </div>
+
+        <div style={{ fontSize: 10, color: emPromocao ? "#ff6b00" : "#888", fontWeight: emPromocao ? 700 : 400, lineHeight: 1.2 }}>{p.desc}</div>
+
+        {p.prescricao && (
+          <div style={{ marginTop: 6, fontSize: 9, color: "#c62828", fontWeight: 700, background: "#ffebee", borderRadius: 6, padding: "3px 6px", display: "inline-block", border: "1px solid #ffcdd2" }}>
+            ⚠️ Venda sob prescrição médica
+          </div>
+        )}
+
+        {!compact && (
+          <div style={{ marginTop: 6, fontSize: 10, color: "#2e7d32", fontWeight: 700, background: "#e8f5e9", borderRadius: 6, padding: "2px 7px", display: "inline-block" }}>{p.categoria}</div>
+        )}
+
+        {/* Seletor de quantidade */}
+        <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: sel ? "space-between" : "center", gap: 6 }}>
+          {sel ? (
+            <>
+              <button onClick={(e) => diminuirQuantidade(p.id, e)} style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "#e8f5e9", color: "#2e7d32", fontSize: 18, fontWeight: 800, cursor: "pointer", lineHeight: 1, fontFamily: "'Nunito', sans-serif" }}>−</button>
+              <div style={{ flex: 1, textAlign: "center", fontSize: 14, fontWeight: 800, color: "#1b5e20" }}>{qtd}</div>
+              <button onClick={(e) => adicionarAoPedido(p, e)} style={{ width: 30, height: 30, borderRadius: 8, border: "none", background: "#2e7d32", color: "#fff", fontSize: 18, fontWeight: 800, cursor: "pointer", lineHeight: 1, fontFamily: "'Nunito', sans-serif" }}>+</button>
+            </>
+          ) : (
+            <button onClick={(e) => adicionarAoPedido(p, e)} style={{ width: "100%", padding: "8px 10px", borderRadius: 10, border: "none", background: emPromocao ? "linear-gradient(135deg, #ff6b00, #ff8c00)" : "linear-gradient(135deg, #2e7d32, #43a047)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>+ Adicionar</button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // TELA CATÁLOGO (pública)
   return (
     <div style={{ minHeight: "100vh", background: "#f0faf4", fontFamily: "'Nunito', sans-serif" }}>
@@ -238,53 +320,31 @@ export default function CatalogoAdmin() {
               </div>
             </div>
             <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4, scrollbarWidth: "thin" }}>
-              {produtos.filter(p => typeof p.desc === "string" && p.desc.includes("PROMOÇÃO")).map(p => {
-                const sel = pedido.find(x => x.id === p.id);
-                return (
-                  <div key={`promo-${p.id}`} onClick={() => togglePedido(p)} style={{ background: "#fff", borderRadius: 14, padding: 12, minWidth: 140, maxWidth: 140, boxShadow: sel ? "0 0 0 2px #2e7d32" : "0 2px 8px rgba(255,107,0,0.2)", border: sel ? "2px solid #2e7d32" : "2px solid #ff8c00", cursor: "pointer", position: "relative", flexShrink: 0 }}>
-                    {sel && <div style={{ position: "absolute", top: 6, right: 6, width: 18, height: 18, borderRadius: "50%", background: "#2e7d32", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, color: "#fff", fontWeight: 700 }}>✓</div>}
-                    <div style={{ fontSize: 22, marginBottom: 4 }}>{p.emoji}</div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.2, marginBottom: 3, minHeight: 26 }}>{p.nome}</div>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: "#ff6b00", marginBottom: 2 }}>R${p.preco.toFixed(2)}</div>
-                    <div style={{ fontSize: 9, color: "#cc5500", fontWeight: 700, lineHeight: 1.2 }}>{p.desc.replace("🔥 ", "")}</div>
-                  </div>
-                );
-              })}
+              {produtos.filter(p => typeof p.desc === "string" && p.desc.includes("PROMOÇÃO")).map(p => (
+                <div key={`promo-${p.id}`}>{renderCard(p, true)}</div>
+              ))}
             </div>
           </div>
         </div>
       )}
 
-      <div style={{ padding: "12px 16px 100px" }}>
+      <div style={{ padding: "12px 16px 120px" }}>
         <p style={{ color: "#aaa", fontSize: 12, margin: "0 0 10px" }}>{produtosFiltrados.length} produto(s)</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          {produtosFiltrados.map(p => {
-            const sel = pedido.find(x => x.id === p.id);
-            const emPromocao = typeof p.desc === "string" && p.desc.includes("PROMOÇÃO");
-            return (
-              <div key={p.id} onClick={() => togglePedido(p)} style={{ background: "#fff", borderRadius: 16, padding: 14, boxShadow: sel ? "0 0 0 2px #2e7d32, 0 4px 12px rgba(46,125,50,0.15)" : emPromocao ? "0 2px 12px rgba(255,140,0,0.18)" : "0 2px 8px rgba(0,0,0,0.07)", cursor: "pointer", border: sel ? "2px solid #2e7d32" : emPromocao ? "2px solid #ff8c00" : "2px solid transparent", position: "relative", transition: "all 0.2s", overflow: "hidden" }}>
-                {emPromocao && (
-                  <div style={{ position: "absolute", top: 0, left: 0, background: "linear-gradient(135deg, #ff6b00, #ff8c00)", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 10px", borderRadius: "0 0 10px 0", letterSpacing: 0.5, textTransform: "uppercase", boxShadow: "0 2px 6px rgba(255,107,0,0.35)" }}>
-                    🔥 Promoção
-                  </div>
-                )}
-                {sel && <div style={{ position: "absolute", top: 8, right: 8, width: 20, height: 20, borderRadius: "50%", background: "#2e7d32", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff", fontWeight: 700 }}>✓</div>}
-                <div style={{ fontSize: 26, marginBottom: 6, marginTop: emPromocao ? 14 : 0 }}>{p.emoji}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 3 }}>{p.nome}</div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: emPromocao ? "#ff6b00" : "#2e7d32", marginBottom: 3 }}>R${p.preco.toFixed(2)}</div>
-                <div style={{ fontSize: 10, color: emPromocao ? "#ff6b00" : "#888", fontWeight: emPromocao ? 700 : 400 }}>{p.desc}</div>
-                <div style={{ marginTop: 6, fontSize: 10, color: "#2e7d32", fontWeight: 700, background: "#e8f5e9", borderRadius: 6, padding: "2px 7px", display: "inline-block" }}>{p.categoria}</div>
-              </div>
-            );
-          })}
+          {produtosFiltrados.map(p => (
+            <div key={p.id}>{renderCard(p, false)}</div>
+          ))}
         </div>
       </div>
 
       {pedido.length > 0 && (
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", padding: "14px 20px", boxShadow: "0 -4px 20px rgba(0,0,0,0.12)", borderRadius: "20px 20px 0 0" }}>
           <div style={{ maxWidth: 480, margin: "0 auto" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: "#333" }}>🛒 {pedido.length} item(s)</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#333" }}>🛒 {totalItens} item(s)</span>
+                <span style={{ marginLeft: 10, fontSize: 14, fontWeight: 800, color: "#2e7d32" }}>R${totalPedido.toFixed(2)}</span>
+              </div>
               <span onClick={() => setPedido([])} style={{ fontSize: 12, color: "#e53935", cursor: "pointer", fontWeight: 700 }}>Limpar</span>
             </div>
             <button onClick={enviarWhatsApp} style={{ width: "100%", padding: 14, borderRadius: 16, border: "none", background: "linear-gradient(135deg, #25d366, #128c7e)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "'Nunito', sans-serif", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
