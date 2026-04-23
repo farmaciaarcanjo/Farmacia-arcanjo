@@ -32,6 +32,7 @@ export default function CatalogoAdmin() {
   const [editando, setEditando] = useState<number | null>(null);
   const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
   const [msgSucesso, setMsgSucesso] = useState("");
+  const [secaoAdmin, setSecaoAdmin] = useState<string|null>(null);
 // Hook para detectar leitor de código de barras (USB - digita rápido + Enter)
   useEffect(() => {
     let buffer = '';
@@ -162,6 +163,15 @@ export default function CatalogoAdmin() {
       </div>
     </div>
   );
+
+  
+  const secoesAdmin = [
+    { id: 'relatorio', emoji: '📊', titulo: 'Relatório', desc: 'Pedidos e faturamento' },
+    { id: 'clientes', emoji: '👥', titulo: 'Clientes', desc: 'Cadastro de clientes' },
+    { id: 'lembretes', emoji: '⏰', titulo: 'Lembretes', desc: 'Alertas automáticos' },
+    { id: 'promocao', emoji: '📢', titulo: 'Promoção', desc: 'Gerador WhatsApp' },
+    { id: 'caixa', emoji: '🧾', titulo: 'Caixa', desc: 'Fechamento de caixa' },
+  ];
 
   if (modo === "admin") return (
     <div style={{ minHeight: "100vh", background: "#f5f5f5", fontFamily: "'Nunito', sans-serif" }}>
