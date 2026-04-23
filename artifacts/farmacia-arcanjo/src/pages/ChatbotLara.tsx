@@ -8,7 +8,9 @@ interface Message {
   timestamp: Date;
 }
 
-const CATALOGO_TEXTO = resumoCatalogo(PRODUTOS_INICIAIS);
+const produtosSalvos = (() => { try { return JSON.parse(localStorage.getItem("farmacia_produtos_v3") || "[]"); } catch { return []; } })();
+const todosProdutos = [...PRODUTOS_INICIAIS, ...produtosSalvos];
+const CATALOGO_TEXTO = resumoCatalogo(todosProdutos);
 
 const PROMOCOES = PRODUTOS_INICIAIS.filter(
   (p) => typeof p.desc === "string" && p.desc.includes("PROMOÇÃO")
