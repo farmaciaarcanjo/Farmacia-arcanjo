@@ -8,6 +8,7 @@ export interface Produto {
   desc: string;
   prescricao?: boolean;
   estoque?: number;
+  codigoBarras?: string;
   promocao?: {
     quantidade: number;
     precoTotal: number;

@@ -30,8 +30,32 @@ export default function CatalogoAdmin() {
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todos");
   const [busca, setBusca] = useState("");
   const [editando, setEditando] = useState<number | null>(null);
-  const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "" });
+  const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
   const [msgSucesso, setMsgSucesso] = useState("");
+// Hook para detectar leitor de código de barras (USB - digita rápido + Enter)
+  useEffect(() => {
+    let buffer = '';
+    let timer: ReturnType<typeof setTimeout>;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter' && buffer.length > 4) {
+        const codigo = buffer.trim();
+        const encontrado = produtos.find(p => p.codigoBarras === codigo);
+        if (encontrado) {
+          setBusca(encontrado.nome);
+        } else {
+          if (modo === 'form') setForm(f => ({ ...f, codigoBarras: codigo }));
+        }
+        buffer = '';
+      } else if (e.key.length === 1) {
+        buffer += e.key;
+        clearTimeout(timer);
+        timer = setTimeout(() => { buffer = ''; }, 300);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [produtos, modo]);
+
 
   useEffect(() => {
     try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(produtos)); } catch {}
@@ -79,6 +103,7 @@ export default function CatalogoAdmin() {
       desc: form.desc,
       prescricao: form.prescricao,
       estoque: form.estoque ? parseInt(form.estoque) : undefined,
+        codigoBarras: form.codigoBarras || undefined,
       promocao: form.promoQtd && form.promoPreco ? {
         quantidade: parseInt(form.promoQtd),
         precoTotal: parseFloat(form.promoPreco),
@@ -108,7 +133,7 @@ export default function CatalogoAdmin() {
       });
     } else {
       setEditando(null);
-      setForm({ nome: "", preco: "", precoOriginal: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "" });
+      setForm({ nome: "", preco: "", precoOriginal: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
     }
     setModo("form");
   }
@@ -199,7 +224,7 @@ export default function CatalogoAdmin() {
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ background: "#fff", borderRadius: 20, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-          {([["Nome *", "nome", "Ex: Dipirona 500mg"], ["Preço (R$) *", "preco", "Ex: 12.90"], ["Preço original (antes da promoção)", "precoOriginal", "Ex: 18.00"], ["Categoria", "categoria", "Ex: Analgésicos"], ["Descrição", "desc", "Ex: Para dor e febre"], ["Estoque (qtd)", "estoque", "Ex: 50"], ["Promoção — Quantidade mínima", "promoQtd", "Ex: 3"], ["Promoção — Preço total", "promoPreco", "Ex: 10.00"], ["Promoção — Descrição", "promoDesc", "Ex: LEVE 3 por R$10,00"]] as [string, string, string][]).map(([label, key, placeholder]) => (
+          {([["Nome *", "nome", "Ex: Dipirona 500mg"], ["Preço (R$) *", "preco", "Ex: 12.90"], ["Preço original (antes da promoção)", "precoOriginal", "Ex: 18.00"], ["Categoria", "categoria", "Ex: Analgésicos"], ["Descrição", "desc", "Ex: Para dor e febre"], ["Código de Barras", "codigoBarras", "Escanear ou digitar"], ["Estoque (qtd)", "estoque", "Ex: 50"], ["Promoção — Quantidade mínima", "promoQtd", "Ex: 3"], ["Promoção — Preço total", "promoPreco", "Ex: 10.00"], ["Promoção — Descrição", "promoDesc", "Ex: LEVE 3 por R$10,00"]] as [string, string, string][]).map(([label, key, placeholder]) => (
             <div key={key} style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "block", marginBottom: 6 }}>{label}</label>
               <input value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
