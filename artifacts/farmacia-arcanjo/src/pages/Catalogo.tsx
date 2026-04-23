@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { PRODUTOS_INICIAIS, VERSAO_CATALOGO, calcularPreco, Produto } from "../data/produtos";
+import BarcodeScanner from "./BarcodeScanner";
 
 const SENHA_ADMIN = "arcanjo2026";
 const WHATSAPP = "5588993375650";
@@ -141,6 +142,19 @@ export default function CatalogoAdmin() {
           <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0 }}>⚙️ Gerenciar Produtos</h1>
           <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, margin: "2px 0 0" }}>{produtos.length} produtos cadastrados</p>
         </div>
+        <BarcodeScanner
+  produtos={produtos}
+  onSalvar={(p) => {
+    const idx = produtos.findIndex(x => x.id === p.id);
+    if (idx >= 0) {
+      const novos = [...produtos];
+      novos[idx] = p;
+      setProdutos(novos);
+    } else {
+      setProdutos([...produtos, p]);
+    }
+  }}
+/>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Novo</button>
           <button onClick={() => setModo("catalogo")} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>👁️ Ver</button>
