@@ -4,6 +4,7 @@ import BarcodeScanner from "./BarcodeScanner";
 import RelatorioPedidos from "./RelatorioPedidos";
 import CadastroClientes from "./CadastroClientes";
 import LembretesAutomaticos from "./LembretesAutomaticos";
+import GeradorPromocao from "./GeradorPromocao";
 const SENHA_ADMIN = "arcanjo2026";
 const WHATSAPP = "5588993375650";
 
@@ -159,7 +160,7 @@ export default function CatalogoAdmin() {
 />
 <RelatorioPedidos />
 <CadastroClientes />
-<LembretesAutomaticos />
+<LembretesAutomaticos /><GeradorPromocao />
 
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Novo</button>
