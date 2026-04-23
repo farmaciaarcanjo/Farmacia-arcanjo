@@ -111,8 +111,8 @@ export default function CatalogoAdmin() {
         descricao: form.promoDesc || `LEVE ${form.promoQtd} por R$${form.promoPreco}`
       } : undefined
     };
-    if (editando) setProdutos(prev => prev.map(p => p.id === editando ? novo : p));
-    else setProdutos(prev => [...prev, novo]);
+    if (editando) { const novos = produtos.map(p => p.id === editando ? novo : p); setProdutos(novos); try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {} }
+    else { const novos = [...produtos, novo]; setProdutos(novos); try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {} }
     setMsgSucesso(editando ? "✅ Produto atualizado!" : "✅ Produto adicionado!");
     setTimeout(() => setMsgSucesso(""), 2000);
     setModo("admin");
@@ -195,11 +195,28 @@ export default function CatalogoAdmin() {
   }}
 />
 <RelatorioPedidos />
-<CadastroClientes />
-<LembretesAutomaticos />
-<GeradorPromocao />
-<FechamentoCaixa produtos= {produtos} onAtualizarEstoque={setProdutos} />
-
+      {!secaoAdmin ? (
+        <div style={{ padding: 16 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
+            {secoesAdmin.map(s => (
+              <div key={s.id} onClick={() => setSecaoAdmin(s.id)} style={{ background: "#fff", borderRadius: 16, padding: "20px 12px", textAlign: "center", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>{s.emoji}</div>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "#1b5e20" }}>{s.titulo}</div>
+                <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div>
+          <button onClick={() => setSecaoAdmin(null)} style={{ margin: 16, padding: "8px 16px", borderRadius: 20, border: "none", background: "#1b5e20", color: "#fff", fontWeight: 700, cursor: "pointer" }}>← Voltar</button>
+          {secaoAdmin === "relatorio" && <RelatorioPedidos />}
+          {secaoAdmin === "clientes" && <CadastroClientes />}
+          {secaoAdmin === "lembretes" && <LembretesAutomaticos />}
+          {secaoAdmin === "promocao" && <GeradorPromocao />}
+          {secaoAdmin === "caixa" && <FechamentoCaixa produtos={produtos} onAtualizarEstoque={setProdutos} />}
+        </div>
+      )}
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Novo</button>
           <button onClick={() => setModo("catalogo")} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>👁️ Ver</button>
