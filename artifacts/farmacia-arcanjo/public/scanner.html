@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scanner — Farmácia Arcanjo</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<style>
+  :root {
+    --verde: #1a7a3c;
+    --verde-escuro: #145f2e;
+    --verde-claro: #e8f5ee;
+    --verde-medio: #2d9e56;
+    --texto: #1a2e1f;
+    --texto-sub: #5a7060;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --sombra: 0 2px 12px rgba(26,122,60,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #f4f6f4;
+    color: var(--texto);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, var(--verde-escuro), var(--verde), var(--verde-medio));
+    padding: 20px 20px 24px;
+    color: white;
+  }
+  .header-top { display: flex; align-items: center; gap: 10px; }
+  .header-icon {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .header-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 17px; }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+
+  /* ── BODY ── */
+  .body { padding: 18px 16px 40px; max-width: 600px; margin: 0 auto; }
+
+  /* ── ABAS ── */
+  .abas {
+    display: flex; gap: 8px;
+    margin-bottom: 18px;
+  }
+  .aba {
+    flex: 1; padding: 11px 8px;
+    border: 2px solid #dde8e1;
+    border-radius: var(--radius-sm);
+    background: white;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800; font-size: 13px;
+    color: var(--texto-sub);
+    cursor: pointer;
+    text-align: center;
+    transition: all .18s;
+  }
+  .aba.ativa {
+    background: var(--verde);
+    border-color: var(--verde);
+    color: white;
+  }
+
+  /* ── PAINEL ── */
+  .painel { display: none; }
+  .painel.ativo { display: block; }
+
+  /* ── CÂMERA ── */
+  .camera-wrap {
+    position: relative;
+    background: #111;
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 14px;
+    aspect-ratio: 4/3;
+    max-height: 300px;
+  }
+
+  #interactive {
+    width: 100%; height: 100%;
+    position: relative;
+  }
+  #interactive video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  #interactive canvas {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+
+  /* Mira */
+  .mira {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 75%; height: 35%;
+    border: 2px solid rgba(255,255,255,0.85);
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .mira::before, .mira::after,
+  .mira-inner::before, .mira-inner::after {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    border-color: #4eff8a;
+    border-style: solid;
+  }
+  .mira::before  { top: -2px; left: -2px;   border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+  .mira::after   { top: -2px; right: -2px;  border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+  .mira-inner::before { bottom: -2px; left: -2px;  border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+  .mira-inner::after  { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+  /* Linha de scan animada */
+  .scan-line {
+    position: absolute;
+    left: 5%; width: 90%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #4eff8a, transparent);
+    animation: scanMove 2s ease-in-out infinite;
+    z-index: 11;
+    top: 50%;
+  }
+  @keyframes scanMove {
+    0%   { transform: translateY(-40px); opacity: 0; }
+    20%  { opacity: 1; }
+    80%  { opacity: 1; }
+    100% { transform: translateY(40px); opacity: 0; }
+  }
+
+  /* Status câmera */
+  .cam-status {
+    position: absolute;
+    bottom: 10px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.65);
+    color: white;
+    font-size: 11px; font-weight: 700;
+    padding: 5px 14px;
+    border-radius: 20px;
+    z-index: 12;
+    white-space: nowrap;
+    backdrop-filter: blur(4px);
+  }
+
+  /* Câmera desligada */
+  .cam-off {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%;
+    color: #666; gap: 10px;
+    font-size: 13px; font-weight: 700;
+  }
+  .cam-off span { font-size: 40px; }
+
+  /* ── BOTÕES CÂMERA ── */
+  .cam-btns { display: flex; gap: 10px; margin-bottom: 14px; }
+  .btn {
+    flex: 1; padding: 13px;
+    border: none; border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800; font-size: 14px;
+    cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .btn-verde { background: var(--verde); color: white; }
+  .btn-verde:hover { background: var(--verde-escuro); }
+  .btn-vermelho { background: #fdecea; color: #c0392b; border: 2px solid #f5c6c2; }
+  .btn-vermelho:hover { background: #c0392b; color: white; }
+  .btn-outline { background: white; color: var(--verde); border: 2px solid var(--verde); }
+  .btn-outline:hover { background: var(--verde-claro); }
+
+  /* ── RESULTADO ── */
+  .resultado {
+    background: white;
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--sombra);
+    margin-bottom: 14px;
+    display: none;
+    animation: fadeUp .3s ease;
+  }
+  .resultado.visivel { display: block; }
+  .resultado.sucesso { border-left: 4px solid var(--verde); }
+  .resultado.erro    { border-left: 4px solid #c0392b; }
+  .resultado.aviso   { border-left: 4px solid #e07b00; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .res-titulo {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700; font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .res-titulo.verde  { color: var(--verde); }
+  .res-titulo.vermelho { color: #c0392b; }
+  .res-titulo.laranja { color: #e07b00; }
+
+  .res-cod {
+    font-size: 12px; color: var(--texto-sub);
+    font-weight: 600; margin-bottom: 8px;
+    font-family: monospace; letter-spacing: 1px;
+  }
+  .res-produto {
+    font-weight: 800; font-size: 15px;
+    color: var(--texto); margin-bottom: 2px;
+  }
+  .res-preco {
+    font-weight: 700; font-size: 14px;
+    color: var(--verde);
+  }
+
+  .res-btns { display: flex; gap: 8px; margin-top: 12px; }
+  .btn-sm {
+    flex: 1; padding: 10px;
+    border: none; border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800; font-size: 12px;
+    cursor: pointer; transition: all .18s;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .btn-sm-verde   { background: var(--verde); color: white; }
+  .btn-sm-verde:hover { background: var(--verde-escuro); }
+  .btn-sm-azul    { background: #e6f0ff; color: #0066cc; }
+  .btn-sm-azul:hover { background: #0066cc; color: white; }
+
+  /* ── CAMPO MANUAL / BUSCA ── */
+  .campo { margin-bottom: 12px; }
+  .campo label {
+    display: block; font-size: 12px; font-weight: 700;
+    color: var(--texto-sub); margin-bottom: 5px;
+    text-transform: uppercase; letter-spacing: .4px;
+  }
+  .campo input {
+    width: 100%;
+    padding: 13px 16px;
+    border: 2px solid #dde8e1;
+    border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-size: 15px; font-weight: 600;
+    color: var(--texto); background: white;
+    outline: none; transition: border-color .2s;
+    letter-spacing: 1px;
+  }
+  .campo input:focus { border-color: var(--verde); }
+  .campo input::placeholder { color: #9ab4a2; letter-spacing: 0; }
+
+  /* USB info */
+  .usb-info {
+    background: var(--verde-claro);
+    border: 1px solid #b6dcc4;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 13px; font-weight: 700;
+    color: var(--verde-escuro);
+    margin-bottom: 14px;
+    display: flex; align-items: flex-start; gap: 8px;
+    line-height: 1.5;
+  }
+
+  /* Histórico */
+  .historico-titulo {
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px; font-weight: 600;
+    color: var(--texto-sub);
+    text-transform: uppercase; letter-spacing: .7px;
+    margin-bottom: 10px; margin-top: 20px;
+  }
+  .historico-lista { display: flex; flex-direction: column; gap: 7px; }
+  .hist-item {
+    background: white;
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: var(--sombra);
+    font-size: 13px;
+  }
+  .hist-emoji { font-size: 20px; }
+  .hist-info { flex: 1; }
+  .hist-nome { font-weight: 800; font-size: 13px; }
+  .hist-cod  { font-size: 10px; color: var(--texto-sub); font-family: monospace; }
+  .hist-preco { font-weight: 700; color: var(--verde); font-size: 13px; }
+  .hist-vazio {
+    text-align: center; padding: 20px 0;
+    color: var(--texto-sub); font-size: 13px; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="header-icon">📷</div>
+    <div>
+      <div class="header-title">Scanner de Produtos</div>
+      <div class="header-sub">Farmácia Arcanjo — Câmera & USB</div>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- Abas -->
+  <div class="abas">
+    <button class="aba ativa" onclick="trocarAba('camera', this)">📷 Câmera</button>
+    <button class="aba" onclick="trocarAba('usb', this)">🔌 Leitor USB</button>
+    <button class="aba" onclick="trocarAba('busca', this)">🔍 Buscar</button>
+  </div>
+
+  <!-- ══ ABA CÂMERA ══ -->
+  <div class="painel ativo" id="painel-camera">
+
+    <div class="camera-wrap">
+      <div id="interactive">
+        <div class="cam-off" id="camOff">
+          <span>📷</span>
+          Câmera desligada
+        </div>
+      </div>
+      <div class="mira" id="miraEl" style="display:none">
+        <div class="mira-inner"></div>
+        <div class="scan-line"></div>
+      </div>
+      <div class="cam-status" id="camStatus" style="display:none">Aponte para o código de barras</div>
+    </div>
+
+    <div class="cam-btns">
+      <button class="btn btn-verde" id="btnLigar" onclick="ligarCamera()">▶ Ligar Câmera</button>
+      <button class="btn btn-vermelho" id="btnDesligar" onclick="desligarCamera()" style="display:none">⏹ Parar</button>
+    </div>
+
+    <div class="resultado" id="resultadoCamera"></div>
+
+    <div class="historico-titulo">Últimas leituras</div>
+    <div class="historico-lista" id="historicoCamera">
+      <div class="hist-vazio">Nenhuma leitura ainda</div>
+    </div>
+
+  </div>
+
+  <!-- ══ ABA USB ══ -->
+  <div class="painel" id="painel-usb">
+
+    <div class="usb-info">
+      🔌 <span>Conecte o leitor USB e aponte para o código de barras. O código será lido automaticamente no campo abaixo.</span>
+    </div>
+
+    <div class="campo">
+      <label>Código lido pelo leitor USB</label>
+      <input type="text" id="inputUSB" placeholder="Aponte o leitor para o código..." autofocus>
+    </div>
+
+    <div class="resultado" id="resultadoUSB"></div>
+
+    <div class="historico-titulo">Últimas leituras</div>
+    <div class="historico-lista" id="historicoUSB">
+      <div class="hist-vazio">Nenhuma leitura ainda</div>
+    </div>
+
+  </div>
+
+  <!-- ══ ABA BUSCA ══ -->
+  <div class="painel" id="painel-busca">
+
+    <div class="campo">
+      <label>Buscar por nome</label>
+      <input type="text" id="inputBusca" placeholder="Digite o nome do produto..." oninput="buscarPorNome(this.value)">
+    </div>
+
+    <div id="resultadosBusca" class="historico-lista">
+      <div class="hist-vazio">Digite para buscar</div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  // ── CATÁLOGO (substitua pelo seu array real) ──
+  const catalogo = [
+    { nome: 'Aberalgina (dipirona 500mg/ml)', preco: 4.50,  cod: '7891234000001' },
+    { nome: 'Belspan composto',               preco: 18.50, cod: '7891234000002' },
+    { nome: 'Cetoprofeno 150mg (10 comp.)',   preco: 15.00, cod: '7891234000003' },
+    { nome: 'Losartana 50mg',                 preco: 12.50, cod: '7891234000004' },
+    { nome: 'Omeprazol 20mg',                 preco: 9.50,  cod: '7891234000005' },
+    { nome: 'Nimesulida 100mg',               preco: 6.75,  cod: '7891234000006' },
+    { nome: 'Vitamina C 1g',                  preco: 22.00, cod: '7891234000007' },
+    { nome: 'Dipirona 500mg',                 preco: 8.90,  cod: '7891234000008' },
+    { nome: 'Amoxicilina 500mg',              preco: 18.90, cod: '7891234000009' },
+    { nome: 'Ibuprofeno 600mg',               preco: 11.00, cod: '7891234000010' },
+  ];
+
+  let scannerAtivo = false;
+  let ultimoCodigo = '';
+  let historicoItens = [];
+
+  // ── ABAS ──
+  function trocarAba(id, btn) {
+    document.querySelectorAll('.painel').forEach(p => p.classList.remove('ativo'));
+    document.querySelectorAll('.aba').forEach(b => b.classList.remove('ativa'));
+    document.getElementById('painel-' + id).classList.add('ativo');
+    btn.classList.add('ativa');
+
+    if (id !== 'camera') desligarCamera();
+    if (id === 'usb') setTimeout(() => document.getElementById('inputUSB').focus(), 100);
+  }
+
+  // ── CÂMERA ──
+  function ligarCamera() {
+    document.getElementById('camOff').style.display = 'none';
+    document.getElementById('miraEl').style.display = 'block';
+    document.getElementById('camStatus').style.display = 'block';
+    document.getElementById('btnLigar').style.display = 'none';
+    document.getElementById('btnDesligar').style.display = 'flex';
+
+    Quagga.init({
+      inputStream: {
+        name: 'Live',
+        type: 'LiveStream',
+        target: document.getElementById('interactive'),
+        constraints: {
+          facingMode: 'environment', // câmera traseira
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+      },
+      locator: { patchSize: 'medium', halfSample: true },
+      numOfWorkers: 2,
+      frequency: 10,
+      decoder: {
+        readers: [
+          'ean_reader', 'ean_8_reader',
+          'code_128_reader', 'code_39_reader',
+          'upc_reader', 'upc_e_reader',
+        ]
+      },
+      locate: true,
+    }, err => {
+      if (err) {
+        mostrarResultado('resultadoCamera', 'erro', '❌ Erro ao acessar câmera', '', 'Verifique se permitiu o acesso à câmera no navegador.');
+        desligarCamera();
+        return;
+      }
+      Quagga.start();
+      scannerAtivo = true;
+    });
+
+    Quagga.onDetected(data => {
+      const cod = data.codeResult.code;
+      if (cod === ultimoCodigo) return; // evita repetição
+      ultimoCodigo = cod;
+      processarCodigo(cod, 'resultadoCamera', 'historicoCamera');
+      // Feedback sonoro
+      tocarBeep();
+      // Pausa de 2s para não ler duplicado
+      setTimeout(() => { ultimoCodigo = ''; }, 2000);
+    });
+  }
+
+  function desligarCamera() {
+    if (scannerAtivo) {
+      Quagga.stop();
+      scannerAtivo = false;
+    }
+    document.getElementById('camOff').style.display = 'flex';
+    document.getElementById('miraEl').style.display = 'none';
+    document.getElementById('camStatus').style.display = 'none';
+    document.getElementById('btnLigar').style.display = 'flex';
+    document.getElementById('btnDesligar').style.display = 'none';
+    // Limpa o vídeo
+    const vid = document.querySelector('#interactive video');
+    if (vid) vid.srcObject = null;
+  }
+
+  // ── USB: captura via input ──
+  const inputUSB = document.getElementById('inputUSB');
+  let bufferUSB = '';
+  let timerUSB = null;
+
+  inputUSB.addEventListener('input', () => {
+    clearTimeout(timerUSB);
+    timerUSB = setTimeout(() => {
+      const cod = inputUSB.value.trim();
+      if (cod.length >= 4) {
+        processarCodigo(cod, 'resultadoUSB', 'historicoUSB');
+        tocarBeep();
+        setTimeout(() => { inputUSB.value = ''; inputUSB.focus(); }, 1200);
+      }
+    }, 300);
+  });
+
+  // Enter também confirma
+  inputUSB.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const cod = inputUSB.value.trim();
+      if (cod.length >= 4) {
+        processarCodigo(cod, 'resultadoUSB', 'historicoUSB');
+        tocarBeep();
+        setTimeout(() => { inputUSB.value = ''; inputUSB.focus(); }, 1200);
+      }
+    }
+  });
+
+  // ── BUSCA POR NOME ──
+  function buscarPorNome(termo) {
+    const area = document.getElementById('resultadosBusca');
+    const t = termo.toLowerCase().trim();
+    if (!t) { area.innerHTML = '<div class="hist-vazio">Digite para buscar</div>'; return; }
+
+    const found = catalogo.filter(p => p.nome.toLowerCase().includes(t));
+    if (found.length === 0) {
+      area.innerHTML = '<div class="hist-vazio">🔎 Nenhum produto encontrado</div>';
+      return;
+    }
+    area.innerHTML = found.map(p => `
+      <div class="hist-item">
+        <div class="hist-emoji">💊</div>
+        <div class="hist-info">
+          <div class="hist-nome">${p.nome}</div>
+          <div class="hist-cod">Cód: ${p.cod}</div>
+        </div>
+        <div class="hist-preco">R$ ${p.preco.toFixed(2).replace('.',',')}</div>
+      </div>
+    `).join('');
+  }
+
+  // ── PROCESSAR CÓDIGO ──
+  function processarCodigo(cod, resId, histId) {
+    const prod = catalogo.find(p => p.cod === cod);
+    const res  = document.getElementById(resId);
+
+    if (prod) {
+      res.className = 'resultado visivel sucesso';
+      res.innerHTML = `
+        <div class="res-titulo verde">✅ Produto encontrado!</div>
+        <div class="res-cod">Código: ${cod}</div>
+        <div class="res-produto">💊 ${prod.nome}</div>
+        <div class="res-preco">R$ ${prod.preco.toFixed(2).replace('.',',')}</div>
+        <div class="res-btns">
+          <button class="btn-sm btn-sm-verde" onclick="alert('Adicionando ao pedido: ${prod.nome}')">🛒 Adicionar ao Pedido</button>
+          <button class="btn-sm btn-sm-azul"  onclick="alert('Editando: ${prod.nome}')">✏️ Editar</button>
+        </div>
+      `;
+      adicionarHistorico(prod, cod, histId);
+    } else {
+      res.className = 'resultado visivel aviso';
+      res.innerHTML = `
+        <div class="res-titulo laranja">⚠️ Produto não cadastrado</div>
+        <div class="res-cod">Código: ${cod}</div>
+        <div style="font-size:13px; color:#555; margin-bottom:10px">Este código não está no catálogo.</div>
+        <div class="res-btns">
+          <button class="btn-sm btn-sm-verde" onclick="alert('Cadastrar produto com código: ${cod}')">➕ Cadastrar Produto</button>
+        </div>
+      `;
+    }
+  }
+
+  // ── HISTÓRICO ──
+  function adicionarHistorico(prod, cod, histId) {
+    const hist = document.getElementById(histId);
+    const hora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    const item = `
+      <div class="hist-item" style="animation: fadeUp .25s ease">
+        <div class="hist-emoji">💊</div>
+        <div class="hist-info">
+          <div class="hist-nome">${prod.nome}</div>
+          <div class="hist-cod">${cod} · ${hora}</div>
+        </div>
+        <div class="hist-preco">R$ ${prod.preco.toFixed(2).replace('.',',')}</div>
+      </div>
+    `;
+    // Remove "nenhuma leitura"
+    const vazio = hist.querySelector('.hist-vazio');
+    if (vazio) vazio.remove();
+    hist.insertAdjacentHTML('afterbegin', item);
+    // Máximo 5 no histórico
+    const itens = hist.querySelectorAll('.hist-item');
+    if (itens.length > 5) itens[itens.length - 1].remove();
+  }
+
+  // ── BEEP ──
+  function tocarBeep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = 1200;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } catch(e) {}
+  }
+
+  // Animação
+  const style = document.create

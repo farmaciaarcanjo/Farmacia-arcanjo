@@ -261,3 +261,342 @@
     inset: -1px;
   }
 }
+/* ═══════════════════════════════════════════════════
+   FARMÁCIA ARCANJO — Responsivo Global
+   Cole este conteúdo no final do seu index.css
+   ═══════════════════════════════════════════════════ */
+
+/* ── BASE ── */
+* { box-sizing: border-box; }
+
+body {
+  font-family: 'Nunito', 'Inter', sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #f0faf4;
+}
+
+/* ── CONTAINER GLOBAL ── */
+.arcanjo-container {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ════════════════════════════════════════
+   CATÁLOGO — Grid de produtos
+   ════════════════════════════════════════ */
+
+/* Mobile: 2 colunas (já existente, garantindo) */
+.grid-produtos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+/* Tablet: 3 colunas */
+@media (min-width: 600px) {
+  .grid-produtos {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+
+  /* Catálogo: aumenta largura máxima */
+  .arcanjo-container {
+    max-width: 720px;
+  }
+}
+
+/* Desktop: 4 colunas */
+@media (min-width: 960px) {
+  .grid-produtos {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+
+  .arcanjo-container {
+    max-width: 1100px;
+  }
+}
+
+/* ════════════════════════════════════════
+   PAINEL ADMIN — Cards de seção
+   ════════════════════════════════════════ */
+
+.grid-admin {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 600px) {
+  .grid-admin {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (min-width: 960px) {
+  .grid-admin {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+  }
+}
+
+/* ════════════════════════════════════════
+   LISTA DE PRODUTOS (admin)
+   ════════════════════════════════════════ */
+
+.lista-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .lista-admin {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+}
+
+@media (min-width: 1100px) {
+  .lista-admin {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ════════════════════════════════════════
+   HEADER
+   ════════════════════════════════════════ */
+
+.header-arcanjo {
+  padding: 20px 16px 24px;
+}
+
+@media (min-width: 600px) {
+  .header-arcanjo {
+    padding: 28px 32px 32px;
+  }
+
+  .header-arcanjo h1 {
+    font-size: 24px !important;
+  }
+
+  .header-arcanjo p {
+    font-size: 14px !important;
+  }
+}
+
+/* ════════════════════════════════════════
+   BARRA DE BUSCA
+   ════════════════════════════════════════ */
+
+.busca-wrap {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+@media (min-width: 600px) {
+  .busca-wrap {
+    max-width: 480px;
+  }
+}
+
+/* ════════════════════════════════════════
+   CATEGORIAS (scroll horizontal mobile,
+   wrap no desktop)
+   ════════════════════════════════════════ */
+
+.categorias-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.categorias-scroll::-webkit-scrollbar { display: none; }
+
+@media (min-width: 768px) {
+  .categorias-scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+}
+
+/* ════════════════════════════════════════
+   CARRINHO FIXO
+   ════════════════════════════════════════ */
+
+.carrinho-fixo {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #fff;
+  padding: 14px 20px;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.12);
+  border-radius: 20px 20px 0 0;
+  z-index: 100;
+}
+
+.carrinho-fixo-inner {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .carrinho-fixo {
+    padding: 16px 32px;
+    border-radius: 0;
+  }
+
+  .carrinho-fixo-inner {
+    max-width: 720px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .carrinho-fixo-inner .btn-whatsapp {
+    flex: 1;
+    max-width: 320px;
+  }
+}
+
+/* ════════════════════════════════════════
+   FORMULÁRIO DE PRODUTO (admin)
+   ════════════════════════════════════════ */
+
+.form-produto {
+  padding: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .form-produto {
+    padding: 28px 32px;
+  }
+
+  /* Grid de 2 colunas no form */
+  .form-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+}
+
+/* ════════════════════════════════════════
+   LOGIN ADMIN
+   ════════════════════════════════════════ */
+
+.login-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px;
+  width: 100%;
+  max-width: 340px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  margin: 0 auto;
+}
+
+@media (min-width: 600px) {
+  .login-card {
+    max-width: 400px;
+    padding: 40px;
+  }
+}
+
+/* ════════════════════════════════════════
+   PROMOÇÕES (carrossel horizontal)
+   ════════════════════════════════════════ */
+
+.promocoes-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.promocoes-scroll::-webkit-scrollbar { display: none; }
+
+@media (min-width: 768px) {
+  .promocoes-scroll {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .promocoes-scroll > div {
+    min-width: 180px !important;
+    flex: 1;
+    max-width: 220px;
+  }
+}
+
+/* ════════════════════════════════════════
+   RELATÓRIO / CARDS DE STATS
+   ════════════════════════════════════════ */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 600px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (min-width: 960px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ════════════════════════════════════════
+   UTILITÁRIOS
+   ════════════════════════════════════════ */
+
+/* Padding de página */
+.page-padding {
+  padding: 12px 16px 120px;
+}
+
+@media (min-width: 600px) {
+  .page-padding {
+    padding: 20px 32px 80px;
+  }
+}
+
+/* Texto responsivo */
+@media (min-width: 600px) {
+  .text-produto-nome { font-size: 13px !important; }
+  .text-produto-preco { font-size: 16px !important; }
+}
+
+/* Botões maiores no desktop */
+@media (min-width: 768px) {
+  .btn-acao {
+    padding: 10px 18px !important;
+    font-size: 14px !important;
+  }
+}
+
+/* ════════════════════════════════════════
+   MODO ESCURO (respeita preferência do SO)
+   ════════════════════════════════════════ */
+
+@media (prefers-color-scheme: dark) {
+  /* Descomente se quiser suporte a dark mode futuramente */
+  /*
+  body { background: #121212; color: #e0e0e0; }
+  .card { background: #1e1e1e !important; }
+  */
+}

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Etiquetas — Farmácia Arcanjo</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@500;600;700;900&display=swap" rel="stylesheet">
+<style>
+
+  /* ══ TELA (interface do app) ══ */
+  :root {
+    --verde: #1a7a3c;
+    --verde-escuro: #145f2e;
+    --verde-claro: #e8f5ee;
+    --verde-medio: #2d9e56;
+    --texto: #1a2e1f;
+    --texto-sub: #5a7060;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --sombra: 0 2px 12px rgba(26,122,60,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #f4f6f4;
+    color: var(--texto);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, var(--verde-escuro), var(--verde), var(--verde-medio));
+    padding: 20px 20px 24px;
+    color: white;
+  }
+  .header-top {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 4px;
+  }
+  .header-top .icon {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .header-title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700; font-size: 17px;
+  }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+
+  /* ── BODY ── */
+  .body { padding: 18px 16px 40px; max-width: 600px; margin: 0 auto; }
+
+  /* ── BARRA DE PESQUISA ── */
+  .search-wrap { position: relative; margin-bottom: 14px; }
+  .search-wrap input {
+    width: 100%;
+    padding: 11px 14px 11px 40px;
+    border: 2px solid #dde8e1;
+    border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px; font-weight: 600;
+    background: white; outline: none;
+    transition: border-color .2s;
+  }
+  .search-wrap input:focus { border-color: var(--verde); }
+  .search-wrap input::placeholder { color: #9ab4a2; }
+  .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+
+  /* ── BARRA DE AÇÕES ── */
+  .acoes {
+    display: flex; gap: 10px; margin-bottom: 16px;
+  }
+  .btn {
+    flex: 1; padding: 12px 10px;
+    border: none; border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800; font-size: 13px;
+    cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-verde { background: var(--verde); color: white; }
+  .btn-verde:hover { background: var(--verde-escuro); }
+  .btn-outline { background: white; color: var(--verde); border: 2px solid var(--verde); }
+  .btn-outline:hover { background: var(--verde-claro); }
+  .btn-cinza { background: #e0e0e0; color: #555; }
+  .btn-cinza:hover { background: #ccc; }
+
+  /* ── INFO SELEÇÃO ── */
+  .info-sel {
+    background: var(--verde-claro);
+    border: 1px solid #b6dcc4;
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13px; font-weight: 700;
+    color: var(--verde-escuro);
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .info-sel span { flex: 1; }
+
+  /* ── LISTA DE PRODUTOS ── */
+  .produto-lista { display: flex; flex-direction: column; gap: 8px; }
+
+  .produto-item {
+    background: white;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--sombra);
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all .18s;
+    user-select: none;
+  }
+  .produto-item.selecionado {
+    border-color: var(--verde);
+    background: var(--verde-claro);
+  }
+  .checkbox {
+    width: 22px; height: 22px;
+    border: 2px solid #b6dcc4;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all .18s;
+    font-size: 13px;
+  }
+  .produto-item.selecionado .checkbox {
+    background: var(--verde);
+    border-color: var(--verde);
+    color: white;
+  }
+  .produto-emoji { font-size: 26px; flex-shrink: 0; }
+  .produto-info { flex: 1; }
+  .produto-nome { font-weight: 800; font-size: 13.5px; }
+  .produto-preco { font-weight: 700; font-size: 13px; color: var(--verde); margin-top: 1px; }
+  .produto-cod { font-size: 10px; color: var(--texto-sub); margin-top: 1px; }
+
+  .no-result {
+    text-align: center; padding: 32px 0;
+    color: var(--texto-sub); font-size: 14px; font-weight: 600;
+  }
+  .no-result span { font-size: 30px; display: block; margin-bottom: 8px; }
+
+  /* ══ ETIQUETAS (só aparece ao imprimir) ══ */
+  @media screen {
+    .area-impressao { display: none; }
+  }
+
+  @media print {
+    /* Esconde tudo da tela */
+    body > *:not(.area-impressao) { display: none !important; }
+    .area-impressao { display: block !important; }
+
+    @page {
+      size: 80mm auto;
+      margin: 0;
+    }
+
+    body { background: white; }
+
+    .etiqueta {
+      width: 80mm;
+      padding: 4mm 5mm;
+      border-bottom: 1px dashed #aaa;
+      page-break-inside: avoid;
+      font-family: 'Nunito', sans-serif;
+    }
+
+    .etq-farmacia {
+      font-size: 8pt;
+      font-weight: 700;
+      color: #333;
+      text-align: center;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 2mm;
+      margin-bottom: 2mm;
+    }
+
+    .etq-nome {
+      font-size: 11pt;
+      font-weight: 900;
+      color: #111;
+      line-height: 1.25;
+      margin-bottom: 2mm;
+      text-align: center;
+    }
+
+    .etq-preco-wrap {
+      text-align: center;
+      margin-bottom: 2mm;
+    }
+    .etq-label {
+      font-size: 7pt;
+      font-weight: 700;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+    .etq-preco {
+      font-family: 'Poppins', sans-serif;
+      font-size: 28pt;
+      font-weight: 900;
+      color: #000;
+      line-height: 1;
+      display: block;
+    }
+
+    .etq-rodape {
+      text-align: center;
+      font-size: 7pt;
+      color: #777;
+      margin-top: 1mm;
+    }
+
+    /* Separador visual entre etiquetas */
+    .etiqueta + .etiqueta {
+      margin-top: 2mm;
+    }
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ══ INTERFACE (tela) ══ -->
+<div class="header">
+  <div class="header-top">
+    <div class="icon">🏷️</div>
+    <div>
+      <div class="header-title">Etiquetas de Preço</div>
+      <div class="header-sub">Farmácia Arcanjo — Goldentec 80mm</div>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- Pesquisa -->
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="campoPesquisa" placeholder="Pesquisar produto..." oninput="filtrar(this.value)">
+  </div>
+
+  <!-- Ações -->
+  <div class="acoes">
+    <button class="btn btn-outline" onclick="selecionarTodos()">☑️ Todos</button>
+    <button class="btn btn-cinza" onclick="limparSelecao()">✖ Limpar</button>
+    <button class="btn btn-verde" onclick="imprimir()">🖨️ Imprimir</button>
+  </div>
+
+  <!-- Info seleção -->
+  <div class="info-sel" id="infoSel" style="display:none">
+    <span id="textoSel">0 etiquetas selecionadas</span>
+  </div>
+
+  <!-- Lista -->
+  <div class="produto-lista" id="listaProdutos"></div>
+  <div class="no-result" id="semResultado" style="display:none">
+    <span>🔎</span>Nenhum produto encontrado
+  </div>
+
+</div>
+
+<!-- ══ ÁREA DE IMPRESSÃO (invisível na tela) ══ -->
+<div class="area-impressao" id="areaImpressao"></div>
+
+<script>
+  // ── PRODUTOS (substitua pelo array real do seu app) ──
+  const produtos = [
+    { nome: 'Aberalgina (dipirona 500mg/ml)', preco: 4.50,  cod: '7891234000001' },
+    { nome: 'Belspan composto',               preco: 18.50, cod: '7891234000002' },
+    { nome: 'Cetoprofeno 150mg (10 comp.)',   preco: 15.00, cod: '7891234000003' },
+    { nome: 'Losartana 50mg',                 preco: 12.50, cod: '7891234000004' },
+    { nome: 'Omeprazol 20mg',                 preco: 9.50,  cod: '7891234000005' },
+    { nome: 'Nimesulida 100mg',               preco: 6.75,  cod: '7891234000006' },
+    { nome: 'Vitamina C 1g',                  preco: 22.00, cod: '7891234000007' },
+    { nome: 'Dipirona 500mg',                 preco: 8.90,  cod: '7891234000008' },
+    { nome: 'Amoxicilina 500mg',              preco: 18.90, cod: '7891234000009' },
+    { nome: 'Ibuprofeno 600mg',               preco: 11.00, cod: '7891234000010' },
+  ];
+
+  let selecionados = new Set();
+  let filtroAtual = '';
+
+  // Renderizar lista
+  function renderizar() {
+    const lista = document.getElementById('listaProdutos');
+    const semRes = document.getElementById('semResultado');
+    const t = filtroAtual.toLowerCase();
+    const filtrados = produtos.filter(p => !t || p.nome.toLowerCase().includes(t));
+
+    if (filtrados.length === 0) {
+      lista.innerHTML = '';
+      semRes.style.display = 'block';
+      return;
+    }
+    semRes.style.display = 'none';
+
+    lista.innerHTML = filtrados.map((p, i) => {
+      const idx = produtos.indexOf(p);
+      const sel = selecionados.has(idx);
+      return `
+        <div class="produto-item ${sel ? 'selecionado' : ''}" onclick="toggleSel(${idx})">
+          <div class="checkbox">${sel ? '✓' : ''}</div>
+          <div class="produto-emoji">💊</div>
+          <div class="produto-info">
+            <div class="produto-nome">${p.nome}</div>
+            <div class="produto-preco">R$ ${p.preco.toFixed(2).replace('.', ',')}</div>
+            <div class="produto-cod">Cód: ${p.cod}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    atualizarInfo();
+  }
+
+  function toggleSel(idx) {
+    if (selecionados.has(idx)) selecionados.delete(idx);
+    else selecionados.add(idx);
+    renderizar();
+  }
+
+  function selecionarTodos() {
+    produtos.forEach((_, i) => selecionados.add(i));
+    renderizar();
+  }
+
+  function limparSelecao() {
+    selecionados.clear();
+    renderizar();
+  }
+
+  function filtrar(val) {
+    filtroAtual = val;
+    renderizar();
+  }
+
+  function atualizarInfo() {
+    const info = document.getElementById('infoSel');
+    const txt  = document.getElementById('textoSel');
+    const n = selecionados.size;
+    if (n > 0) {
+      info.style.display = 'flex';
+      txt.textContent = `${n} etiqueta${n !== 1 ? 's' : ''} selecionada${n !== 1 ? 's' : ''}`;
+    } else {
+      info.style.display = 'none';
+    }
+  }
+
+  function imprimir() {
+    if (selecionados.size === 0) {
+      alert('Selecione ao menos um produto para imprimir.');
+      return;
+    }
+
+    const area = document.getElementById('areaImpressao');
+    const agora = new Date();
+    const dataHora = agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+
+    area.innerHTML = [...selecionados].map(idx => {
+      const p = produtos[idx];
+      const precoParts = p.preco.toFixed(2).split('.');
+      return `
+        <div class="etiqueta">
+          <div class="etq-farmacia">💊 Farmácia Arcanjo</div>
+          <div class="etq-nome">${p.nome}</div>
+          <div class="etq-preco-wrap">
+            <div class="etq-label">Preço</div>
+            <span class="etq-preco">R$ ${p.preco.toFixed(2).replace('.', ',')}</span>
+          </div>
+          <div class="etq-rodape">Cód: ${p.cod} · ${dataHora}</div>
+        </div>`;
+    }).join('');
+
+    setTimeout(() => window.print(), 100);
+  }
+
+  // Init
+  renderizar();
+</script>
+
+</body>
+</html>

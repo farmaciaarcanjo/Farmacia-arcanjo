@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cupom de Venda — Farmácia Arcanjo</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #1a7a3c;
+    --verde-escuro: #145f2e;
+    --verde-claro: #e8f5ee;
+    --verde-medio: #2d9e56;
+    --texto: #1a2e1f;
+    --texto-sub: #5a7060;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --sombra: 0 2px 12px rgba(26,122,60,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: #f4f6f4;
+    color: var(--texto);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: linear-gradient(135deg, var(--verde-escuro), var(--verde), var(--verde-medio));
+    padding: 20px 20px 24px;
+    color: white;
+  }
+  .header-top { display: flex; align-items: center; gap: 10px; }
+  .header-icon {
+    width: 38px; height: 38px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .header-title { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 17px; }
+  .header-sub { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+
+  /* ── BODY ── */
+  .body { padding: 18px 16px 40px; max-width: 600px; margin: 0 auto; }
+
+  /* ── SEÇÃO ── */
+  .secao-titulo {
+    font-family: 'Poppins', sans-serif;
+    font-size: 12px; font-weight: 600;
+    color: var(--texto-sub);
+    text-transform: uppercase;
+    letter-spacing: .7px;
+    margin: 18px 0 10px;
+  }
+
+  /* ── CAMPO ── */
+  .campo { margin-bottom: 10px; }
+  .campo label {
+    display: block;
+    font-size: 12px; font-weight: 700;
+    color: var(--texto-sub);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+  }
+  .campo input, .campo select {
+    width: 100%;
+    padding: 11px 14px;
+    border: 2px solid #dde8e1;
+    border-radius: var(--radius-sm);
+    font-family: 'Nunito', sans-serif;
+    font-size: 14px; font-weight: 600;
+    color: var(--texto);
+    background: white;
+    outline: none;
+    transition: border-color .2s;
+    appearance: none;
+  }
+  .campo input:focus, .campo select:focus { border-color: var(--verde); }
+  .campo input::placeholder { color: #9ab4a2; }
+
+  /* ── PAGAMENTO ── */
+  .pagamento-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .pag-btn {
+    background: white;
+    border: 2px solid #dde8e1;
+    border-radius: var(--radius-sm);
+    padding: 12px 8px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700; font-size: 13px;
+    color: var(--texto);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: all .18s;
+  }
+  .pag-btn:hover { border-color: var(--verde); background: var(--verde-claro); }
+  .pag-btn.ativo { border-color: var(--verde); background: var(--verde-claro); color: var(--verde-escuro); }
+
+  /* ── ADICIONAR PRODUTO ── */
+  .add-produto {
+    background: white;
+    border-radius: var(--radius);
+    padding: 14px;
+    box-shadow: var(--sombra);
+    margin-bottom: 10px;
+  }
+  .add-row { display: flex; gap: 8px; align-items: flex-end; }
+  .add-row .campo { flex: 1; margin-bottom: 0; }
+  .add-row .campo-qtd { width: 70px; flex-shrink: 0; }
+  .btn-add {
+    background: var(--verde);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    width: 44px; height: 44px;
+    font-size: 22px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background .2s;
+    margin-bottom: 0;
+    align-self: flex-end;
+  }
+  .btn-add:hover { background: var(--verde-escuro); }
+
+  /* ── LISTA ITENS ── */
+  .itens-lista { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .item-row {
+    background: white;
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: var(--sombra);
+    animation: fadeUp .25s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .item-emoji { font-size: 22px; flex-shrink: 0; }
+  .item-info { flex: 1; min-width: 0; }
+  .item-nome { font-weight: 800; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-detalhe { font-size: 11px; color: var(--texto-sub); font-weight: 600; margin-top: 1px; }
+  .item-total { font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 14px; color: var(--verde); flex-shrink: 0; }
+  .btn-remover {
+    background: #fdecea; color: #c0392b;
+    border: none; border-radius: 7px;
+    width: 30px; height: 30px;
+    font-size: 14px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all .15s;
+  }
+  .btn-remover:hover { background: #c0392b; color: white; }
+
+  /* ── VAZIO ── */
+  .lista-vazia {
+    text-align: center; padding: 24px 0;
+    color: var(--texto-sub); font-size: 13px; font-weight: 600;
+  }
+  .lista-vazia span { font-size: 26px; display: block; margin-bottom: 6px; }
+
+  /* ── TOTAIS ── */
+  .totais {
+    background: white;
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--sombra);
+    margin-bottom: 16px;
+  }
+  .totais-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; font-weight: 700;
+    color: var(--texto-sub);
+    padding: 4px 0;
+  }
+  .totais-row.total {
+    font-size: 18px; font-weight: 900;
+    color: var(--texto);
+    border-top: 2px solid #dde8e1;
+    margin-top: 8px; padding-top: 10px;
+  }
+  .totais-row.total .val { color: var(--verde); font-family: 'Poppins', sans-serif; }
+  .totais-row.troco { color: #0066cc; }
+
+  /* ── TROCO ── */
+  .troco-wrap { display: none; margin-top: 10px; }
+  .troco-wrap.visivel { display: block; }
+
+  /* ── BOTÃO IMPRIMIR ── */
+  .btn-imprimir {
+    width: 100%;
+    background: var(--verde);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 15px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700; font-size: 15px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all .2s;
+    box-shadow: 0 4px 14px rgba(26,122,60,0.25);
+  }
+  .btn-imprimir:hover { background: var(--verde-escuro); transform: translateY(-1px); }
+  .btn-imprimir:active { transform: scale(0.98); }
+
+  .btn-limpar {
+    width: 100%;
+    background: white;
+    color: #c0392b;
+    border: 2px solid #fdecea;
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800; font-size: 13px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all .2s;
+  }
+  .btn-limpar:hover { background: #fdecea; }
+
+  /* ══ CUPOM IMPRESSÃO ══ */
+  @media screen { .cupom-print { display: none; } }
+
+  @media print {
+    body > *:not(.cupom-print) { display: none !important; }
+    .cupom-print { display: block !important; }
+
+    @page { size: 80mm auto; margin: 3mm 4mm; }
+
+    body { background: white; }
+
+    .cupom-print {
+      width: 72mm;
+      font-family: 'Courier New', monospace;
+      font-size: 9pt;
+      color: #000;
+    }
+
+    .cp-center { text-align: center; }
+    .cp-bold { font-weight: bold; }
+    .cp-grande { font-size: 13pt; font-weight: bold; }
+    .cp-separador { border: none; border-top: 1px dashed #000; margin: 3mm 0; }
+    .cp-linha { display: flex; justify-content: space-between; margin: 1.5mm 0; }
+    .cp-linha .nome { flex: 1; padding-right: 4mm; }
+    .cp-linha .val { flex-shrink: 0; text-align: right; }
+    .cp-total-row { display: flex; justify-content: space-between; font-size: 14pt; font-weight: bold; margin: 2mm 0; }
+    .cp-rodape { text-align: center; font-size: 8pt; margin-top: 3mm; }
+    .cp-obrigado { text-align: center; font-size: 11pt; font-weight: bold; margin: 3mm 0 1mm; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══ INTERFACE ══ -->
+<div class="header">
+  <div class="header-top">
+    <div class="header-icon">🧾</div>
+    <div>
+      <div class="header-title">Cupom de Venda</div>
+      <div class="header-sub">Farmácia Arcanjo — Impressora 80mm</div>
+    </div>
+  </div>
+</div>
+
+<div class="body">
+
+  <!-- Cliente -->
+  <div class="secao-titulo">Cliente (opcional)</div>
+  <div class="campo">
+    <input type="text" id="nomeCliente" placeholder="Nome do cliente...">
+  </div>
+
+  <!-- Pagamento -->
+  <div class="secao-titulo">Forma de Pagamento</div>
+  <div class="pagamento-grid">
+    <button class="pag-btn" onclick="selecionarPag(this, 'Dinheiro')">💵 Dinheiro</button>
+    <button class="pag-btn" onclick="selecionarPag(this, 'Pix')">📱 Pix</button>
+    <button class="pag-btn" onclick="selecionarPag(this, 'Débito')">💳 Débito</button>
+    <button class="pag-btn" onclick="selecionarPag(this, 'Crédito')">💳 Crédito</button>
+  </div>
+
+  <!-- Troco (só aparece se dinheiro) -->
+  <div class="troco-wrap" id="trocoWrap">
+    <div class="campo">
+      <label>Valor recebido (R$)</label>
+      <input type="number" id="valorRecebido" placeholder="0,00" step="0.01" min="0" oninput="calcTroco()">
+    </div>
+  </div>
+
+  <!-- Produtos -->
+  <div class="secao-titulo">Adicionar Produto</div>
+  <div class="add-produto">
+    <div class="add-row">
+      <div class="campo" style="flex:2">
+        <label>Produto</label>
+        <input type="text" id="inputProduto" list="listaProdutos" placeholder="Nome do produto..." oninput="preencherPreco()">
+        <datalist id="listaProdutos"></datalist>
+      </div>
+      <div class="campo campo-qtd">
+        <label>Qtd</label>
+        <input type="number" id="inputQtd" value="1" min="1" style="text-align:center">
+      </div>
+      <div class="campo" style="width:90px; flex-shrink:0">
+        <label>Preço R$</label>
+        <input type="number" id="inputPreco" placeholder="0,00" step="0.01" min="0">
+      </div>
+      <button class="btn-add" onclick="adicionarItem()" title="Adicionar">+</button>
+    </div>
+  </div>
+
+  <!-- Lista de itens -->
+  <div id="itensLista" class="itens-lista"></div>
+  <div id="listaVazia" class="lista-vazia">
+    <span>🛒</span>Nenhum produto adicionado
+  </div>
+
+  <!-- Totais -->
+  <div class="totais" id="totaisBox" style="display:none">
+    <div class="totais-row"><span>Subtotal</span><span id="valSubtotal">R$ 0,00</span></div>
+    <div class="totais-row"><span>Itens</span><span id="valItens">0</span></div>
+    <div class="totais-row total"><span>TOTAL</span><span class="val" id="valTotal">R$ 0,00</span></div>
+    <div class="totais-row troco" id="trocoRow" style="display:none">
+      <span>💰 Troco</span><span id="valTroco">R$ 0,00</span>
+    </div>
+  </div>
+
+  <!-- Botões -->
+  <button class="btn-imprimir" onclick="imprimirCupom()">🖨️ Imprimir Cupom</button>
+  <button class="btn-limpar" onclick="limparTudo()">🗑️ Limpar e novo pedido</button>
+
+</div>
+
+<!-- ══ CUPOM PARA IMPRESSÃO ══ -->
+<div class="cupom-print" id="cupomPrint"></div>
+
+<script>
+  // ── PRODUTOS DO CATÁLOGO (substitua pelo seu array real) ──
+  const catalogo = [
+    { nome: 'Aberalgina (dipirona 500mg/ml)', preco: 4.50 },
+    { nome: 'Belspan composto',               preco: 18.50 },
+    { nome: 'Cetoprofeno 150mg (10 comp.)',   preco: 15.00 },
+    { nome: 'Losartana 50mg',                 preco: 12.50 },
+    { nome: 'Omeprazol 20mg',                 preco: 9.50 },
+    { nome: 'Nimesulida 100mg',               preco: 6.75 },
+    { nome: 'Vitamina C 1g',                  preco: 22.00 },
+    { nome: 'Dipirona 500mg',                 preco: 8.90 },
+    { nome: 'Amoxicilina 500mg',              preco: 18.90 },
+    { nome: 'Ibuprofeno 600mg',               preco: 11.00 },
+  ];
+
+  let itens = [];
+  let pagamentoSel = '';
+  let numeroPedido = gerarNumero();
+
+  // Preencher datalist
+  const dl = document.getElementById('listaProdutos');
+  catalogo.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.nome;
+    dl.appendChild(opt);
+  });
+
+  function gerarNumero() {
+    return String(Date.now()).slice(-6);
+  }
+
+  function preencherPreco() {
+    const nome = document.getElementById('inputProduto').value;
+    const prod = catalogo.find(p => p.nome.toLowerCase() === nome.toLowerCase());
+    if (prod) document.getElementById('inputPreco').value = prod.preco.toFixed(2);
+  }
+
+  function selecionarPag(btn, tipo) {
+    document.querySelectorAll('.pag-btn').forEach(b => b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    pagamentoSel = tipo;
+    document.getElementById('trocoWrap').classList.toggle('visivel', tipo === 'Dinheiro');
+    calcTroco();
+  }
+
+  function adicionarItem() {
+    const nome  = document.getElementById('inputProduto').value.trim();
+    const qtd   = parseInt(document.getElementById('inputQtd').value) || 1;
+    const preco = parseFloat(document.getElementById('inputPreco').value);
+
+    if (!nome) { alert('Digite o nome do produto.'); return; }
+    if (!preco || preco <= 0) { alert('Digite o preço do produto.'); return; }
+
+    // Se já existe, soma quantidade
+    const existe = itens.find(i => i.nome === nome);
+    if (existe) { existe.qtd += qtd; }
+    else { itens.push({ nome, qtd, preco }); }
+
+    document.getElementById('inputProduto').value = '';
+    document.getElementById('inputPreco').value = '';
+    document.getElementById('inputQtd').value = 1;
+
+    renderItens();
+    document.getElementById('inputProduto').focus();
+  }
+
+  function removerItem(idx) {
+    itens.splice(idx, 1);
+    renderItens();
+  }
+
+  function renderItens() {
+    const lista  = document.getElementById('itensLista');
+    const vazia  = document.getElementById('listaVazia');
+    const totBox = document.getElementById('totaisBox');
+
+    if (itens.length === 0) {
+      lista.innerHTML = '';
+      vazia.style.display = 'block';
+      totBox.style.display = 'none';
+      return;
+    }
+    vazia.style.display = 'none';
+    totBox.style.display = 'block';
+
+    lista.innerHTML = itens.map((it, i) => `
+      <div class="item-row">
+        <div class="item-emoji">💊</div>
+        <div class="item-info">
+          <div class="item-nome">${it.nome}</div>
+          <div class="item-detalhe">${it.qtd}x · R$ ${it.preco.toFixed(2).replace('.',',')}</div>
+        </div>
+        <div class="item-total">R$ ${(it.qtd * it.preco).toFixed(2).replace('.',',')}</div>
+        <button class="btn-remover" onclick="removerItem(${i})">✕</button>
+      </div>
+    `).join('');
+
+    atualizarTotais();
+  }
+
+  function atualizarTotais() {
+    const subtotal = itens.reduce((s, i) => s + i.qtd * i.preco, 0);
+    const totalItens = itens.reduce((s, i) => s + i.qtd, 0);
+    document.getElementById('valSubtotal').textContent = 'R$ ' + subtotal.toFixed(2).replace('.',',');
+    document.getElementById('valTotal').textContent    = 'R$ ' + subtotal.toFixed(2).replace('.',',');
+    document.getElementById('valItens').textContent    = totalItens + ' item' + (totalItens !== 1 ? 's' : '');
+    calcTroco();
+  }
+
+  function calcTroco() {
+    const total    = itens.reduce((s, i) => s + i.qtd * i.preco, 0);
+    const recebido = parseFloat(document.getElementById('valorRecebido')?.value) || 0;
+    const trocoRow = document.getElementById('trocoRow');
+    if (pagamentoSel === 'Dinheiro' && recebido > 0) {
+      const troco = recebido - total;
+      trocoRow.style.display = 'flex';
+      document.getElementById('valTroco').textContent = 'R$ ' + Math.max(troco, 0).toFixed(2).replace('.',',');
+    } else {
+      trocoRow.style.display = 'none';
+    }
+  }
+
+  function fmt(val) { return 'R$ ' + val.toFixed(2).replace('.',','); }
+
+  function imprimirCupom() {
+    if (itens.length === 0) { alert('Adicione ao menos um produto.'); return; }
+    if (!pagamentoSel)      { alert('Selecione a forma de pagamento.'); return; }
+
+    const cliente  = document.getElementById('nomeCliente').value.trim();
+    const total    = itens.reduce((s, i) => s + i.qtd * i.preco, 0);
+    const recebido = parseFloat(document.getElementById('valorRecebido')?.value) || 0;
+    const troco    = recebido - total;
+    const agora    = new Date();
+    const data     = agora.toLocaleDateString('pt-BR');
+    const hora     = agora.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+
+    const itensHTML = itens.map(it => `
+      <div class="cp-linha">
+        <span class="nome">${it.nome}</span>
+        <span class="val">${fmt(it.qtd * it.preco)}</span>
+      </div>
+      <div style="font-size:8pt; color:#555; margin: 0 0 1.5mm 0">
+        ${it.qtd}x ${fmt(it.preco)}
+      </div>
+    `).join('');
+
+    document.getElementById('cupomPrint').innerHTML = `
+      <div class="cp-center cp-bold" style="font-size:13pt">FARMÁCIA ARCANJO</div>
+      <div class="cp-center" style="margin:1mm 0">(88) 99337-5650</div>
+      <hr class="cp-separador">
+
+      <div class="cp-linha">
+        <span>Pedido</span><span>#${numeroPedido}</span>
+      </div>
+      <div class="cp-linha">
+        <span>Data</span><span>${data} ${hora}</span>
+      </div>
+      ${cliente ? `<div class="cp-linha"><span>Cliente</span><span>${cliente}</span></div>` : ''}
+      <hr class="cp-separador">
+
+      <div class="cp-bold" style="margin-bottom:2mm">ITENS</div>
+      ${itensHTML}
+      <hr class="cp-separador">
+
+      <div class="cp-total-row">
+        <span>TOTAL</span>
+        <span>${fmt(total)}</span>
+      </div>
+      <div class="cp-linha">
+        <span>Pagamento</span><span>${pagamentoSel}</span>
+      </div>
+      ${pagamentoSel === 'Dinheiro' && recebido > 0 ? `
+        <div class="cp-linha"><span>Recebido</span><span>${fmt(recebido)}</span></div>
+        <div class="cp-linha cp-bold"><span>Troco</span><span>${fmt(Math.max(troco,0))}</span></div>
+      ` : ''}
+      <hr class="cp-separador">
+
+      <div class="cp-obrigado">Obrigado pela preferência! 💊</div>
+      <div class="cp-rodape">Farmácia Arcanjo — Sempre cuidando de você</div>
+      <div style="margin-top:6mm"></div>
+    `;
+
+    setTimeout(() => window.print(), 100);
+  }
+
+  function limparTudo() {
+    if (itens.length > 0 && !confirm('Limpar o pedido atual?')) return;
+    itens = [];
+    pagamentoSel = '';
+    numeroPedido = gerarNumero();
+    document.getElementById('nomeCliente').value = '';
+    document.getElementById('valorRecebido').value = '';
+    document.getElementById('inputProduto').value = '';
+    document.getElementById('inputPreco').value = '';
+    document.getElementById('inputQtd').value = 1;
+    document.querySelectorAll('.pag-btn').forEach(b => b.classList.remove('ativo'));
+    document.getElementById('trocoWrap').classList.remove('visivel');
+    renderItens();
+  }
+
+  // Enter no campo produto adiciona
+  document.getElementById('inputProduto').addEventListener('keydown', e => {
+    if (e.key === 'Enter') adicionarItem();
+  });
+
+  renderItens();
+</script>
+
+</body>
+</html>
