@@ -358,12 +358,8 @@ function LogAtividades() {
 }
 
 export default function CatalogoAdmin() {
-  const [produtos, setProdutos] = useState<Produto[]>(() => {
-    try {
-      const saved =localStorage.getItem("farmacia_produtos_v3") ;
-      return saved ? JSON.parse(saved) : PRODUTOS_INICIAIS;
-    } catch { return PRODUTOS_INICIAIS; }
-  });
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [carregandoProdutos, setCarregandoProdutos] = useState(true);
   const [usuariosAdmin, setUsuariosAdmin] = useState<UsuarioAdmin[]>(() => carregarUsuarios());
   const [modo, setModo] = useState<"catalogo" | "login" | "admin" | "form">("catalogo");
   const [senha, setSenha] = useState("");
@@ -386,13 +382,30 @@ export default function CatalogoAdmin() {
         try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fbProdutos)); } catch {}
       } else {
         setFirebaseAtivo(false);
+        try {
+          const saved = localStorage.getItem("farmacia_produtos_v3");
+          const local: Produto[] = saved ? JSON.parse(saved) : [];
+          setProdutos(local.length > 0 ? local : PRODUTOS_INICIAIS);
+        } catch {
+          setProdutos(PRODUTOS_INICIAIS);
+        }
       }
-    }).catch(() => setFirebaseAtivo(false));
+    }).catch(() => {
+      setFirebaseAtivo(false);
+      try {
+        const saved = localStorage.getItem("farmacia_produtos_v3");
+        const local: Produto[] = saved ? JSON.parse(saved) : [];
+        setProdutos(local.length > 0 ? local : PRODUTOS_INICIAIS);
+      } catch {
+        setProdutos(PRODUTOS_INICIAIS);
+      }
+    }).finally(() => setCarregandoProdutos(false));
 
     const unsubscribe = escutarProdutosFirebase(
       (fbProdutos) => {
         setProdutos(fbProdutos);
         setFirebaseAtivo(true);
+        setCarregandoProdutos(false);
         try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fbProdutos)); } catch {}
       },
       () => setFirebaseAtivo(prev => prev === true ? true : false)
@@ -746,6 +759,15 @@ export default function CatalogoAdmin() {
           </button>
         </div>
       </div>
+    </div>
+  );
+
+  if (carregandoProdutos) return (
+    <div style={{ minHeight: "100vh", background: "#f0f4ff", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{ fontSize: 48 }}>💊</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: "#1565c0" }}>Carregando catálogo...</div>
+      <div style={{ fontSize: 13, color: "#888" }}>Buscando produtos no servidor</div>
     </div>
   );
 

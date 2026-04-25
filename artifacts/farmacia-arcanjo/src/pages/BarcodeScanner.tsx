@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { salvarProdutoFirebase } from "../lib/firebase";
 
 interface Produto {
   id: string;
@@ -143,6 +144,16 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
     if (!form.nome.trim()) { setErro("Nome é obrigatório."); return; }
     if (form.preco <= 0) { setErro("Informe um preço válido."); return; }
     onSalvar(form);
+    salvarProdutoFirebase({
+      id: isNaN(Number(form.id)) ? Date.now() : Number(form.id),
+      nome: form.nome,
+      preco: form.preco,
+      categoria: form.categoria,
+      emoji: "💊",
+      desc: form.descricao || "",
+      estoque: form.estoque,
+      codigoBarras: form.codigoBarras,
+    });
     setModo("sucesso");
     setTimeout(() => { setModo("inicio"); setErro(""); }, 2500);
   };
