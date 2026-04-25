@@ -12,7 +12,6 @@ import {
   salvarProdutoFirebase,
   buscarProdutosFirebase,
   deletarProdutoFirebase,
-  escutarProdutosFirebase,
   registrarPedidoFirebase,
   registrarLogFirebase,
   registrarCliqueWhatsAppFirebase,
@@ -375,51 +374,43 @@ export default function CatalogoAdmin() {
   const [firebaseAtivo, setFirebaseAtivo] = useState<boolean | null>(null);
 
   useEffect(() => {
-    buscarProdutosFirebase().then(async fbProdutos => {
-      if (fbProdutos && fbProdutos.length >= 10) {
-        // Firebase tem catálogo completo — usa como fonte principal
-        setProdutos(fbProdutos);
-        setFirebaseAtivo(true);
-        try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fbProdutos)); } catch {}
-      } else {
-        // Firebase vazio ou incompleto — faz carga inicial (seed) a partir do localStorage ou PRODUTOS_INICIAIS
-        let fonte: Produto[] = [];
+    const inicializar = async () => {
+      try {
+        const fbProdutos = await buscarProdutosFirebase();
+        if (fbProdutos && fbProdutos.length >= 10) {
+          setProdutos(fbProdutos);
+          setFirebaseAtivo(true);
+          try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fbProdutos)); } catch {}
+        } else {
+          let fonte: Produto[] = [];
+          try {
+            const saved = localStorage.getItem("farmacia_produtos_v3");
+            const local: Produto[] = saved ? JSON.parse(saved) : [];
+            fonte = local.length > 0 ? local : PRODUTOS_INICIAIS;
+          } catch {
+            fonte = PRODUTOS_INICIAIS;
+          }
+          setProdutos(fonte);
+          setFirebaseAtivo(true);
+          for (const p of fonte) {
+            await salvarProdutoFirebase(p);
+          }
+          try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fonte)); } catch {}
+        }
+      } catch {
+        setFirebaseAtivo(false);
         try {
           const saved = localStorage.getItem("farmacia_produtos_v3");
           const local: Produto[] = saved ? JSON.parse(saved) : [];
-          fonte = local.length > 0 ? local : PRODUTOS_INICIAIS;
+          setProdutos(local.length > 0 ? local : PRODUTOS_INICIAIS);
         } catch {
-          fonte = PRODUTOS_INICIAIS;
+          setProdutos(PRODUTOS_INICIAIS);
         }
-        setProdutos(fonte);
-        setFirebaseAtivo(true);
-        // Envia todos os produtos para o Firebase em loop (seed)
-        for (const p of fonte) {
-          await salvarProdutoFirebase(p);
-        }
-        try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fonte)); } catch {}
-      }
-    }).catch(() => {
-      setFirebaseAtivo(false);
-      try {
-        const saved = localStorage.getItem("farmacia_produtos_v3");
-        const local: Produto[] = saved ? JSON.parse(saved) : [];
-        setProdutos(local.length > 0 ? local : PRODUTOS_INICIAIS);
-      } catch {
-        setProdutos(PRODUTOS_INICIAIS);
-      }
-    }).finally(() => setCarregandoProdutos(false));
-
-    const unsubscribe = escutarProdutosFirebase(
-      (fbProdutos) => {
-        setProdutos(fbProdutos);
-        setFirebaseAtivo(true);
+      } finally {
         setCarregandoProdutos(false);
-        try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fbProdutos)); } catch {}
-      },
-      () => setFirebaseAtivo(prev => prev === true ? true : false)
-    );
-    return () => unsubscribe();
+      }
+    };
+    inicializar();
   }, []);
 
 // Hook para detectar leitor de código de barras (USB - digita rápido + Enter)
