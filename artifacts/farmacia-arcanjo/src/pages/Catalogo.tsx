@@ -11,6 +11,7 @@ import { trackWhatsAppClick, trackProdutoAdicionado } from "../lib/analytics";
 import {
   salvarProdutoFirebase,
   buscarProdutosFirebase,
+  escutarProdutosFirebase,
   deletarProdutoFirebase,
   registrarPedidoFirebase,
   registrarLogFirebase,
@@ -384,6 +385,8 @@ export default function CatalogoAdmin() {
   const [firebaseAtivo, setFirebaseAtivo] = useState<boolean | null>(null);
 
   useEffect(() => {
+    let cancelar: (() => void) | null = null;
+
     const inicializar = async () => {
       try {
         const fbProdutos = await buscarProdutosFirebase();
@@ -402,8 +405,17 @@ export default function CatalogoAdmin() {
       } catch {
         setFirebaseAtivo(false);
       }
+
+      // Ativa listener em tempo real após carga inicial
+      cancelar = escutarProdutosFirebase(
+        (atualizados) => { setProdutos(atualizados); setFirebaseAtivo(true); },
+        () => {}
+      );
     };
+
     inicializar();
+
+    return () => { cancelar?.(); };
   }, []);
 
 // Hook para detectar leitor de código de barras (USB - digita rápido + Enter)
