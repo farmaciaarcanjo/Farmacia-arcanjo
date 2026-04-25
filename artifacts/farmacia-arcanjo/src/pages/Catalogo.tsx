@@ -6,6 +6,8 @@ import CadastroClientes from "./CadastroClientes";
 import LembretesAutomaticos from "./LembretesAutomaticos";
 import GeradorPromocao from "./GeradorPromocao";
 import FechamentoCaixa from "./FechamentoCaixa";
+import AnalyticsDashboard from "./AnalyticsDashboard";
+import { trackWhatsAppClick, trackProdutoAdicionado } from "../lib/analytics";
 const SENHA_ADMIN = "arcanjo2026";
 const WHATSAPP = "5588993375650";
 
@@ -96,6 +98,7 @@ export default function CatalogoAdmin() {
     } else {
       setPedido(prev => {
         const exists = prev.find(i => i.produto.id === produto.id);
+        if (!exists) trackProdutoAdicionado(produto.nome);
         if (exists) return prev.map(i => i.produto.id === produto.id ? { ...i, quantidade: qty } : i);
         return [...prev, { produto, quantidade: qty }];
       });
@@ -155,6 +158,7 @@ export default function CatalogoAdmin() {
   }
 
   function enviarWhatsApp() {
+    trackWhatsAppClick(pedido.map(i => i.produto.nome).join(", "));
     const lista = pedido.map(i => {
       const total = calcularPreco(i.produto, i.quantidade);
       return `• ${i.quantidade}x ${i.produto.nome} — R$${total.toFixed(2)}`;
@@ -186,6 +190,7 @@ export default function CatalogoAdmin() {
     { id: 'lembretes', emoji: '⏰', titulo: 'Lembretes', desc: 'Alertas automáticos', cor: '#e07b00', fundo: '#fff0e6' },
     { id: 'promocao', emoji: '📢', titulo: 'Promoção', desc: 'Gerador WhatsApp', cor: '#c0392b', fundo: '#fdecea' },
     { id: 'caixa', emoji: '🧾', titulo: 'Caixa', desc: 'Fechamento de caixa', cor: '#0d7680', fundo: '#e6f5f6' },
+    { id: 'analytics', emoji: '📈', titulo: 'Analytics', desc: 'Visitantes e engajamento', cor: '#145f2e', fundo: '#e8f5ee' },
     { id: 'cupom', emoji: '🧾', titulo: 'Cupom', desc: 'Imprimir cupom', cor: '#6d4c41', fundo: '#efebe9', externo: '/cupom.html' },
     { id: 'etiquetas', emoji: '🏷️', titulo: 'Etiquetas', desc: 'Imprimir etiquetas', cor: '#37474f', fundo: '#eceff1', externo: '/etiquetas.html' },
   ];
@@ -260,6 +265,7 @@ export default function CatalogoAdmin() {
           {secaoAdmin === "lembretes" && <LembretesAutomaticos />}
           {secaoAdmin === "promocao" && <GeradorPromocao />}
           {secaoAdmin === "caixa" && <FechamentoCaixa produtos={produtos} onAtualizarEstoque={setProdutos} />}
+          {secaoAdmin === "analytics" && <AnalyticsDashboard />}
         </div>
       )}
       {msgSucesso && <div style={{ background: "#e8f5e9", padding: "10px 16px", textAlign: "center", color: "#2e7d32", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}

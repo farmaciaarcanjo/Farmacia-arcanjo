@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ChatbotLara from "@/pages/ChatbotLara";
 import InstagramGenerator from "@/pages/InstagramGenerator";
 import Catalogo from "@/pages/Catalogo";
+import { trackVisita } from "@/lib/analytics";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,8 @@ type TabId = (typeof TABS)[number]["id"];
 
 function AppContent() {
   const [activeTab, setActiveTab] = useState<TabId>("chatbot");
+
+  useEffect(() => { trackVisita(); }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

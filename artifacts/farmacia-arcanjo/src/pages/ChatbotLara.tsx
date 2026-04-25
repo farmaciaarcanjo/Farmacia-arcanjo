@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { PRODUTOS_INICIAIS, calcularPreco, resumoCatalogo, type Produto } from "../data/produtos";
+import { trackLaraMensagem, trackWhatsAppClick, trackProdutoAdicionado } from "../lib/analytics";
 
 interface Message {
   id: string;
@@ -133,6 +134,8 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
     setInput("");
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
+    trackLaraMensagem();
+
     const respostaRapida = detectarResposta(trimmed);
     if (respostaRapida) {
       setTimeout(() => appendAssistantMessage(respostaRapida), 400);
@@ -163,11 +166,13 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
   };
 
   function adicionarAoCatalogo(produto: Produto) {
+    trackProdutoAdicionado(produto.nome);
     localStorage.setItem("lara_produto_pendente", String(produto.id));
     onNavigateTab?.("catalogo");
   }
 
   function pedirWhatsApp(produto: Produto) {
+    trackWhatsAppClick(produto.nome);
     const preco = calcularPreco(produto, 1);
     const msg = `Olá! Vi no app da Farmácia Arcanjo e gostaria de pedir:\n• ${produto.nome} — R$${preco.toFixed(2)}\n\nPoderia confirmar disponibilidade? 😊`;
     window.open(`https://wa.me/5588993375650?text=${encodeURIComponent(msg)}`, "_blank");
