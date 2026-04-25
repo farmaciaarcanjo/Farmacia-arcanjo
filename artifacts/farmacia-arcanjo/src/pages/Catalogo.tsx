@@ -724,20 +724,6 @@ export default function CatalogoAdmin() {
           ))}
         </div>
       </div>
-        <BarcodeScanner
-  produtos={produtos}
-  onSalvar={(p) => {
-    const idx = produtos.findIndex(x => x.id === p.id);
-    if (idx >= 0) {
-      const novos = [...produtos];
-      novos[idx] = p;
-      setProdutos(novos);
-    } else {
-      setProdutos([...produtos, p]);
-    }
-  }}
-/>
-<RelatorioPedidos />
       {!secaoAdmin ? (
         <div style={{ padding: 16 }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
