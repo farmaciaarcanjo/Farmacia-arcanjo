@@ -442,19 +442,46 @@ export default function CatalogoAdmin() {
     fecharScan();
   };
 
+  const [estoqueProduto, setEstoqueProduto] = useState<Produto | null>(null);
+  const [estoqueValor, setEstoqueValor] = useState("");
+  const [salvandoEstoque, setSalvandoEstoque] = useState(false);
+
+  const abrirEstoque = (p: Produto) => { setEstoqueProduto(p); setEstoqueValor(String(p.estoque ?? "")); };
+  const fecharEstoque = () => { setEstoqueProduto(null); setEstoqueValor(""); };
+  const salvarEstoqueRapido = async () => {
+    if (!estoqueProduto) return;
+    setSalvandoEstoque(true);
+    const qtd = parseInt(estoqueValor);
+    const atualizado = { ...estoqueProduto, estoque: isNaN(qtd) ? undefined : qtd };
+    setProdutos(prev => prev.map(p => p.id === atualizado.id ? atualizado : p));
+    await salvarProdutoFirebase(atualizado).catch(() => {});
+    setSalvandoEstoque(false);
+    fecharEstoque();
+  };
+
   const IGNORAR_SIS = new Set(["mg", "mcg", "g", "ml", "cx", "cxt", "com", "gen", "un", "un.", "cp", "cps", "cpr", "comp", "sol", "susp", "caps", "amp", "fr", "bs", "bsa", "kit"]);
 
   const processarSisMoura = async (file: File, cadastrarNovos: boolean) => {
     setImportandoEstoque(true);
     try {
+      // Limpar produtos inválidos cadastrados por importações anteriores
+      const invalidos = produtos.filter(p => p.nome.trim().toLowerCase() === "produto" || (p.preco === 0 && p.nome.trim().toLowerCase() === "produto"));
+      for (const inv of invalidos) {
+        setProdutos(prev => prev.filter(x => x.id !== inv.id));
+        await deletarProdutoFirebase(inv.id).catch(() => {});
+      }
+
       const buffer = await file.arrayBuffer();
       const wb = XLSX.read(buffer, { type: "array" });
       const ws = wb.Sheets["Relatorio"];
       if (!ws) { alert("Aba 'Relatorio' não encontrada no arquivo."); setImportandoEstoque(false); return; }
       const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
-      const linhas = (data.slice(1) as any[][]).filter((row: any[]) =>
-        typeof row[1] === "string" && row[1].trim() !== ""
-      );
+      const linhas = (data.slice(1) as any[][]).filter((row: any[]) => {
+        if (typeof row[1] !== "string") return false;
+        const nome = row[1].trim();
+        if (!nome || nome.toLowerCase() === "produto") return false;
+        return true;
+      });
       let atualizados = 0;
       let novosCadastrados = 0;
       const naoEncontrados: string[] = [];
@@ -468,7 +495,8 @@ export default function CatalogoAdmin() {
         const custo       = custoRaw !== null && !isNaN(custoRaw) ? custoRaw : null;
         const vendaRaw    = row[6] != null ? parseFloat(String(row[6]).replace(",", ".")) : null;
         const venda       = vendaRaw !== null && !isNaN(vendaRaw) && vendaRaw > 0 ? vendaRaw : null;
-        if (!nomeSis) continue;
+        if (!nomeSis || nomeSis.toLowerCase() === "produto") continue;
+        if (venda === null) continue;
         const nomeSisLow  = nomeSis.toLowerCase();
         const palavrasSis = nomeSisLow.split(/[\s,./\-+()]+/).filter(w => w.length > 2 && !IGNORAR_SIS.has(w));
         const buscarIdx = (): number => {
@@ -993,6 +1021,7 @@ export default function CatalogoAdmin() {
               <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
                 <button onClick={() => imprimirEtiqueta(p)} title="Etiqueta" style={{ padding: "6px 10px", borderRadius: 10, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 13, cursor: "pointer" }}>🏷️</button>
                 {podeEditar && <button onClick={() => abrirScan(p)} title="Código de barras" style={{ padding: "6px 10px", borderRadius: 10, border: "none", background: p.codigoBarras ? "#e8f5e9" : "#f3e5f5", color: p.codigoBarras ? "#2e7d32" : "#6a1b9a", fontSize: 13, cursor: "pointer" }}>📷</button>}
+                {podeEditar && <button onClick={() => abrirEstoque(p)} title="Ajustar estoque" style={{ padding: "6px 10px", borderRadius: 10, border: "none", background: p.estoque !== undefined && p.estoque > 0 ? "#e3f2fd" : "#fff3e0", color: p.estoque !== undefined && p.estoque > 0 ? "#1565c0" : "#e65100", fontSize: 13, cursor: "pointer" }}>📦</button>}
                 {podeEditar && <button onClick={() => abrirForm(p)} title="Editar" style={{ padding: "6px 10px", borderRadius: 10, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 13, cursor: "pointer" }}>✏️</button>}
                 {podeDeletar && <button title="Excluir" onClick={() => {
                   registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
@@ -1023,6 +1052,7 @@ export default function CatalogoAdmin() {
                   <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
                     <button onClick={() => imprimirEtiqueta(p)} title="Etiqueta" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 15, cursor: "pointer" }}>🏷️</button>
                     {podeEditar && <button onClick={() => abrirScan(p)} title="Código de barras" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: p.codigoBarras ? "#e8f5e9" : "#f3e5f5", color: p.codigoBarras ? "#2e7d32" : "#6a1b9a", fontSize: 15, cursor: "pointer" }}>📷</button>}
+                    {podeEditar && <button onClick={() => abrirEstoque(p)} title="Ajustar estoque" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: p.estoque !== undefined && p.estoque > 0 ? "#e3f2fd" : "#fff3e0", color: p.estoque !== undefined && p.estoque > 0 ? "#1565c0" : "#e65100", fontSize: 15, cursor: "pointer" }}>📦</button>}
                     {podeEditar && <button onClick={() => abrirForm(p)} title="Editar" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 15, cursor: "pointer" }}>✏️</button>}
                     {podeDeletar && <button title="Excluir" onClick={() => {
                       registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
@@ -1131,6 +1161,65 @@ export default function CatalogoAdmin() {
                   disabled={salvandoScan || !scanCodigo.trim()}
                   style={{ flex: 2, padding: 13, borderRadius: 12, border: "none", background: scanCodigo.trim() ? "linear-gradient(135deg, #4a148c, #6a1b9a)" : "#e0e0e0", color: scanCodigo.trim() ? "#fff" : "#aaa", fontSize: 14, fontWeight: 800, cursor: scanCodigo.trim() ? "pointer" : "default", fontFamily: "'Nunito', sans-serif", transition: "all 0.2s" }}>
                   {salvandoScan ? "⏳ Salvando..." : "💾 Salvar Código"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Modal ajuste rápido de estoque ── */}
+        {estoqueProduto && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.60)", zIndex: 2100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ background: "#fff", borderRadius: 24, padding: 24, width: "100%", maxWidth: 360, boxShadow: "0 24px 64px rgba(0,0,0,0.35)", fontFamily: "'Nunito', sans-serif" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: "#e3f2fd", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>
+                  {estoqueProduto.emoji}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#1a1a1a", lineHeight: 1.3 }}>{estoqueProduto.nome}</div>
+                  <div style={{ fontSize: 11, color: "#1565c0", fontWeight: 700, marginTop: 2 }}>
+                    Estoque atual: {estoqueProduto.estoque !== undefined ? `${estoqueProduto.estoque} un.` : "Sem informação"}
+                  </div>
+                </div>
+              </div>
+
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#555", marginBottom: 6 }}>
+                📦 Nova quantidade em estoque:
+              </label>
+              <input
+                autoFocus
+                type="number"
+                inputMode="numeric"
+                min="0"
+                value={estoqueValor}
+                onChange={e => setEstoqueValor(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && estoqueValor !== "") salvarEstoqueRapido(); }}
+                placeholder="Ex: 50"
+                style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "2px solid #e0e0e0", fontSize: 18, fontWeight: 800, color: "#1565c0", outline: "none", fontFamily: "'Nunito', sans-serif", boxSizing: "border-box", textAlign: "center" }}
+                onFocus={e => { e.currentTarget.style.borderColor = "#1565c0"; }}
+                onBlur={e => { e.currentTarget.style.borderColor = "#e0e0e0"; }}
+              />
+              <div style={{ display: "flex", gap: 8, marginTop: 12, marginBottom: 18 }}>
+                {[0, 5, 10, 20, 50, 100].map(v => (
+                  <button key={v} onClick={() => setEstoqueValor(String(v))}
+                    style={{ flex: 1, padding: "6px 0", borderRadius: 10, border: "2px solid #e3f2fd", background: estoqueValor === String(v) ? "#1565c0" : "#e3f2fd", color: estoqueValor === String(v) ? "#fff" : "#1565c0", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+                    {v}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={fecharEstoque}
+                  disabled={salvandoEstoque}
+                  style={{ flex: 1, padding: 13, borderRadius: 12, border: "2px solid #e0e0e0", background: "#fff", color: "#666", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+                  Cancelar
+                </button>
+                <button
+                  onClick={salvarEstoqueRapido}
+                  disabled={salvandoEstoque || estoqueValor === ""}
+                  style={{ flex: 2, padding: 13, borderRadius: 12, border: "none", background: estoqueValor !== "" ? "linear-gradient(135deg, #0d47a1, #1565c0)" : "#e0e0e0", color: estoqueValor !== "" ? "#fff" : "#aaa", fontSize: 14, fontWeight: 800, cursor: estoqueValor !== "" ? "pointer" : "default", fontFamily: "'Nunito', sans-serif", transition: "all 0.2s" }}>
+                  {salvandoEstoque ? "⏳ Salvando..." : "💾 Salvar Estoque"}
                 </button>
               </div>
             </div>
