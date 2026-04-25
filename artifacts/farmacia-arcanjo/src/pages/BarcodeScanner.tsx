@@ -30,6 +30,35 @@ const formVazio = (codigo = ""): Produto => ({
 
 type Modo = "inicio" | "manual" | "busca" | "edicao" | "novo" | "sucesso" | "foto";
 
+function imprimirEtiquetaScanner(nome: string, preco: number, codigoBarras?: string) {
+  const precoFmt = `R$ ${preco.toFixed(2).replace('.', ',')}`;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Etiqueta</title>
+  <style>
+    @page { size: 80mm auto; margin: 0; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 4mm 3mm; }
+    .sep { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+    .nome { font-size: 15px; font-weight: bold; text-align: center; line-height: 1.3; margin: 6px 0; word-break: break-word; }
+    .preco { font-size: 36px; font-weight: bold; text-align: center; margin: 8px 0; letter-spacing: 1px; }
+    .info { font-size: 10px; text-align: center; margin: 3px 0; color: #333; }
+    .rodape { font-size: 11px; font-weight: bold; text-align: center; margin: 4px 0; }
+    .btn { display: block; margin: 14px auto 0; padding: 9px 28px; font-size: 14px; cursor: pointer; background: #1565c0; color: #fff; border: none; border-radius: 8px; }
+    @media print { .btn { display: none !important; } }
+  </style></head><body>
+  <hr class="sep"/>
+  <div class="nome">${nome}</div>
+  <hr class="sep"/>
+  <div class="preco">${precoFmt}</div>
+  <hr class="sep"/>
+  ${codigoBarras ? `<div class="info">Cód: ${codigoBarras}</div>` : ''}
+  <div class="rodape">Farmácia Arcanjo — Meruoca-CE</div>
+  <hr class="sep"/>
+  <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+  </body></html>`;
+  const win = window.open('', '_blank', 'width=420,height=340');
+  if (win) { win.document.write(html); win.document.close(); win.focus(); }
+}
+
 export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerProps) {
   const [modo, setModo] = useState<Modo>("inicio");
   const [codigo, setCodigo] = useState("");
@@ -345,6 +374,10 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
             <input style={s.input} placeholder="Ex: Analgésico e antipirético"
               value={form.descricao || ""} onChange={e => setForm({ ...form, descricao: e.target.value })} />
             <button style={s.btnVerde} onClick={salvar}>💾 Salvar Alterações</button>
+            <button style={{ ...s.btnCinza, background: "#fef9c3", color: "#92400e", border: "1px solid #fde68a" } as React.CSSProperties}
+              onClick={() => imprimirEtiquetaScanner(form.nome, form.preco, form.codigoBarras || undefined)}>
+              🖨️ Imprimir etiqueta de preço
+            </button>
             <button style={s.btnCinza as React.CSSProperties} onClick={voltar}>← Cancelar</button>
           </div>
         )}
@@ -380,6 +413,10 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
             <input style={s.input} placeholder="Ex: Analgésico e antipirético"
               value={form.descricao || ""} onChange={e => setForm({ ...form, descricao: e.target.value })} />
             <button style={s.btnVerde} onClick={salvar}>➕ Cadastrar Produto</button>
+            <button style={{ ...s.btnCinza, background: "#fef9c3", color: "#92400e", border: "1px solid #fde68a" } as React.CSSProperties}
+              onClick={() => imprimirEtiquetaScanner(form.nome, form.preco, form.codigoBarras || undefined)}>
+              🖨️ Imprimir etiqueta de preço
+            </button>
             <button style={s.btnCinza as React.CSSProperties} onClick={voltar}>← Cancelar</button>
           </div>
         )}

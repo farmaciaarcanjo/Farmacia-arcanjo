@@ -357,6 +357,35 @@ function LogAtividades() {
   );
 }
 
+function imprimirEtiqueta(p: Produto) {
+  const preco = `R$ ${p.preco.toFixed(2).replace('.', ',')}`;
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Etiqueta</title>
+  <style>
+    @page { size: 80mm auto; margin: 0; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 4mm 3mm; }
+    .sep { border: none; border-top: 1px dashed #000; margin: 5px 0; }
+    .nome { font-size: 15px; font-weight: bold; text-align: center; line-height: 1.3; margin: 6px 0; word-break: break-word; }
+    .preco { font-size: 36px; font-weight: bold; text-align: center; margin: 8px 0; letter-spacing: 1px; }
+    .info { font-size: 10px; text-align: center; margin: 3px 0; color: #333; }
+    .rodape { font-size: 11px; font-weight: bold; text-align: center; margin: 4px 0; }
+    .btn { display: block; margin: 14px auto 0; padding: 9px 28px; font-size: 14px; cursor: pointer; background: #1565c0; color: #fff; border: none; border-radius: 8px; }
+    @media print { .btn { display: none !important; } }
+  </style></head><body>
+  <hr class="sep"/>
+  <div class="nome">${p.nome}</div>
+  <hr class="sep"/>
+  <div class="preco">${preco}</div>
+  <hr class="sep"/>
+  ${p.codigoBarras ? `<div class="info">Cód: ${p.codigoBarras}</div>` : ''}
+  <div class="rodape">Farmácia Arcanjo — Meruoca-CE</div>
+  <hr class="sep"/>
+  <button class="btn" onclick="window.print()">🖨️ Imprimir</button>
+  </body></html>`;
+  const win = window.open('', '_blank', 'width=420,height=340');
+  if (win) { win.document.write(html); win.document.close(); win.focus(); }
+}
+
 export default function CatalogoAdmin() {
   const [produtos, setProdutos] = useState<Produto[]>(PRODUTOS_INICIAIS);
   const [carregandoProdutos, setCarregandoProdutos] = useState(false);
@@ -748,6 +777,7 @@ export default function CatalogoAdmin() {
               {(p as any).promocao && <div style={{ fontSize: 11, color: "#f57c00" }}>🔥 {(p as any).promocao.descricao}</div>}
             </div>
             <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={() => imprimirEtiqueta(p)} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🏷️</button>
               {podeEditar && <button onClick={() => abrirForm(p)} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✏️</button>}
               {podeDeletar && <button onClick={() => {
                 registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
