@@ -224,7 +224,7 @@ export default function BarcodeScanner({ produtos, onSalvar, embedded }: Barcode
 
   const s: Record<string, React.CSSProperties> = {
     wrap: embedded
-      ? { fontFamily: "'Segoe UI', sans-serif", background: "#f8fafc", color: cor.texto, paddingBottom: 8, borderRadius: 12, overflow: "hidden" }
+      ? { fontFamily: "'Segoe UI', sans-serif", background: "#f8fafc", color: cor.texto, paddingBottom: 0, borderRadius: 12, overflow: "hidden" }
       : { fontFamily: "'Segoe UI', sans-serif", background: cor.fundo, minHeight: "100vh", color: cor.texto, paddingBottom: 40 },
     header: { background: `linear-gradient(135deg, ${cor.verde}, #15803d)`, padding: "20px 20px 16px" },
     h1: { margin: 0, fontSize: 20, fontWeight: 700 },

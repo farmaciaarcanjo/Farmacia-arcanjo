@@ -775,17 +775,18 @@ export default function CatalogoAdmin() {
             }
           }}
         />
-        <div style={{ borderTop: "2px solid #e3f2fd", margin: "16px 0 14px" }} />
         {/* ── Cabeçalho com toggle ── */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, marginTop: 0 }}>
           <span style={{ fontSize: 13, color: "#888", fontFamily: "'Nunito', sans-serif" }}>{produtos.length} produto(s)</span>
           <div style={{ display: "flex", gap: 3, background: "#eeeeee", borderRadius: 22, padding: 3 }}>
-            {(["lista", "grade"] as const).map(v => (
-              <button key={v} onClick={() => setView(v)}
-                style={{ padding: "6px 14px", borderRadius: 18, border: "none", background: viewProdutos === v ? "#1565c0" : "transparent", color: viewProdutos === v ? "#fff" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", transition: "background 0.15s" }}>
-                {v === "lista" ? "Lista" : "Grade"}
-              </button>
-            ))}
+            <button onClick={() => setView("lista")}
+              style={{ padding: "6px 14px", borderRadius: 18, border: "none", background: viewProdutos === "lista" ? "#1565c0" : "transparent", color: viewProdutos === "lista" ? "#fff" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+              Lista
+            </button>
+            <button onClick={() => setView("grade")}
+              style={{ padding: "6px 14px", borderRadius: 18, border: "none", background: viewProdutos === "grade" ? "#1565c0" : "transparent", color: viewProdutos === "grade" ? "#fff" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+              Grade
+            </button>
           </div>
         </div>
 
