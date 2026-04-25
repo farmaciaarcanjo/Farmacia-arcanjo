@@ -764,6 +764,7 @@ export default function CatalogoAdmin() {
       {secaoAdmin === "produtos_admin" && <div style={{ padding: 16 }}>
         {/* ── Scanner & Cadastro ── */}
         <BarcodeScanner
+          embedded
           produtos={produtos}
           onSalvar={(p) => {
             const idx = produtos.findIndex(x => x.id === p.id);
@@ -782,7 +783,7 @@ export default function CatalogoAdmin() {
             {(["lista", "grade"] as const).map(v => (
               <button key={v} onClick={() => setView(v)}
                 style={{ padding: "6px 14px", borderRadius: 18, border: "none", background: viewProdutos === v ? "#1565c0" : "transparent", color: viewProdutos === v ? "#fff" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", transition: "background 0.15s" }}>
-                {v === "lista" ? "≡ Lista" : "▦ Grade"}
+                {v === "lista" ? "Lista" : "Grade"}
               </button>
             ))}
           </div>

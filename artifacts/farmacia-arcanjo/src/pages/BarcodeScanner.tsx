@@ -15,6 +15,7 @@ interface Produto {
 interface BarcodeScannerProps {
   produtos: Produto[];
   onSalvar: (produto: Produto) => void;
+  embedded?: boolean;
 }
 
 const categorias = [
@@ -60,7 +61,7 @@ function imprimirEtiquetaScanner(nome: string, preco: number, codigoBarras?: str
   if (win) { win.document.write(html); win.document.close(); win.focus(); }
 }
 
-export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerProps) {
+export default function BarcodeScanner({ produtos, onSalvar, embedded }: BarcodeScannerProps) {
   const [modo, setModo] = useState<Modo>("inicio");
   const [codigo, setCodigo] = useState("");
   const [buscaNome, setBuscaNome] = useState("");
@@ -222,7 +223,9 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
   };
 
   const s: Record<string, React.CSSProperties> = {
-    wrap: { fontFamily: "'Segoe UI', sans-serif", background: cor.fundo, minHeight: "100vh", color: cor.texto, paddingBottom: 40 },
+    wrap: embedded
+      ? { fontFamily: "'Segoe UI', sans-serif", background: "#f8fafc", color: cor.texto, paddingBottom: 8, borderRadius: 12, overflow: "hidden" }
+      : { fontFamily: "'Segoe UI', sans-serif", background: cor.fundo, minHeight: "100vh", color: cor.texto, paddingBottom: 40 },
     header: { background: `linear-gradient(135deg, ${cor.verde}, #15803d)`, padding: "20px 20px 16px" },
     h1: { margin: 0, fontSize: 20, fontWeight: 700 },
     sub: { margin: "4px 0 0", fontSize: 13, color: "#bbf7d0" },
