@@ -360,10 +360,20 @@ export default function CatalogoAdmin() {
   const [produtos, setProdutos] = useState<Produto[]>(PRODUTOS_INICIAIS);
   const [carregandoProdutos, setCarregandoProdutos] = useState(false);
   const [usuariosAdmin, setUsuariosAdmin] = useState<UsuarioAdmin[]>(() => carregarUsuarios());
-  const [modo, setModo] = useState<"catalogo" | "login" | "admin" | "form">("catalogo");
+  const [usuarioLogado, setUsuarioLogado] = useState<UsuarioAdmin | null>(() => {
+    try {
+      const id = sessionStorage.getItem("farmacia_admin_logado");
+      const usuarios = carregarUsuarios();
+      return id ? (usuarios.find(u => u.id === id) ?? null) : null;
+    } catch { return null; }
+  });
+  const [modo, setModo] = useState<"catalogo" | "login" | "admin" | "form">(() => {
+    try {
+      return sessionStorage.getItem("farmacia_admin_logado") ? "admin" : "catalogo";
+    } catch { return "catalogo"; }
+  });
   const [senha, setSenha] = useState("");
   const [erroSenha, setErroSenha] = useState(false);
-  const [usuarioLogado, setUsuarioLogado] = useState<UsuarioAdmin | null>(null);
   const [pedido, setPedido] = useState<ItemPedido[]>([]);
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todos");
   const [busca, setBusca] = useState("");
@@ -469,11 +479,20 @@ export default function CatalogoAdmin() {
 
   function login() {
     const usuario = usuariosAdmin.find(u => u.senha === senha && u.ativo !== false);
-    if (usuario) { setUsuarioLogado(usuario); setModo("admin"); setErroSenha(false); setSenha(""); }
+    if (usuario) {
+      sessionStorage.setItem("farmacia_admin_logado", usuario.id);
+      sessionStorage.setItem("farmacia_admin_usuario", usuario.nome);
+      setUsuarioLogado(usuario); setModo("admin"); setErroSenha(false); setSenha("");
+    }
     else setErroSenha(true);
   }
 
-  function logout() { setUsuarioLogado(null); setModo("catalogo"); }
+  function logout() {
+    sessionStorage.removeItem("farmacia_admin_logado");
+    sessionStorage.removeItem("farmacia_admin_usuario");
+    setUsuarioLogado(null);
+    setModo("catalogo");
+  }
 
   const podeEditar = usuarioLogado?.nivel === "master" || usuarioLogado?.nivel === "editor";
 
