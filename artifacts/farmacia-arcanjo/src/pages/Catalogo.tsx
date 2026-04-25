@@ -679,9 +679,9 @@ export default function CatalogoAdmin() {
 
 
 
-  // ── Limpeza completa do catálogo (roda uma única vez após carregar) ──
+  // ── Limpeza completa do catálogo (roda apenas quando Firebase estiver ativo) ──
   useEffect(() => {
-    if (correcaoFeita.current || produtos.length === 0) return;
+    if (!firebaseAtivo || correcaoFeita.current || produtos.length === 0) return;
     correcaoFeita.current = true;
 
     const limparNome = (nome: string): string => {
@@ -724,7 +724,7 @@ export default function CatalogoAdmin() {
         salvarProdutoFirebase(atualizado).catch(() => {});
       }
     }
-  }, [produtos]);
+  }, [produtos, firebaseAtivo]);
 
   useEffect(() => {
     const pendente = localStorage.getItem("lara_produto_pendente");
