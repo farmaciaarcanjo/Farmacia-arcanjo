@@ -90,7 +90,7 @@ function VisitantesLara() {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
         {[
           { label: "Conversas com Lara hoje", valor: hojeInter, icon: "💬", cor: "#1565c0", fundo: "#e3f2fd" },
-          { label: "Cliques no WhatsApp hoje", valor: hojeCliq, icon: "📲", cor: "#2e7d32", fundo: "#e8f5e9" },
+          { label: "Cliques no WhatsApp hoje", valor: hojeCliq, icon: "📲", cor: "#1565c0", fundo: "#e3f2fd" },
         ].map(c => (
           <div key={c.label} style={{ background: c.fundo, borderRadius: 14, padding: "14px 12px", textAlign: "center" }}>
             <div style={{ fontSize: 24 }}>{c.icon}</div>
@@ -163,7 +163,7 @@ const CATEGORIAS = ["Todos", ...Array.from(new Set(PRODUTOS_INICIAIS.map(p => p.
 function LogAtividades() {
   const log = carregarLog().reverse().slice(0, 20);
   const corAcao: Record<TipoAcao, { bg: string; cor: string; label: string }> = {
-    produto_adicionado: { bg: "#e8f5e9", cor: "#2e7d32", label: "Adicionou" },
+    produto_adicionado: { bg: "#e3f2fd", cor: "#1565c0", label: "Adicionou" },
     produto_editado:    { bg: "#e3f2fd", cor: "#1565c0", label: "Editou"    },
     produto_deletado:   { bg: "#ffebee", cor: "#c62828", label: "Deletou"   },
   };
@@ -411,18 +411,18 @@ export default function CatalogoAdmin() {
     const msg = `Olá! Vi o catálogo da Farmácia Arcanjo e gostaria de:\n\n${lista}\n\n💰 Total: R$${totalPedido.toFixed(2)}\n\nPoderia confirmar disponibilidade e entrega? 😊`;
     window.open(`https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`, "_blank");
   }if (modo === "login") return (
-    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #1b5e20, #2e7d32)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Nunito', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #0d47a1, #1565c0)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, fontFamily: "'Nunito', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
       <div style={{ background: "#fff", borderRadius: 24, padding: 32, width: "100%", maxWidth: 340, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ fontSize: 48 }}>🔒</div>
-          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#1b5e20", margin: "8px 0 4px" }}>Área Admin</h2>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "#0d47a1", margin: "8px 0 4px" }}>Área Admin</h2>
           <p style={{ fontSize: 13, color: "#888", margin: 0 }}>Farmácia Arcanjo</p>
         </div>
         <input type="password" value={senha} onChange={e => setSenha(e.target.value)} onKeyDown={e => e.key === "Enter" && login()} placeholder="Digite a senha"
           style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: erroSenha ? "2px solid #e53935" : "2px solid #e0e0e0", fontSize: 15, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" as any, marginBottom: 8 }} />
         {erroSenha && <p style={{ color: "#e53935", fontSize: 12, margin: "0 0 8px" }}>Senha incorreta!</p>}
-        <button onClick={login} style={{ width: "100%", padding: 13, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #2e7d32, #43a047)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 10 }}>Entrar</button>
+        <button onClick={login} style={{ width: "100%", padding: 13, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #0d47a1, #1565c0)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 10 }}>Entrar</button>
         <button onClick={() => setModo("catalogo")} style={{ width: "100%", padding: 10, borderRadius: 12, border: "none", background: "#f5f5f5", color: "#666", fontSize: 14, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>← Voltar</button>
       </div>
     </div>
@@ -431,13 +431,13 @@ export default function CatalogoAdmin() {
   
   const secoesAdmin = [
     { id: 'relatorio', emoji: '📊', titulo: 'Relatório', desc: 'Pedidos e faturamento', cor: '#0066cc', fundo: '#e6f0ff' },
-    { id: 'clientes', emoji: '👥', titulo: 'Clientes', desc: 'Cadastro de clientes', cor: '#7c3aed', fundo: '#f0ebff' },
+    { id: 'clientes', emoji: '👥', titulo: 'Clientes', desc: 'Cadastro de clientes', cor: '#1565c0', fundo: '#e3f2fd' },
     { id: 'lembretes', emoji: '⏰', titulo: 'Lembretes', desc: 'Alertas automáticos', cor: '#e07b00', fundo: '#fff0e6' },
-    { id: 'promocao', emoji: '📢', titulo: 'Promoção', desc: 'Gerador WhatsApp', cor: '#c0392b', fundo: '#fdecea' },
-    { id: 'caixa', emoji: '🧾', titulo: 'Caixa', desc: 'Fechamento de caixa', cor: '#0d7680', fundo: '#e6f5f6' },
+    { id: 'promocao', emoji: '📢', titulo: 'Promoção', desc: 'Gerador WhatsApp', cor: '#c62828', fundo: '#ffebee' },
+    { id: 'caixa', emoji: '🧾', titulo: 'Caixa', desc: 'Fechamento de caixa', cor: '#0d47a1', fundo: '#e3f2fd' },
     { id: 'visitantes', emoji: '👁️', titulo: 'Visitantes', desc: 'Conversas e WhatsApp', cor: '#1565c0', fundo: '#e3f2fd' },
-    { id: 'analytics', emoji: '📈', titulo: 'Analytics', desc: 'Visitantes e engajamento', cor: '#145f2e', fundo: '#e8f5ee' },
-    { id: 'logatividades', emoji: '📋', titulo: 'Log', desc: 'Atividades do admin', cor: '#4527a0', fundo: '#ede7f6' },
+    { id: 'analytics', emoji: '📈', titulo: 'Analytics', desc: 'Visitantes e engajamento', cor: '#1565c0', fundo: '#e3f2fd' },
+    { id: 'logatividades', emoji: '📋', titulo: 'Log', desc: 'Atividades do admin', cor: '#37474f', fundo: '#eceff1' },
     { id: 'cupom', emoji: '🧾', titulo: 'Cupom', desc: 'Imprimir cupom', cor: '#6d4c41', fundo: '#efebe9', externo: '/cupom.html' },
     { id: 'etiquetas', emoji: '🏷️', titulo: 'Etiquetas', desc: 'Imprimir etiquetas', cor: '#37474f', fundo: '#eceff1', externo: '/etiquetas.html' },
   ];
@@ -445,7 +445,7 @@ export default function CatalogoAdmin() {
   if (modo === "admin") return (
     <div style={{ minHeight: "100vh", background: "#f5f5f5", fontFamily: "'Nunito', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
-      <div style={{ background: "linear-gradient(135deg, #1b5e20, #2e7d32)", padding: "20px 16px 16px" }}>
+      <div style={{ background: "linear-gradient(135deg, #0d47a1, #1565c0)", padding: "20px 16px 16px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div>
             <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0 }}>⚙️ Gerenciar</h1>
@@ -453,20 +453,20 @@ export default function CatalogoAdmin() {
               <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, margin: 0 }}>
                 Olá, {usuarioLogado?.nome ?? "Admin"}
               </p>
-              <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 20, background: usuarioLogado?.nivel === "master" ? "#ffd600" : usuarioLogado?.nivel === "editor" ? "#81d4fa" : "#b0bec5", color: "#111", textTransform: "uppercase", letterSpacing: 0.5 }}>
+              <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 20, background: usuarioLogado?.nivel === "master" ? "#ffd600" : usuarioLogado?.nivel === "editor" ? "#90caf9" : "#b0bec5", color: "#111", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 {usuarioLogado?.nivel}
               </span>
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            {podeEditar && <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>+ Novo</button>}
+            {podeEditar && <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1565c0", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>+ Novo</button>}
             <button onClick={() => setModo("catalogo")} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>👁️ Ver</button>
             <button onClick={logout} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Sair</button>
           </div>
         </div>
         <div style={{ marginBottom: 10 }}>
           {firebaseAtivo === true && (
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#a5d6a7", display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#90caf9", display: "flex", alignItems: "center", gap: 4 }}>
               <span style={{ fontSize: 9 }}>🟢</span> Sincronizado com a nuvem
             </span>
           )}
@@ -531,7 +531,7 @@ export default function CatalogoAdmin() {
         </div>
       ) : (
         <div>
-          <button onClick={() => setSecaoAdmin(null)} style={{ margin: 16, padding: "8px 16px", borderRadius: 20, border: "none", background: "#1b5e20", color: "#fff", fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>← Voltar</button>
+          <button onClick={() => setSecaoAdmin(null)} style={{ margin: 16, padding: "8px 16px", borderRadius: 20, border: "none", background: "#1565c0", color: "#fff", fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>← Voltar</button>
           {secaoAdmin === "relatorio" && <RelatorioPedidos />}
           {secaoAdmin === "clientes" && <CadastroClientes />}
           {secaoAdmin === "lembretes" && <LembretesAutomaticos />}
@@ -542,14 +542,14 @@ export default function CatalogoAdmin() {
           {secaoAdmin === "logatividades" && <LogAtividades />}
         </div>
       )}
-      {msgSucesso && <div style={{ background: "#e8f5e9", padding: "10px 16px", textAlign: "center", color: "#2e7d32", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}
+      {msgSucesso && <div style={{ background: "#e3f2fd", padding: "10px 16px", textAlign: "center", color: "#1565c0", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}
       <div style={{ padding: 16 }}>
         {produtos.map(p => (
           <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: p.estoque !== undefined && p.estoque <= 5 ? "2px solid #ff9800" : "2px solid transparent" }}>
             <span style={{ fontSize: 28 }}>{p.emoji}</span>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>{p.nome}</div>
-              <div style={{ fontSize: 13, color: "#2e7d32", fontWeight: 700 }}>R${p.preco.toFixed(2)}</div>
+              <div style={{ fontSize: 13, color: "#1565c0", fontWeight: 700 }}>R${p.preco.toFixed(2)}</div>
               {p.estoque !== undefined && <div style={{ fontSize: 11, color: p.estoque <= 5 ? "#ff9800" : "#888" }}>Estoque: {p.estoque} {p.estoque <= 5 ? "⚠️ Baixo!" : ""}</div>}
               {p.prescricao && <div style={{ fontSize: 11, color: "#e53935" }}>⚠️ Receita médica</div>}
               {(p as any).promocao && <div style={{ fontSize: 11, color: "#f57c00" }}>🔥 {(p as any).promocao.descricao}</div>}
@@ -569,7 +569,7 @@ export default function CatalogoAdmin() {
   );if (modo === "form") return (
     <div style={{ minHeight: "100vh", background: "#f5f5f5", fontFamily: "'Nunito', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
-      <div style={{ background: "linear-gradient(135deg, #1b5e20, #2e7d32)", padding: "20px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ background: "linear-gradient(135deg, #0d47a1, #1565c0)", padding: "20px 16px", display: "flex", alignItems: "center", gap: 12 }}>
         <button onClick={() => setModo("admin")} style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", borderRadius: "50%", width: 36, height: 36, fontSize: 18, cursor: "pointer" }}>←</button>
         <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0 }}>{editando ? "✏️ Editar" : "➕ Novo Produto"}</h1>
       </div>
@@ -587,7 +587,7 @@ export default function CatalogoAdmin() {
             ⚠️ Venda sob prescrição médica
           </label>
           <button onClick={salvarProduto} disabled={!form.nome || !form.preco}
-            style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: (!form.nome || !form.preco) ? "#e0e0e0" : "linear-gradient(135deg, #2e7d32, #43a047)", color: (!form.nome || !form.preco) ? "#aaa" : "#fff", fontSize: 15, fontWeight: 800, cursor: (!form.nome || !form.preco) ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: (!form.nome || !form.preco) ? "#e0e0e0" : "linear-gradient(135deg, #0d47a1, #1565c0)", color: (!form.nome || !form.preco) ? "#aaa" : "#fff", fontSize: 15, fontWeight: 800, cursor: (!form.nome || !form.preco) ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif" }}>
             {editando ? "💾 Salvar" : "✅ Adicionar"}
           </button>
         </div>
@@ -596,9 +596,9 @@ export default function CatalogoAdmin() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f0faf4", fontFamily: "'Nunito', sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#f0f4ff", fontFamily: "'Nunito', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
-      <div style={{ background: "linear-gradient(135deg, #1b5e20, #2e7d32, #388e3c)", padding: "24px 20px 28px", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: "linear-gradient(135deg, #0d47a1, #1565c0, #1976d2)", padding: "24px 20px 28px", position: "relative", overflow: "hidden" }}>
         <button onClick={() => setModo("login")} style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,0.25)", border: "2px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 20, padding: "12px 20px", fontSize: 13, cursor: "pointer", fontWeight: 700, fontFamily: "'Nunito', sans-serif", zIndex: 10 }}>⚙️ Admin</button>
         <div style={{ textAlign: "center", position: "relative" }}>
           <div style={{ fontSize: 36, marginBottom: 4 }}>💊</div>
@@ -615,36 +615,36 @@ export default function CatalogoAdmin() {
         <div style={{ display: "flex", gap: 8, paddingBottom: 4, minWidth: "max-content" }}>
           {CATEGORIAS.map(cat => (
             <button key={cat} onClick={() => setCategoriaFiltro(cat)}
-              style={{ padding: "7px 16px", borderRadius: 20, border: "none", background: categoriaFiltro === cat ? "#2e7d32" : "#fff", color: categoriaFiltro === cat ? "#fff" : "#555", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 1px 6px rgba(0,0,0,0.08)", whiteSpace: "nowrap" }}>{cat}</button>
+              style={{ padding: "7px 16px", borderRadius: 20, border: "none", background: categoriaFiltro === cat ? "#1565c0" : "#fff", color: categoriaFiltro === cat ? "#fff" : "#555", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 1px 6px rgba(0,0,0,0.08)", whiteSpace: "nowrap" }}>{cat}</button>
           ))}
         </div>
       </div>
       {categoriaFiltro === "Todos" && busca === "" && promocoes.length > 0 && (
-        <div style={{ margin: "12px 16px 0", background: "#fff8f0", borderRadius: 16, padding: 16, border: "2px solid #ff9800" }}>
+        <div style={{ margin: "12px 16px 0", background: "#ffebee", borderRadius: 16, padding: 16, border: "2px solid #c62828" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <span style={{ fontSize: 24 }}>🔥</span>
             <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#e65100" }}>Ofertas da Semana</div>
-              <div style={{ fontSize: 12, color: "#f57c00" }}>Aproveite enquanto dura o estoque!</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#c62828" }}>Ofertas da Semana</div>
+              <div style={{ fontSize: 12, color: "#e53935" }}>Aproveite enquanto dura o estoque!</div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
             {promocoes.map(p => {
               const qty = getQuantidade(p.id);
               return (
-                <div key={p.id} style={{ background: "#fff", borderRadius: 14, padding: 12, minWidth: 160, border: "2px solid #ff9800", flexShrink: 0 }}>
+                <div key={p.id} style={{ background: "#fff", borderRadius: 14, padding: 12, minWidth: 160, border: "2px solid #c62828", flexShrink: 0 }}>
                   <div style={{ fontSize: 22, marginBottom: 4 }}>{p.emoji}</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", marginBottom: 2 }}>{p.nome.split(" ").slice(0, 3).join(" ")}</div>
                   {p.precoOriginal && <div style={{ fontSize: 12, color: "#aaa", textDecoration: "line-through" }}>R${(p.precoOriginal * p.promocao!.quantidade).toFixed(2)}</div>}
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "#e65100" }}>R${p.promocao!.precoTotal.toFixed(2)}</div>
-                  <div style={{ fontSize: 10, color: "#f57c00", fontWeight: 700, marginBottom: 8 }}>🔥 {p.promocao!.descricao}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "#c62828" }}>R${p.promocao!.precoTotal.toFixed(2)}</div>
+                  <div style={{ fontSize: 10, color: "#c62828", fontWeight: 700, marginBottom: 8 }}>🔥 {p.promocao!.descricao}</div>
                   {qty === 0 ? (
-                    <button onClick={() => setQuantidade(p, p.promocao!.quantidade)} style={{ width: "100%", padding: "8px", borderRadius: 10, border: "none", background: "#ff9800", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Adicionar</button>
+                    <button onClick={() => setQuantidade(p, p.promocao!.quantidade)} style={{ width: "100%", padding: "8px", borderRadius: 10, border: "none", background: "#c62828", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Adicionar</button>
                   ) : (
                     <div style={{ display: "block" }}>
                       <button onClick={() => setQuantidade(p, qty - 1)} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "#f5f5f5", fontSize: 18, cursor: "pointer", fontWeight: 700 }}>−</button>
                       <span style={{ fontWeight: 800, fontSize: 16 }}>{qty}</span>
-                      <button onClick={() => setQuantidade(p, qty + 1)} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "#2e7d32", color: "#fff", fontSize: 18, cursor: "pointer", fontWeight: 700 }}>+</button>
+                      <button onClick={() => setQuantidade(p, qty + 1)} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "#1565c0", color: "#fff", fontSize: 18, cursor: "pointer", fontWeight: 700 }}>+</button>
                     </div>
                   )}
                 </div>
@@ -661,8 +661,8 @@ export default function CatalogoAdmin() {
                   const estoqueBaixo = p.estoque !== undefined && p.estoque > 0 && p.estoque <= 5;
                   const precoExibir = qty > 0 ? calcularPreco(p, qty) : p.preco;
                   return (
-                    <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: 14, boxShadow: p.promocao ? "0 0 0 2px #ff9800, 0 4px 12px rgba(255,152,0,0.15)" : qty > 0 ? "0 0 0 2px #2e7d32" : "0 2px 8px rgba(0,0,0,0.07)", border: "2px solid transparent", position: "relative", opacity: esgotado ? 0.6 : 1 }}>
-                      {p.promocao && <div style={{ position: "absolute", top: 0, left: 0, background: "#ff9800", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: "14px 0 10px 0" }}>🔥 PROMOÇÃO</div>}
+                    <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: 14, boxShadow: p.promocao ? "0 0 0 2px #c62828, 0 4px 12px rgba(198,40,40,0.15)" : qty > 0 ? "0 0 0 2px #1565c0" : "0 2px 8px rgba(0,0,0,0.07)", border: "2px solid transparent", position: "relative", opacity: esgotado ? 0.6 : 1 }}>
+                      {p.promocao && <div style={{ position: "absolute", top: 0, left: 0, background: "#c62828", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: "14px 0 10px 0" }}>🔥 PROMOÇÃO</div>}
                       {esgotado && <div style={{ position: "absolute", top: 8, right: 8, background: "#e53935", color: "#fff", fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 6 }}>Esgotado</div>}
                       {estoqueBaixo && <div style={{ position: "absolute", top: 8, right: 8, background: "#ff9800", color: "#fff", fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 6 }}>⚠️ Últimas</div>}
                       <div style={{ fontSize: 26, marginBottom: 6, marginTop: p.promocao ? 12 : 0 }}>{p.emoji}</div>
@@ -670,7 +670,7 @@ export default function CatalogoAdmin() {
                       {p.precoOriginal && qty >= (p.promocao?.quantidade || 999) && (
                         <div style={{ fontSize: 11, color: "#aaa", textDecoration: "line-through" }}>R${(p.precoOriginal * qty).toFixed(2)}</div>
                       )}
-                      <div style={{ fontSize: 14, fontWeight: 800, color: p.promocao && qty >= p.promocao.quantidade ? "#e65100" : "#2e7d32", marginBottom: 3 }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: p.promocao && qty >= p.promocao.quantidade ? "#c62828" : "#1565c0", marginBottom: 3 }}>
                         R${qty > 0 ? precoExibir.toFixed(2) : p.preco.toFixed(2)}
                         {qty > 0 && p.promocao && qty >= p.promocao.quantidade && <span style={{ fontSize: 10, color: "#e65100", marginLeft: 4 }}>🔥</span>}
                       </div>
@@ -679,12 +679,12 @@ export default function CatalogoAdmin() {
                       {!esgotado && (
                         qty === 0 ? (
                           <button onClick={() => setQuantidade(p, 1)}
-                            style={{ width: "100%", padding: "8px", borderRadius: 10, border: "none", background: p.promocao ? "#ff9800" : "#2e7d32", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Adicionar</button>
+                            style={{ width: "100%", padding: "8px", borderRadius: 10, border: "none", background: p.promocao ? "#c62828" : "#1565c0", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Adicionar</button>
                         ) : (
                           <div style={{ display: "block" }}>
                             <button onClick={() => setQuantidade(p, qty - 1)} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", background: "#f5f5f5", fontSize: 16, cursor: "pointer", fontWeight: 700 }}>−</button>
                             <span style={{ fontWeight: 800, fontSize: 15 }}>{qty}</span>
-                            <button onClick={() => setQuantidade(p, qty + 1)} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", background: "#2e7d32", color: "#fff", fontSize: 16, cursor: "pointer", fontWeight: 700 }}>+</button>
+                            <button onClick={() => setQuantidade(p, qty + 1)} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", background: "#1565c0", color: "#fff", fontSize: 16, cursor: "pointer", fontWeight: 700 }}>+</button>
                           </div>
                         )
                       )}
@@ -697,7 +697,7 @@ export default function CatalogoAdmin() {
               <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "#fff", padding: "14px 20px", boxShadow: "0 -4px 20px rgba(0,0,0,0.12)", borderRadius: "20px 20px 0 0" }}>
                 <div style={{ maxWidth: 480, margin: "0 auto" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "#333" }}>🛒 {pedido.reduce((a, i) => a + i.quantidade, 0)} item(ns) · <span style={{ color: "#2e7d32" }}>R${totalPedido.toFixed(2)}</span></span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: "#333" }}>🛒 {pedido.reduce((a, i) => a + i.quantidade, 0)} item(ns) · <span style={{ color: "#1565c0" }}>R${totalPedido.toFixed(2)}</span></span>
                     <span onClick={() => setPedido([])} style={{ fontSize: 12, color: "#e53935", cursor: "pointer", fontWeight: 700 }}>Limpar</span>
                   </div>
                   <button onClick={enviarWhatsApp} style={{ width: "100%", padding: 14, borderRadius: 16, border: "none", background: "linear-gradient(135deg, #25d366, #128c7e)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>

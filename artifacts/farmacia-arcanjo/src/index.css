@@ -66,7 +66,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* LIGHT MODE - Verde farmácia / saúde */
+/* LIGHT MODE - Azul Farmácia Arcanjo */
 :root {
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
@@ -74,40 +74,40 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  --background: 150 30% 97%;
-  --foreground: 150 15% 15%;
-  --border: 150 20% 85%;
+  --background: 214 40% 97%;
+  --foreground: 0 0% 10%;
+  --border: 214 25% 87%;
   --card: 0 0% 100%;
-  --card-foreground: 150 15% 15%;
-  --card-border: 150 20% 88%;
-  --sidebar: 150 35% 95%;
-  --sidebar-foreground: 150 20% 20%;
-  --sidebar-border: 150 20% 85%;
-  --sidebar-primary: 152 60% 38%;
+  --card-foreground: 0 0% 10%;
+  --card-border: 214 25% 89%;
+  --sidebar: 214 35% 95%;
+  --sidebar-foreground: 214 20% 20%;
+  --sidebar-border: 214 25% 87%;
+  --sidebar-primary: 214 80% 42%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 150 25% 90%;
-  --sidebar-accent-foreground: 152 50% 28%;
-  --sidebar-ring: 152 60% 38%;
+  --sidebar-accent: 214 30% 91%;
+  --sidebar-accent-foreground: 214 70% 28%;
+  --sidebar-ring: 214 80% 42%;
   --popover: 0 0% 100%;
-  --popover-foreground: 150 15% 15%;
-  --popover-border: 150 20% 85%;
-  --primary: 152 60% 38%;
+  --popover-foreground: 0 0% 10%;
+  --popover-border: 214 25% 87%;
+  --primary: 214 80% 42%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 150 25% 90%;
-  --secondary-foreground: 152 50% 25%;
-  --muted: 150 20% 93%;
-  --muted-foreground: 150 15% 45%;
-  --accent: 168 55% 42%;
+  --secondary: 214 30% 91%;
+  --secondary-foreground: 214 70% 25%;
+  --muted: 214 20% 94%;
+  --muted-foreground: 214 15% 45%;
+  --accent: 214 65% 55%;
   --accent-foreground: 0 0% 100%;
-  --destructive: 0 72% 51%;
+  --destructive: 0 67% 47%;
   --destructive-foreground: 0 0% 100%;
-  --input: 150 20% 85%;
-  --ring: 152 60% 38%;
-  --chart-1: 152 60% 38%;
-  --chart-2: 168 55% 42%;
+  --input: 214 25% 87%;
+  --ring: 214 80% 42%;
+  --chart-1: 214 80% 42%;
+  --chart-2: 0 67% 47%;
   --chart-3: 36 88% 52%;
-  --chart-4: 280 55% 55%;
-  --chart-5: 0 72% 51%;
+  --chart-4: 214 50% 65%;
+  --chart-5: 0 67% 47%;
 
   --app-font-sans: 'Inter', sans-serif;
   --app-font-serif: Georgia, serif;
@@ -273,7 +273,7 @@ body {
   font-family: 'Nunito', 'Inter', sans-serif;
   margin: 0;
   padding: 0;
-  background: #f0faf4;
+  background: #f0f4ff;
 }
 
 /* ── CONTAINER GLOBAL ── */

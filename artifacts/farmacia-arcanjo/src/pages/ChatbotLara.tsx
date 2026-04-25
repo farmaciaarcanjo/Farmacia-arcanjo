@@ -267,8 +267,9 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                 className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-xs ${
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground rounded-br-sm"
-                    : "bg-card text-foreground border border-border rounded-bl-sm"
+                    : "text-foreground rounded-bl-sm"
                 }`}
+                style={msg.role === "assistant" ? { background: "#e3f2fd", borderLeft: "3px solid #1565c0" } : {}}
               >
                 <p className="whitespace-pre-wrap">{msg.content}</p>
                 <p className={`text-[10px] mt-1 ${msg.role === "user" ? "text-primary-foreground/60 text-right" : "text-muted-foreground"}`}>
@@ -296,7 +297,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                   const emPromocao = produto.desc?.includes("PROMOÇÃO") || !!produto.promocao;
                   const descPromo = produto.promocao?.descricao ?? produto.desc?.replace("🔥 PROMOÇÃO: ", "");
                   return (
-                    <div key={produto.id} className="bg-card border rounded-xl p-3 shadow-xs" style={{ borderColor: emPromocao ? "#ff8c00" : "#e0e0e0" }}>
+                    <div key={produto.id} className="bg-card border rounded-xl p-3 shadow-xs" style={{ borderColor: emPromocao ? "#c62828" : "#e0e0e0" }}>
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xl">{produto.emoji}</span>
                         <div className="flex-1 min-w-0">
@@ -305,11 +306,11 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                             {produto.precoOriginal && (
                               <span className="text-xs text-muted-foreground line-through">R${produto.precoOriginal.toFixed(2)}</span>
                             )}
-                            <span className="text-sm font-bold" style={{ color: emPromocao ? "#ff6b00" : "#2e7d32" }}>
+                            <span className="text-sm font-bold" style={{ color: emPromocao ? "#c62828" : "#1565c0" }}>
                               R${produto.preco.toFixed(2)}
                             </span>
                             {emPromocao && (
-                              <span className="text-[10px] bg-orange-100 text-orange-700 font-bold px-2 py-0.5 rounded-full">🔥 {descPromo}</span>
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#ffebee", color: "#c62828" }}>🔥 {descPromo}</span>
                             )}
                           </div>
                           {produto.prescricao && (
@@ -344,7 +345,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
         {loading && (
           <div className="flex justify-start items-end gap-2">
             <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">L</div>
-            <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-bl-sm shadow-xs">
+            <div className="px-4 py-3 rounded-2xl rounded-bl-sm shadow-xs" style={{ background: "#e3f2fd", borderLeft: "3px solid #1565c0" }}>
               <div className="flex gap-1 items-center">
                 <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:0ms]"></span>
                 <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:150ms]"></span>

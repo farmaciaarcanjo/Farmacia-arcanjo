@@ -40,7 +40,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="bg-primary text-primary-foreground px-4 pt-3 pb-0 shadow-md">
+      <header className="text-white px-4 pt-3 pb-0 shadow-md" style={{ background: "linear-gradient(135deg, #0d47a1, #1565c0)" }}>
         <div className="max-w-lg mx-auto">
           <div className="flex items-center gap-3 pb-2.5">
             <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-2xl shrink-0">
