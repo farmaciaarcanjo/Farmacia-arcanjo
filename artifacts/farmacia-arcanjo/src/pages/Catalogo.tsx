@@ -426,6 +426,21 @@ export default function CatalogoAdmin() {
   const [importResultEstoque, setImportResultEstoque] = useState<{ atualizados: number; novosCadastrados: number; naoEncontrados: string[] } | null>(null);
   const inputImportEstoqueRef = useRef<HTMLInputElement>(null);
   const inputImportCadastroRef = useRef<HTMLInputElement>(null);
+  const [scanProduto, setScanProduto] = useState<Produto | null>(null);
+  const [scanCodigo, setScanCodigo] = useState("");
+  const [salvandoScan, setSalvandoScan] = useState(false);
+
+  const abrirScan = (p: Produto) => { setScanProduto(p); setScanCodigo(p.codigoBarras ?? ""); };
+  const fecharScan = () => { setScanProduto(null); setScanCodigo(""); };
+  const salvarCodigoBarras = async () => {
+    if (!scanProduto) return;
+    setSalvandoScan(true);
+    const atualizado = { ...scanProduto, codigoBarras: scanCodigo.trim() || undefined };
+    setProdutos(prev => prev.map(p => p.id === atualizado.id ? atualizado : p));
+    await salvarProdutoFirebase(atualizado).catch(() => {});
+    setSalvandoScan(false);
+    fecharScan();
+  };
 
   const IGNORAR_SIS = new Set(["mg", "mcg", "g", "ml", "cx", "cxt", "com", "gen", "un", "un.", "cp", "cps", "cpr", "comp", "sol", "susp", "caps", "amp", "fr", "bs", "bsa", "kit"]);
 
@@ -974,6 +989,7 @@ export default function CatalogoAdmin() {
               </div>
               <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
                 <button onClick={() => imprimirEtiqueta(p)} title="Etiqueta" style={{ padding: "6px 10px", borderRadius: 10, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 13, cursor: "pointer" }}>🏷️</button>
+                {podeEditar && <button onClick={() => abrirScan(p)} title="Código de barras" style={{ padding: "6px 10px", borderRadius: 10, border: "none", background: p.codigoBarras ? "#e8f5e9" : "#f3e5f5", color: p.codigoBarras ? "#2e7d32" : "#6a1b9a", fontSize: 13, cursor: "pointer" }}>📷</button>}
                 {podeEditar && <button onClick={() => abrirForm(p)} title="Editar" style={{ padding: "6px 10px", borderRadius: 10, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 13, cursor: "pointer" }}>✏️</button>}
                 {podeDeletar && <button title="Excluir" onClick={() => {
                   registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
@@ -1003,6 +1019,7 @@ export default function CatalogoAdmin() {
                   {p.prescricao && <div style={{ fontSize: 9, color: "#e53935", marginBottom: 6 }}>⚠️ Receita</div>}
                   <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
                     <button onClick={() => imprimirEtiqueta(p)} title="Etiqueta" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 15, cursor: "pointer" }}>🏷️</button>
+                    {podeEditar && <button onClick={() => abrirScan(p)} title="Código de barras" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: p.codigoBarras ? "#e8f5e9" : "#f3e5f5", color: p.codigoBarras ? "#2e7d32" : "#6a1b9a", fontSize: 15, cursor: "pointer" }}>📷</button>}
                     {podeEditar && <button onClick={() => abrirForm(p)} title="Editar" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 15, cursor: "pointer" }}>✏️</button>}
                     {podeDeletar && <button title="Excluir" onClick={() => {
                       registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
@@ -1060,6 +1077,59 @@ export default function CatalogoAdmin() {
                 </div>
               )}
               <button onClick={() => setImportResultEstoque(null)} style={{ width: "100%", padding: 13, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #1b5e20, #2e7d32)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Fechar</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Modal código de barras rápido ── */}
+        {scanProduto && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.60)", zIndex: 2100, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+            <div style={{ background: "#fff", borderRadius: 24, padding: 24, width: "100%", maxWidth: 360, boxShadow: "0 24px 64px rgba(0,0,0,0.35)", fontFamily: "'Nunito', sans-serif" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: scanProduto.codigoBarras ? "#e8f5e9" : "#f3e5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>
+                  {scanProduto.emoji}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#1a1a1a", lineHeight: 1.3 }}>{scanProduto.nome}</div>
+                  {scanProduto.codigoBarras
+                    ? <div style={{ fontSize: 11, color: "#2e7d32", fontWeight: 700, marginTop: 2 }}>✅ Código atual: {scanProduto.codigoBarras}</div>
+                    : <div style={{ fontSize: 11, color: "#6a1b9a", fontWeight: 700, marginTop: 2 }}>⚠️ Sem código de barras</div>}
+                </div>
+              </div>
+
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#555", marginBottom: 6 }}>
+                📷 Escaneie ou digite o código de barras:
+              </label>
+              <input
+                autoFocus
+                type="text"
+                inputMode="numeric"
+                value={scanCodigo}
+                onChange={e => setScanCodigo(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && scanCodigo.trim()) salvarCodigoBarras(); }}
+                placeholder="Ex: 7891234567890"
+                style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "2px solid #e0e0e0", fontSize: 15, fontWeight: 700, color: "#1a1a1a", outline: "none", fontFamily: "'Nunito', sans-serif", boxSizing: "border-box", letterSpacing: 1 }}
+                onFocus={e => { e.currentTarget.style.borderColor = "#6a1b9a"; }}
+                onBlur={e => { e.currentTarget.style.borderColor = "#e0e0e0"; }}
+              />
+              <div style={{ fontSize: 10, color: "#aaa", marginTop: 5, marginBottom: 18 }}>
+                Com leitor USB/Bluetooth: aponte o scanner para o código — ele preenche e confirma automaticamente.
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={fecharScan}
+                  disabled={salvandoScan}
+                  style={{ flex: 1, padding: 13, borderRadius: 12, border: "2px solid #e0e0e0", background: "#fff", color: "#666", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+                  Cancelar
+                </button>
+                <button
+                  onClick={salvarCodigoBarras}
+                  disabled={salvandoScan || !scanCodigo.trim()}
+                  style={{ flex: 2, padding: 13, borderRadius: 12, border: "none", background: scanCodigo.trim() ? "linear-gradient(135deg, #4a148c, #6a1b9a)" : "#e0e0e0", color: scanCodigo.trim() ? "#fff" : "#aaa", fontSize: 14, fontWeight: 800, cursor: scanCodigo.trim() ? "pointer" : "default", fontFamily: "'Nunito', sans-serif", transition: "all 0.2s" }}>
+                  {salvandoScan ? "⏳ Salvando..." : "💾 Salvar Código"}
+                </button>
+              </div>
             </div>
           </div>
         )}
