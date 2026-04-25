@@ -8,8 +8,32 @@ import GeradorPromocao from "./GeradorPromocao";
 import FechamentoCaixa from "./FechamentoCaixa";
 import AnalyticsDashboard from "./AnalyticsDashboard";
 import { trackWhatsAppClick, trackProdutoAdicionado } from "../lib/analytics";
-const SENHA_ADMIN = "arcanjo2026";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "../lib/firebase";
+
 const WHATSAPP = "5588993375650";
+
+type NivelAcesso = "master" | "editor" | "viewer";
+interface UsuarioAdmin { id: string; nome: string; senha: string; nivel: NivelAcesso; }
+const USUARIOS_ADMIN: UsuarioAdmin[] = [
+  { id: "admin",        nome: "Administrador", senha: "arcanjo2026", nivel: "master" },
+  { id: "farmaceutico", nome: "Farmacêutico",  senha: "farm2026",   nivel: "editor" },
+  { id: "atendente",    nome: "Atendente",     senha: "atend2026",  nivel: "viewer" },
+];
+
+type TipoAcao = "produto_adicionado" | "produto_editado" | "produto_deletado";
+interface LogEntry { acao: TipoAcao; usuario: string; userId: string; produto: string; ts: number; }
+const LS_LOG_KEY = "farmacia_admin_log";
+
+function carregarLog(): LogEntry[] {
+  try { return JSON.parse(localStorage.getItem(LS_LOG_KEY) || "[]"); } catch { return []; }
+}
+function registrarLog(entry: LogEntry) {
+  const log = carregarLog();
+  log.push(entry);
+  try { localStorage.setItem(LS_LOG_KEY, JSON.stringify(log.slice(-100))); } catch {}
+  try { addDoc(collection(db, "admin_log"), { ...entry, createdAt: serverTimestamp() }); } catch {}
+}
 
 interface ItemPedido {
   produto: Produto;
@@ -17,6 +41,54 @@ interface ItemPedido {
 }
 
 const CATEGORIAS = ["Todos", ...Array.from(new Set(PRODUTOS_INICIAIS.map(p => p.categoria)))];
+
+function LogAtividades() {
+  const log = carregarLog().reverse().slice(0, 20);
+  const corAcao: Record<TipoAcao, { bg: string; cor: string; label: string }> = {
+    produto_adicionado: { bg: "#e8f5e9", cor: "#2e7d32", label: "Adicionou" },
+    produto_editado:    { bg: "#e3f2fd", cor: "#1565c0", label: "Editou"    },
+    produto_deletado:   { bg: "#ffebee", cor: "#c62828", label: "Deletou"   },
+  };
+  return (
+    <div style={{ padding: 16, fontFamily: "'Nunito', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+      <h3 style={{ fontSize: 16, fontWeight: 800, color: "#4527a0", margin: "0 0 14px" }}>📋 Log de Atividades</h3>
+      {log.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 32, color: "#bbb", fontSize: 13 }}>
+          Nenhuma atividade registrada ainda.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {log.map((entry, i) => {
+            const cfg = corAcao[entry.acao];
+            const data = new Date(entry.ts);
+            const dataStr = data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+            const hora = data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+            return (
+              <div key={i} style={{ background: "#fff", borderRadius: 12, padding: "10px 14px", boxShadow: "0 1px 6px rgba(0,0,0,0.07)", borderLeft: `4px solid ${cfg.cor}`, display: "flex", alignItems: "center", gap: 12 }}>
+                <div style={{ background: cfg.bg, color: cfg.cor, borderRadius: 8, padding: "3px 9px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" }}>
+                  {cfg.label}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {entry.produto}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#888" }}>
+                    {entry.usuario}
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: "#aaa", whiteSpace: "nowrap", textAlign: "right" }}>
+                  <div>{dataStr}</div>
+                  <div>{hora}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function CatalogoAdmin() {
   const [produtos, setProdutos] = useState<Produto[]>(() => {
@@ -28,6 +100,7 @@ export default function CatalogoAdmin() {
   const [modo, setModo] = useState<"catalogo" | "login" | "admin" | "form">("catalogo");
   const [senha, setSenha] = useState("");
   const [erroSenha, setErroSenha] = useState(false);
+  const [usuarioLogado, setUsuarioLogado] = useState<UsuarioAdmin | null>(null);
   const [pedido, setPedido] = useState<ItemPedido[]>([]);
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todos");
   const [busca, setBusca] = useState("");
@@ -106,9 +179,15 @@ export default function CatalogoAdmin() {
   }
 
   function login() {
-    if (senha === SENHA_ADMIN) { setModo("admin"); setErroSenha(false); setSenha(""); }
+    const usuario = USUARIOS_ADMIN.find(u => u.senha === senha);
+    if (usuario) { setUsuarioLogado(usuario); setModo("admin"); setErroSenha(false); setSenha(""); }
     else setErroSenha(true);
   }
+
+  function logout() { setUsuarioLogado(null); setModo("catalogo"); }
+
+  const podeEditar = usuarioLogado?.nivel === "master" || usuarioLogado?.nivel === "editor";
+  const podeDeletar = usuarioLogado?.nivel === "master";
 
   function salvarProduto() {
     if (!form.nome || !form.preco) return;
@@ -129,8 +208,10 @@ export default function CatalogoAdmin() {
         descricao: form.promoDesc || `LEVE ${form.promoQtd} por R$${form.promoPreco}`
       } : undefined
     };
+    const acao: TipoAcao = editando ? "produto_editado" : "produto_adicionado";
     if (editando) { const novos = produtos.map(p => p.id === editando ? novo : p); setProdutos(novos); try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {} }
     else { const novos = [...produtos, novo]; setProdutos(novos); try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {} }
+    registrarLog({ acao, usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: novo.nome, ts: Date.now() });
     setMsgSucesso(editando ? "✅ Produto atualizado!" : "✅ Produto adicionado!");
     setTimeout(() => setMsgSucesso(""), 2000);
     setModo("admin");
@@ -191,6 +272,7 @@ export default function CatalogoAdmin() {
     { id: 'promocao', emoji: '📢', titulo: 'Promoção', desc: 'Gerador WhatsApp', cor: '#c0392b', fundo: '#fdecea' },
     { id: 'caixa', emoji: '🧾', titulo: 'Caixa', desc: 'Fechamento de caixa', cor: '#0d7680', fundo: '#e6f5f6' },
     { id: 'analytics', emoji: '📈', titulo: 'Analytics', desc: 'Visitantes e engajamento', cor: '#145f2e', fundo: '#e8f5ee' },
+    { id: 'logatividades', emoji: '📋', titulo: 'Log', desc: 'Atividades do admin', cor: '#4527a0', fundo: '#ede7f6' },
     { id: 'cupom', emoji: '🧾', titulo: 'Cupom', desc: 'Imprimir cupom', cor: '#6d4c41', fundo: '#efebe9', externo: '/cupom.html' },
     { id: 'etiquetas', emoji: '🏷️', titulo: 'Etiquetas', desc: 'Imprimir etiquetas', cor: '#37474f', fundo: '#eceff1', externo: '/etiquetas.html' },
   ];
@@ -202,11 +284,19 @@ export default function CatalogoAdmin() {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div>
             <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0 }}>⚙️ Gerenciar</h1>
-            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, margin: "2px 0 0" }}>Farmácia Arcanjo</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+              <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, margin: 0 }}>
+                Olá, {usuarioLogado?.nome ?? "Admin"}
+              </p>
+              <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 20, background: usuarioLogado?.nivel === "master" ? "#ffd600" : usuarioLogado?.nivel === "editor" ? "#81d4fa" : "#b0bec5", color: "#111", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                {usuarioLogado?.nivel}
+              </span>
+            </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>+ Novo</button>
+            {podeEditar && <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>+ Novo</button>}
             <button onClick={() => setModo("catalogo")} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>👁️ Ver</button>
+            <button onClick={logout} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Sair</button>
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -266,6 +356,7 @@ export default function CatalogoAdmin() {
           {secaoAdmin === "promocao" && <GeradorPromocao />}
           {secaoAdmin === "caixa" && <FechamentoCaixa produtos={produtos} onAtualizarEstoque={setProdutos} />}
           {secaoAdmin === "analytics" && <AnalyticsDashboard />}
+          {secaoAdmin === "logatividades" && <LogAtividades />}
         </div>
       )}
       {msgSucesso && <div style={{ background: "#e8f5e9", padding: "10px 16px", textAlign: "center", color: "#2e7d32", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}
@@ -281,8 +372,8 @@ export default function CatalogoAdmin() {
               {(p as any).promocao && <div style={{ fontSize: 11, color: "#f57c00" }}>🔥 {(p as any).promocao.descricao}</div>}
             </div>
             <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={() => abrirForm(p)} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✏️</button>
-              <button onClick={() => setProdutos(prev => prev.filter(x => x.id !== p.id))} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#ffebee", color: "#c62828", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🗑️</button>
+              {podeEditar && <button onClick={() => abrirForm(p)} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✏️</button>}
+              {podeDeletar && <button onClick={() => { registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() }); setProdutos(prev => prev.filter(x => x.id !== p.id)); }} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#ffebee", color: "#c62828", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🗑️</button>}
             </div>
           </div>
         ))}
