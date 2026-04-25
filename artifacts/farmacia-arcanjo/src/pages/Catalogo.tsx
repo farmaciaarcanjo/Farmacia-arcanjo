@@ -25,12 +25,25 @@ import {
 const WHATSAPP = "5588993375650";
 
 type NivelAcesso = "master" | "editor" | "viewer";
-interface UsuarioAdmin { id: string; nome: string; senha: string; nivel: NivelAcesso; }
-const USUARIOS_ADMIN: UsuarioAdmin[] = [
-  { id: "admin",        nome: "Administrador", senha: "arcanjo2026", nivel: "master" },
-  { id: "farmaceutico", nome: "Farmacêutico",  senha: "farm2026",   nivel: "editor" },
-  { id: "atendente",    nome: "Atendente",     senha: "atend2026",  nivel: "viewer" },
+interface UsuarioAdmin { id: string; nome: string; funcao: string; senha: string; nivel: NivelAcesso; ativo: boolean; }
+
+const USUARIOS_DEFAULT: UsuarioAdmin[] = [
+  { id: "admin",        nome: "Administrador", funcao: "Master",      senha: "arcanjo2026", nivel: "master", ativo: true },
+  { id: "farmaceutico", nome: "Farmacêutico",  funcao: "Farmacêutico", senha: "farm2026",   nivel: "editor", ativo: true },
+  { id: "atendente",    nome: "Atendente",     funcao: "Atendente",   senha: "atend2026",  nivel: "viewer", ativo: true },
 ];
+const LS_USUARIOS_KEY = "farmacia_usuarios_admin";
+function carregarUsuarios(): UsuarioAdmin[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(LS_USUARIOS_KEY) || "[]") as UsuarioAdmin[];
+    if (saved.length > 0) return saved;
+  } catch {}
+  localStorage.setItem(LS_USUARIOS_KEY, JSON.stringify(USUARIOS_DEFAULT));
+  return USUARIOS_DEFAULT;
+}
+function persistirUsuarios(users: UsuarioAdmin[]) {
+  localStorage.setItem(LS_USUARIOS_KEY, JSON.stringify(users));
+}
 
 type TipoAcao = "produto_adicionado" | "produto_editado" | "produto_deletado";
 interface LogEntry { acao: TipoAcao; usuario: string; userId: string; produto: string; ts: number; }
@@ -160,6 +173,151 @@ interface ItemPedido {
 
 const CATEGORIAS = ["Todos", ...Array.from(new Set(PRODUTOS_INICIAIS.map(p => p.categoria)))];
 
+// ── Gerenciar Usuários ────────────────────────────────────────────────────────
+function GerenciarUsuarios({
+  usuarios, setUsuarios,
+}: {
+  usuarios: UsuarioAdmin[];
+  setUsuarios: (u: UsuarioAdmin[]) => void;
+}) {
+  const [tela, setTela] = useState<"lista" | "form">("lista");
+  const [editandoId, setEditandoId] = useState<string | null>(null);
+  const [formU, setFormU] = useState({ nome: "", funcao: "", senha: "", nivel: "viewer" as NivelAcesso });
+  const [confirmarDelete, setConfirmarDelete] = useState<string | null>(null);
+  const [erroForm, setErroForm] = useState("");
+
+  const abrirNovo = () => { setFormU({ nome: "", funcao: "", senha: "", nivel: "viewer" }); setEditandoId(null); setErroForm(""); setTela("form"); };
+  const abrirEditar = (u: UsuarioAdmin) => { setFormU({ nome: u.nome, funcao: u.funcao, senha: u.senha, nivel: u.nivel }); setEditandoId(u.id); setErroForm(""); setTela("form"); };
+
+  const salvarUsuario = () => {
+    if (!formU.nome.trim()) { setErroForm("Nome é obrigatório."); return; }
+    if (!formU.senha.trim()) { setErroForm("Senha é obrigatória."); return; }
+    let novos: UsuarioAdmin[];
+    if (editandoId) {
+      novos = usuarios.map(u => u.id === editandoId ? { ...u, nome: formU.nome, funcao: formU.funcao || formU.nivel, senha: formU.senha, nivel: formU.nivel } : u);
+    } else {
+      const novo: UsuarioAdmin = { id: Date.now().toString(), nome: formU.nome, funcao: formU.funcao || formU.nivel, senha: formU.senha, nivel: formU.nivel, ativo: true };
+      novos = [...usuarios, novo];
+    }
+    persistirUsuarios(novos);
+    setUsuarios(novos);
+    setTela("lista");
+  };
+
+  const toggleAtivo = (id: string) => {
+    const novos = usuarios.map(u => u.id === id ? { ...u, ativo: !u.ativo } : u);
+    persistirUsuarios(novos);
+    setUsuarios(novos);
+  };
+
+  const excluirUsuario = (id: string) => {
+    const novos = usuarios.filter(u => u.id !== id);
+    persistirUsuarios(novos);
+    setUsuarios(novos);
+    setConfirmarDelete(null);
+  };
+
+  const nivelCor: Record<NivelAcesso, { bg: string; cor: string }> = {
+    master: { bg: "#fff9c4", cor: "#f57f17" },
+    editor: { bg: "#e3f2fd", cor: "#1565c0" },
+    viewer: { bg: "#eceff1", cor: "#546e7a" },
+  };
+
+  return (
+    <div style={{ padding: 16, fontFamily: "'Nunito', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+
+      {tela === "lista" ? (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0d47a1", margin: 0 }}>👤 Gerenciar Usuários</h3>
+            <button onClick={abrirNovo} style={{ padding: "7px 14px", borderRadius: 20, border: "none", background: "#1565c0", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Novo</button>
+          </div>
+
+          {usuarios.map(u => (
+            <div key={u.id} style={{ background: "#fff", borderRadius: 14, padding: "12px 14px", marginBottom: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.07)", border: `2px solid ${u.ativo ? "transparent" : "#ffcdd2"}`, opacity: u.ativo ? 1 : 0.6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: 14, color: "#1a1a1a" }}>{u.nome}</div>
+                  <div style={{ fontSize: 12, color: "#888", marginTop: 2 }}>{u.funcao}</div>
+                </div>
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 20, padding: "3px 10px", background: nivelCor[u.nivel].bg, color: nivelCor[u.nivel].cor }}>{u.nivel}</span>
+                  {!u.ativo && <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 20, padding: "3px 8px", background: "#ffebee", color: "#c62828" }}>Inativo</span>}
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" as const }}>
+                <button onClick={() => abrirEditar(u)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✏️ Editar</button>
+                <button onClick={() => toggleAtivo(u.id)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: u.ativo ? "#fff9c4" : "#e8f5e9", color: u.ativo ? "#f57f17" : "#2e7d32", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  {u.ativo ? "⏸ Desativar" : "▶ Ativar"}
+                </button>
+                {u.nivel !== "master" && (
+                  <button onClick={() => setConfirmarDelete(u.id)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#ffebee", color: "#c62828", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🗑️ Excluir</button>
+                )}
+              </div>
+              {confirmarDelete === u.id && (
+                <div style={{ marginTop: 10, background: "#ffebee", borderRadius: 8, padding: "10px 12px" }}>
+                  <p style={{ color: "#c62828", fontSize: 13, margin: "0 0 8px", fontWeight: 700 }}>Excluir {u.nome}?</p>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => excluirUsuario(u.id)} style={{ flex: 1, background: "#c62828", color: "#fff", border: "none", borderRadius: 8, padding: "8px", fontSize: 13, cursor: "pointer" }}>Sim</button>
+                    <button onClick={() => setConfirmarDelete(null)} style={{ flex: 1, background: "#eee", color: "#555", border: "none", borderRadius: 8, padding: "8px", fontSize: 13, cursor: "pointer" }}>Não</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </>
+      ) : (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+            <button onClick={() => setTela("lista")} style={{ padding: "7px 14px", borderRadius: 20, border: "none", background: "#e3f2fd", color: "#1565c0", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>← Voltar</button>
+            <h3 style={{ fontSize: 15, fontWeight: 800, color: "#0d47a1", margin: 0 }}>{editandoId ? "✏️ Editar Usuário" : "➕ Novo Usuário"}</h3>
+          </div>
+          {erroForm && <div style={{ background: "#ffebee", borderRadius: 10, padding: "10px 14px", color: "#c62828", fontSize: 13, marginBottom: 12 }}>{erroForm}</div>}
+
+          {(["Nome *|nome|Ex: Maria Farmácia", "Função|funcao|Ex: Balconista", "Senha *|senha|Mínimo 6 caracteres"] as string[]).map(f => {
+            const [lbl, key, ph] = f.split("|");
+            return (
+              <div key={key} style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 12, color: "#888", fontWeight: 600, display: "block", marginBottom: 4, textTransform: "uppercase" as const }}>{lbl}</label>
+                <input
+                  type={key === "senha" ? "password" : "text"}
+                  placeholder={ph}
+                  value={(formU as Record<string, string>)[key] ?? ""}
+                  onChange={e => setFormU(prev => ({ ...prev, [key]: e.target.value }))}
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "2px solid #e0e0e0", fontSize: 15, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" as const }}
+                />
+              </div>
+            );
+          })}
+
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 12, color: "#888", fontWeight: 600, display: "block", marginBottom: 8, textTransform: "uppercase" as const }}>Nível de Acesso</label>
+            <div style={{ display: "flex", gap: 8 }}>
+              {(["master", "editor", "viewer"] as NivelAcesso[]).map(n => (
+                <button key={n} onClick={() => setFormU(prev => ({ ...prev, nivel: n }))}
+                  style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: formU.nivel === n ? `2px solid ${nivelCor[n].cor}` : "2px solid #e0e0e0", background: formU.nivel === n ? nivelCor[n].bg : "#fff", color: formU.nivel === n ? nivelCor[n].cor : "#666", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                  {n === "master" ? "🔑 Master" : n === "editor" ? "✏️ Editor" : "👁 Viewer"}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginTop: 8, fontSize: 12, color: "#888", lineHeight: 1.5 }}>
+              {formU.nivel === "master" && "🔑 Acesso total — pode criar, editar e excluir"}
+              {formU.nivel === "editor" && "✏️ Pode adicionar e editar produtos, mas não excluir"}
+              {formU.nivel === "viewer" && "👁 Apenas visualiza, sem alterar nada"}
+            </div>
+          </div>
+
+          <button onClick={salvarUsuario} style={{ width: "100%", padding: 14, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #0d47a1, #1565c0)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 10 }}>
+            {editandoId ? "💾 Salvar" : "✅ Criar Usuário"}
+          </button>
+          <button onClick={() => setTela("lista")} style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: "#f5f5f5", color: "#666", fontSize: 14, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Cancelar</button>
+        </>
+      )}
+    </div>
+  );
+}
+
 function LogAtividades() {
   const log = carregarLog().reverse().slice(0, 20);
   const corAcao: Record<TipoAcao, { bg: string; cor: string; label: string }> = {
@@ -183,21 +341,12 @@ function LogAtividades() {
             const dataStr = data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
             const hora = data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
             return (
-              <div key={i} style={{ background: "#fff", borderRadius: 12, padding: "10px 14px", boxShadow: "0 1px 6px rgba(0,0,0,0.07)", borderLeft: `4px solid ${cfg.cor}`, display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ background: cfg.bg, color: cfg.cor, borderRadius: 8, padding: "3px 9px", fontSize: 11, fontWeight: 800, whiteSpace: "nowrap" }}>
-                  {cfg.label}
+              <div key={i} style={{ background: "#fff", borderRadius: 12, padding: "10px 14px", boxShadow: "0 1px 6px rgba(0,0,0,0.07)", borderLeft: `4px solid ${cfg.cor}` }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>
+                  {entry.usuario} <span style={{ color: cfg.cor }}>{cfg.label.toLowerCase()}</span> {entry.produto}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {entry.produto}
-                  </div>
-                  <div style={{ fontSize: 11, color: "#888" }}>
-                    {entry.usuario}
-                  </div>
-                </div>
-                <div style={{ fontSize: 11, color: "#aaa", whiteSpace: "nowrap", textAlign: "right" }}>
-                  <div>{dataStr}</div>
-                  <div>{hora}</div>
+                <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
+                  em {dataStr} às {hora}
                 </div>
               </div>
             );
@@ -215,6 +364,7 @@ export default function CatalogoAdmin() {
       return saved ? JSON.parse(saved) : PRODUTOS_INICIAIS;
     } catch { return PRODUTOS_INICIAIS; }
   });
+  const [usuariosAdmin, setUsuariosAdmin] = useState<UsuarioAdmin[]>(() => carregarUsuarios());
   const [modo, setModo] = useState<"catalogo" | "login" | "admin" | "form">("catalogo");
   const [senha, setSenha] = useState("");
   const [erroSenha, setErroSenha] = useState(false);
@@ -321,7 +471,7 @@ export default function CatalogoAdmin() {
   }
 
   function login() {
-    const usuario = USUARIOS_ADMIN.find(u => u.senha === senha);
+    const usuario = usuariosAdmin.find(u => u.senha === senha && u.ativo !== false);
     if (usuario) { setUsuarioLogado(usuario); setModo("admin"); setErroSenha(false); setSenha(""); }
     else setErroSenha(true);
   }
@@ -438,6 +588,7 @@ export default function CatalogoAdmin() {
     { id: 'visitantes', emoji: '👁️', titulo: 'Visitantes', desc: 'Conversas e WhatsApp', cor: '#1565c0', fundo: '#e3f2fd' },
     { id: 'analytics', emoji: '📈', titulo: 'Analytics', desc: 'Visitantes e engajamento', cor: '#1565c0', fundo: '#e3f2fd' },
     { id: 'logatividades', emoji: '📋', titulo: 'Log', desc: 'Atividades do admin', cor: '#37474f', fundo: '#eceff1' },
+    ...(usuarioLogado?.nivel === "master" ? [{ id: 'usuarios', emoji: '🔐', titulo: 'Usuários', desc: 'Gerenciar logins', cor: '#f57f17', fundo: '#fff9c4' }] : []),
     { id: 'cupom', emoji: '🧾', titulo: 'Cupom', desc: 'Imprimir cupom', cor: '#6d4c41', fundo: '#efebe9', externo: '/cupom.html' },
     { id: 'etiquetas', emoji: '🏷️', titulo: 'Etiquetas', desc: 'Imprimir etiquetas', cor: '#37474f', fundo: '#eceff1', externo: '/etiquetas.html' },
   ];
@@ -451,7 +602,7 @@ export default function CatalogoAdmin() {
             <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0 }}>⚙️ Gerenciar</h1>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
               <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, margin: 0 }}>
-                Olá, {usuarioLogado?.nome ?? "Admin"}
+                Olá, {usuarioLogado?.nome ?? "Admin"}! · <span style={{ color: "#90caf9" }}>{usuarioLogado?.funcao ?? usuarioLogado?.nivel}</span>
               </p>
               <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 7px", borderRadius: 20, background: usuarioLogado?.nivel === "master" ? "#ffd600" : usuarioLogado?.nivel === "editor" ? "#90caf9" : "#b0bec5", color: "#111", textTransform: "uppercase", letterSpacing: 0.5 }}>
                 {usuarioLogado?.nivel}
@@ -540,6 +691,9 @@ export default function CatalogoAdmin() {
           {secaoAdmin === "visitantes" && <VisitantesLara />}
           {secaoAdmin === "analytics" && <AnalyticsDashboard />}
           {secaoAdmin === "logatividades" && <LogAtividades />}
+          {secaoAdmin === "usuarios" && usuarioLogado?.nivel === "master" && (
+            <GerenciarUsuarios usuarios={usuariosAdmin} setUsuarios={setUsuariosAdmin} />
+          )}
         </div>
       )}
       {msgSucesso && <div style={{ background: "#e3f2fd", padding: "10px 16px", textAlign: "center", color: "#1565c0", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}

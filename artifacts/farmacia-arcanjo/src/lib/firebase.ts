@@ -189,4 +189,21 @@ export async function buscarCliquesWhatsApp(maxRegistros = 100): Promise<CliqueW
   } catch { return []; }
 }
 
+// ── Clientes com Dívida ────────────────────────────────────────────────────────
+export async function salvarClienteDividaFirebase(cliente: Record<string, unknown>): Promise<void> {
+  try {
+    await setDoc(doc(db, "clientes_dividas", String(cliente.id)), {
+      ...cliente,
+      updatedAt: serverTimestamp(),
+    });
+  } catch {}
+}
+
+export async function buscarClientesDividaFirebase(): Promise<Record<string, unknown>[]> {
+  try {
+    const snap = await getDocs(collection(db, "clientes_dividas"));
+    return snap.docs.map(d => d.data() as Record<string, unknown>);
+  } catch { return []; }
+}
+
 export { addDoc, collection, serverTimestamp, query, orderBy, getDocs };
