@@ -357,8 +357,14 @@ function LogAtividades() {
 }
 
 export default function CatalogoAdmin() {
-  const [produtos, setProdutos] = useState<Produto[]>([]);
-  const [carregandoProdutos, setCarregandoProdutos] = useState(true);
+  const [produtos, setProdutos] = useState<Produto[]>(() => {
+    try {
+      const saved = localStorage.getItem("farmacia_produtos_v3");
+      const local: Produto[] = saved ? JSON.parse(saved) : [];
+      return local.length > 0 ? local : PRODUTOS_INICIAIS;
+    } catch { return PRODUTOS_INICIAIS; }
+  });
+  const [carregandoProdutos, setCarregandoProdutos] = useState(false);
   const [usuariosAdmin, setUsuariosAdmin] = useState<UsuarioAdmin[]>(() => carregarUsuarios());
   const [modo, setModo] = useState<"catalogo" | "login" | "admin" | "form">("catalogo");
   const [senha, setSenha] = useState("");
@@ -762,12 +768,13 @@ export default function CatalogoAdmin() {
     </div>
   );
 
-  if (carregandoProdutos) return (
+  if (produtos.length === 0) return (
     <div style={{ minHeight: "100vh", background: "#f0f4ff", fontFamily: "'Nunito', sans-serif", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
       <div style={{ fontSize: 48 }}>💊</div>
       <div style={{ fontSize: 16, fontWeight: 700, color: "#1565c0" }}>Carregando catálogo...</div>
       <div style={{ fontSize: 13, color: "#888" }}>Buscando produtos no servidor</div>
+      <button onClick={() => setModo("login")} style={{ marginTop: 8, padding: "10px 20px", borderRadius: 20, border: "2px solid #1565c0", background: "transparent", color: "#1565c0", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>⚙️ Admin</button>
     </div>
   );
 
