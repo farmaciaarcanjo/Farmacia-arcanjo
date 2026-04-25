@@ -414,6 +414,10 @@ export default function CatalogoAdmin() {
   const [msgSucesso, setMsgSucesso] = useState("");
   const [secaoAdmin, setSecaoAdmin] = useState<string|null>(null);
   const [firebaseAtivo, setFirebaseAtivo] = useState<boolean | null>(null);
+  const [viewProdutos, setViewProdutos] = useState<"lista" | "grade">(() =>
+    (localStorage.getItem("farmacia_admin_view_produtos") as "lista" | "grade") ?? "lista"
+  );
+  const setView = (v: "lista" | "grade") => { setViewProdutos(v); localStorage.setItem("farmacia_admin_view_produtos", v); };
 
   useEffect(() => {
     let cancelar: (() => void) | null = null;
@@ -772,27 +776,81 @@ export default function CatalogoAdmin() {
       )}
       {msgSucesso && <div style={{ background: "#e3f2fd", padding: "10px 16px", textAlign: "center", color: "#1565c0", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}
       {secaoAdmin === "produtos_admin" && <div style={{ padding: 16 }}>
-        {produtos.map(p => (
-          <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: p.estoque !== undefined && p.estoque <= 5 ? "2px solid #ff9800" : "2px solid transparent" }}>
-            <span style={{ fontSize: 28 }}>{p.emoji}</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>{p.nome}</div>
-              <div style={{ fontSize: 13, color: "#1565c0", fontWeight: 700 }}>R${p.preco.toFixed(2)}</div>
-              {p.estoque !== undefined && <div style={{ fontSize: 11, color: p.estoque <= 5 ? "#ff9800" : "#888" }}>Estoque: {p.estoque} {p.estoque <= 5 ? "⚠️ Baixo!" : ""}</div>}
-              {p.prescricao && <div style={{ fontSize: 11, color: "#e53935" }}>⚠️ Receita médica</div>}
-              {(p as any).promocao && <div style={{ fontSize: 11, color: "#f57c00" }}>🔥 {(p as any).promocao.descricao}</div>}
-            </div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={() => imprimirEtiqueta(p)} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🏷️</button>
-              {podeEditar && <button onClick={() => abrirForm(p)} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✏️</button>}
-              {podeDeletar && <button onClick={() => {
-                registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
-                setProdutos(prev => prev.filter(x => x.id !== p.id));
-                deletarProdutoFirebase(p.id).catch(() => {});
-              }} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#ffebee", color: "#c62828", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🗑️</button>}
-            </div>
+        {/* ── Cabeçalho com toggle ── */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <span style={{ fontSize: 13, color: "#888", fontFamily: "'Nunito', sans-serif" }}>{produtos.length} produto(s)</span>
+          <div style={{ display: "flex", gap: 3, background: "#eeeeee", borderRadius: 22, padding: 3 }}>
+            {(["lista", "grade"] as const).map(v => (
+              <button key={v} onClick={() => setView(v)}
+                style={{ padding: "6px 14px", borderRadius: 18, border: "none", background: viewProdutos === v ? "#1565c0" : "transparent", color: viewProdutos === v ? "#fff" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", transition: "background 0.15s" }}>
+                {v === "lista" ? "☰ Lista" : "⊞ Grade"}
+              </button>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {/* ── LISTA ── */}
+        {viewProdutos === "lista" && produtos.map(p => {
+          const est = p.estoque;
+          const badge = est === undefined || est === null ? { bg: "#ffebee", cor: "#c62828", txt: "Sem info" }
+            : est === 0 ? { bg: "#ffebee", cor: "#c62828", txt: "Esgotado" }
+            : est <= 10 ? { bg: "#fff9c4", cor: "#f57f17", txt: `${est} un.` }
+            : { bg: "#e8f5e9", cor: "#2e7d32", txt: `${est} un.` };
+          return (
+            <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 14px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: est !== undefined && est <= 5 ? "2px solid #ff9800" : "2px solid transparent" }}>
+              <span style={{ fontSize: 26 }}>{p.emoji}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.nome}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 13, color: "#1565c0", fontWeight: 700 }}>R$ {p.preco.toFixed(2).replace(".", ",")}</span>
+                  <span style={{ background: badge.bg, color: badge.cor, borderRadius: 20, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>📦 {badge.txt}</span>
+                </div>
+                {p.prescricao && <div style={{ fontSize: 10, color: "#e53935", marginTop: 2 }}>⚠️ Receita médica</div>}
+                {(p as any).promocao && <div style={{ fontSize: 10, color: "#f57c00", marginTop: 2 }}>🔥 {(p as any).promocao.descricao}</div>}
+              </div>
+              <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
+                <button onClick={() => imprimirEtiqueta(p)} title="Etiqueta" style={{ padding: "6px 10px", borderRadius: 10, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 13, cursor: "pointer" }}>🏷️</button>
+                {podeEditar && <button onClick={() => abrirForm(p)} title="Editar" style={{ padding: "6px 10px", borderRadius: 10, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 13, cursor: "pointer" }}>✏️</button>}
+                {podeDeletar && <button title="Excluir" onClick={() => {
+                  registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
+                  setProdutos(prev => prev.filter(x => x.id !== p.id));
+                  deletarProdutoFirebase(p.id).catch(() => {});
+                }} style={{ padding: "6px 10px", borderRadius: 10, border: "none", background: "#ffebee", color: "#c62828", fontSize: 13, cursor: "pointer" }}>🗑️</button>}
+              </div>
+            </div>
+          );
+        })}
+
+        {/* ── GRADE ── */}
+        {viewProdutos === "grade" && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            {produtos.map(p => {
+              const est = p.estoque;
+              const badge = est === undefined || est === null ? { bg: "#ffebee", cor: "#c62828", txt: "Sem info" }
+                : est === 0 ? { bg: "#ffebee", cor: "#c62828", txt: "Esgotado" }
+                : est <= 10 ? { bg: "#fff9c4", cor: "#f57f17", txt: `${est} un.` }
+                : { bg: "#e8f5e9", cor: "#2e7d32", txt: `${est} un.` };
+              return (
+                <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 10px 10px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: est !== undefined && est <= 5 ? "2px solid #ff9800" : "2px solid #f0f0f0", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{ fontSize: 28, marginBottom: 6 }}>{p.emoji}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", textAlign: "center", marginBottom: 5, lineHeight: 1.3, padding: "0 4px" }}>{p.nome}</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#1565c0", marginBottom: 6 }}>R$ {p.preco.toFixed(2).replace(".", ",")}</div>
+                  <span style={{ background: badge.bg, color: badge.cor, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 700, marginBottom: 8 }}>📦 {badge.txt}</span>
+                  {p.prescricao && <div style={{ fontSize: 9, color: "#e53935", marginBottom: 6 }}>⚠️ Receita</div>}
+                  <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
+                    <button onClick={() => imprimirEtiqueta(p)} title="Etiqueta" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 15, cursor: "pointer" }}>🏷️</button>
+                    {podeEditar && <button onClick={() => abrirForm(p)} title="Editar" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 15, cursor: "pointer" }}>✏️</button>}
+                    {podeDeletar && <button title="Excluir" onClick={() => {
+                      registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
+                      setProdutos(prev => prev.filter(x => x.id !== p.id));
+                      deletarProdutoFirebase(p.id).catch(() => {});
+                    }} style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#ffebee", color: "#c62828", fontSize: 15, cursor: "pointer" }}>🗑️</button>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>}
     </div>
   );if (modo === "form") return (
