@@ -382,8 +382,6 @@ export default function CatalogoAdmin() {
   const [msgSucesso, setMsgSucesso] = useState("");
   const [secaoAdmin, setSecaoAdmin] = useState<string|null>(null);
   const [firebaseAtivo, setFirebaseAtivo] = useState<boolean | null>(null);
-  const [seedProgresso, setSeedProgresso] = useState("");
-  const [seedStatus, setSeedStatus] = useState<"idle" | "enviando" | "concluido">("idle");
 
   useEffect(() => {
     const inicializar = async () => {
@@ -398,10 +396,8 @@ export default function CatalogoAdmin() {
           } catch {}
         } else {
           setFirebaseAtivo(false);
-          // Firebase vazio — seed com PRODUTOS_INICIAIS
-          for (const p of PRODUTOS_INICIAIS) {
-            await salvarProdutoFirebase(p);
-          }
+          // Firebase vazio — seed silencioso em segundo plano
+          PRODUTOS_INICIAIS.forEach(p => { salvarProdutoFirebase(p).catch(() => {}); });
         }
       } catch {
         setFirebaseAtivo(false);
@@ -496,23 +492,6 @@ export default function CatalogoAdmin() {
 
   const podeEditar = usuarioLogado?.nivel === "master" || usuarioLogado?.nivel === "editor";
 
-  const enviarTodosAoFirebase = () => {
-    try {
-      setSeedStatus("enviando");
-      setSeedProgresso("Enviando...");
-      produtos.forEach(p => { salvarProdutoFirebase(p).catch(() => {}); });
-      setTimeout(() => {
-        try {
-          setSeedProgresso("");
-          setSeedStatus("concluido");
-          setTimeout(() => { try { setSeedStatus("idle"); } catch {} }, 4000);
-        } catch {}
-      }, 5000);
-    } catch {
-      setSeedStatus("idle");
-      setSeedProgresso("");
-    }
-  };
   const podeDeletar = usuarioLogado?.nivel === "master";
 
   function salvarProduto() {
@@ -712,17 +691,6 @@ export default function CatalogoAdmin() {
                 <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>{s.desc}</div>
               </div>
             ))}
-          </div>
-          <div style={{ padding: "0 16px 24px" }}>
-            <button
-              onClick={enviarTodosAoFirebase}
-              disabled={seedStatus === "enviando"}
-              style={{ width: "100%", padding: "14px 0", borderRadius: 14, border: "none", background: seedStatus === "concluido" ? "#1b5e20" : seedStatus === "enviando" ? "#555" : "#b71c1c", color: "#fff", fontSize: 15, fontWeight: 800, cursor: seedStatus === "enviando" ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif", transition: "background 0.3s" }}
-            >
-              {seedStatus === "idle" && "🔥 Enviar produtos ao Firebase"}
-              {seedStatus === "enviando" && (seedProgresso || "Enviando...")}
-              {seedStatus === "concluido" && "✅ Concluído! Todos os produtos enviados"}
-            </button>
           </div>
         </div>
       ) : (
