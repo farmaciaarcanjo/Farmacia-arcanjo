@@ -930,20 +930,12 @@ export default function CatalogoAdmin() {
 
         {/* ── Importar Estoque SIS Moura ── */}
         <input ref={inputImportEstoqueRef} type="file" accept=".xlsx" style={{ display: "none" }}
-          onChange={e => { const f = e.target.files?.[0]; if (f) processarSisMoura(f, false); if (e.target) e.target.value = ""; }} />
+          onChange={e => { const f = e.target.files?.[0]; if (f) processarSisMoura(f, true); if (e.target) e.target.value = ""; }} />
         <button
           onClick={() => inputImportEstoqueRef.current?.click()}
           disabled={importando || importandoEstoque}
           style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "2px dashed #2e7d32", background: "#e8f5e9", color: "#2e7d32", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 8, opacity: (importando || importandoEstoque) ? 0.6 : 1 }}>
           {importandoEstoque ? "⏳ Importando..." : "📦 Importar Estoque (SIS Moura)"}
-        </button>
-        <input ref={inputImportCadastroRef} type="file" accept=".xlsx" style={{ display: "none" }}
-          onChange={e => { const f = e.target.files?.[0]; if (f) processarSisMoura(f, true); if (e.target) e.target.value = ""; }} />
-        <button
-          onClick={() => inputImportCadastroRef.current?.click()}
-          disabled={importando || importandoEstoque}
-          style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "2px dashed #6a1b9a", background: "#f3e5f5", color: "#6a1b9a", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 14, opacity: (importando || importandoEstoque) ? 0.6 : 1 }}>
-          {importandoEstoque ? "⏳ Importando..." : "➕ Importar E Cadastrar Novos"}
         </button>
 
         {/* ── Cabeçalho com toggle ── */}
