@@ -275,15 +275,15 @@ export default function CatalogoAdmin() {
     <div style={{ minHeight: "100vh", background: "#f0faf4", fontFamily: "'Nunito', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
       <div style={{ background: "linear-gradient(135deg, #1b5e20, #2e7d32, #388e3c)", padding: "24px 20px 28px", position: "relative", overflow: "hidden" }}>
-        <button onClick={() => setModo("login")} style={{ position: "absolute", top: 16, right: 16, background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", borderRadius: 20, padding: "6px 12px", fontSize: 11, cursor: "pointer", fontWeight: 700 }}>⚙️ Admin</button>
+        <button onClick={() => setModo("login")} style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,0.25)", border: "2px solid rgba(255,255,255,0.4)", color: "#fff", borderRadius: 20, padding: "12px 20px", fontSize: 13, cursor: "pointer", fontWeight: 700, fontFamily: "'Nunito', sans-serif", zIndex: 10 }}>⚙️ Admin</button>
         <div style={{ textAlign: "center", position: "relative" }}>
           <div style={{ fontSize: 36, marginBottom: 4 }}>💊</div>
           <h1 style={{ color: "#fff", fontSize: 20, fontWeight: 800, margin: 0 }}>Farmácia Arcanjo</h1>
           <p style={{ color: "rgba(255,255,255,0.75)", fontSize: 12, margin: "3px 0 14px" }}>📍 Meruoca, Ceará · (88) 99337-5650</p>
-          <div style={{ position: "relative", maxWidth: 320, margin: "0 auto" }}>
-            <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14 }}>🔍</span>
+          <div style={{ position: "relative", maxWidth: 400, margin: "0 auto" }}>
+            <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, zIndex: 1 }}>🔍</span>
             <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar produto..."
-              style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 24, border: "none", fontSize: 13, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" as any }} />
+              style={{ width: "100%", padding: "12px 16px 12px 40px", borderRadius: 24, border: "2px solid rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.95)", fontSize: 14, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" as any }} />
           </div>
         </div>
       </div>
