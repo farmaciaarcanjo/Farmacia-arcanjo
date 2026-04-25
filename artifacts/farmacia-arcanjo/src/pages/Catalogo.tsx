@@ -595,7 +595,7 @@ export default function CatalogoAdmin() {
   const secoesAdmin = [
     { id: 'relatorio', emoji: '📊', titulo: 'Relatório', desc: 'Pedidos e faturamento', cor: '#0066cc', fundo: '#e6f0ff' },
     { id: 'clientes', emoji: '👥', titulo: 'Clientes', desc: 'Cadastro de clientes', cor: '#1565c0', fundo: '#e3f2fd' },
-    { id: 'lembretes', emoji: '⏰', titulo: 'Lembretes', desc: 'Alertas automáticos', cor: '#e07b00', fundo: '#fff0e6' },
+    { id: 'lembretes', emoji: '🔔', titulo: 'Alertas', desc: 'Lembretes automáticos', cor: '#e07b00', fundo: '#fff0e6' },
     { id: 'promocao', emoji: '📢', titulo: 'Promoção', desc: 'Gerador WhatsApp', cor: '#c62828', fundo: '#ffebee' },
     { id: 'caixa', emoji: '🧾', titulo: 'Caixa', desc: 'Fechamento de caixa', cor: '#0d47a1', fundo: '#e3f2fd' },
     { id: 'visitantes', emoji: '👁️', titulo: 'Visitantes', desc: 'Conversas e WhatsApp', cor: '#1565c0', fundo: '#e3f2fd' },
