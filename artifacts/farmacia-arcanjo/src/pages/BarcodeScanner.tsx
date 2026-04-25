@@ -172,12 +172,15 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
       } else {
         mostrarToast("⚠️ Erro ao salvar no Firebase. Verifique a conexão.", "erro");
       }
+      await new Promise(res => setTimeout(res, 1000));
+      setModo("sucesso");
+      setTimeout(() => { setModo("inicio"); setErro(""); }, 2500);
     } catch {
       mostrarToast("⚠️ Erro ao salvar no Firebase. Verifique a conexão.", "erro");
+      await new Promise(res => setTimeout(res, 1000));
+      setModo("sucesso");
+      setTimeout(() => { setModo("inicio"); setErro(""); }, 2500);
     }
-
-    setModo("sucesso");
-    setTimeout(() => { setModo("inicio"); setErro(""); }, 2500);
   };
 
   const voltar = () => { setModo("inicio"); setErro(""); setCodigo(""); setBuscaNome(""); setResultados([]); };
