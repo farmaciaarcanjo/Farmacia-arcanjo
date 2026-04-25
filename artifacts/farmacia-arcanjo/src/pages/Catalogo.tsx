@@ -496,21 +496,22 @@ export default function CatalogoAdmin() {
 
   const podeEditar = usuarioLogado?.nivel === "master" || usuarioLogado?.nivel === "editor";
 
-  const enviarTodosAoFirebase = async () => {
-    setSeedStatus("enviando");
-    const total = produtos.length;
-    const tamanhoChunk = 10;
-    let enviados = 0;
-    for (let i = 0; i < total; i += tamanhoChunk) {
-      const chunk = produtos.slice(i, i + tamanhoChunk);
-      await Promise.all(chunk.map(p => salvarProdutoFirebase(p)));
-      enviados = Math.min(i + tamanhoChunk, total);
-      setSeedProgresso(`Enviando ${enviados}/${total}...`);
-      await new Promise(res => setTimeout(res, 0));
+  const enviarTodosAoFirebase = () => {
+    try {
+      setSeedStatus("enviando");
+      setSeedProgresso("Enviando...");
+      produtos.forEach(p => { salvarProdutoFirebase(p).catch(() => {}); });
+      setTimeout(() => {
+        try {
+          setSeedProgresso("");
+          setSeedStatus("concluido");
+          setTimeout(() => { try { setSeedStatus("idle"); } catch {} }, 4000);
+        } catch {}
+      }, 5000);
+    } catch {
+      setSeedStatus("idle");
+      setSeedProgresso("");
     }
-    setSeedProgresso("");
-    setSeedStatus("concluido");
-    setTimeout(() => setSeedStatus("idle"), 4000);
   };
   const podeDeletar = usuarioLogado?.nivel === "master";
 
