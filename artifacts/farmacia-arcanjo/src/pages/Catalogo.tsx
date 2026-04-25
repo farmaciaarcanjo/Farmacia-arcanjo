@@ -694,14 +694,18 @@ export default function CatalogoAdmin() {
       salvarProdutoFirebase(atualizado).catch(() => {});
     }
 
-    // 2. Deletar "FARMAÇA PARACETAMOL GOTAS 15ML" do Firebase
-    const paraExcluir = produtos.filter(p =>
+    // 2. Corrigir nome "FARMAÇA PARACETAMOL GOTAS 15ML" → "PARACETAMOL GOTAS 15ML"
+    const farmaParacetamol = produtos.find(p =>
       p.nome.toUpperCase().includes("FARMAÇA PARACETAMOL")
     );
-    paraExcluir.forEach(p => {
-      setProdutos(prev => prev.filter(x => x.id !== p.id));
-      deletarProdutoFirebase(p.id).catch(() => {});
-    });
+    if (farmaParacetamol) {
+      const nomeCorrigido = farmaParacetamol.nome
+        .replace(/FARMAÇA\s+/i, "")
+        .replace(/farmaça\s+/i, "");
+      const atualizado = { ...farmaParacetamol, nome: nomeCorrigido };
+      setProdutos(prev => prev.map(p => p.id === atualizado.id ? atualizado : p));
+      salvarProdutoFirebase(atualizado).catch(() => {});
+    }
   }, [produtos]);
 
   useEffect(() => {
