@@ -434,14 +434,17 @@ export default function CatalogoAdmin() {
       const ws = wb.Sheets["Relatorio"];
       if (!ws) { alert("Aba 'Relatorio' não encontrada no arquivo."); setImportandoEstoque(false); return; }
       const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
-      const linhas = (data.slice(1) as any[][]).filter((row: any[]) => row[1] != null);
+      const linhas = (data.slice(1) as any[][]).filter((row: any[]) =>
+        typeof row[1] === "string" && row[1].trim() !== ""
+      );
       let atualizados = 0;
       const naoEncontrados: string[] = [];
       const novosProdutos = [...produtos];
       for (const row of linhas) {
-        const nomeSis = String(row[1]).trim();
-        const qtd = row[3] != null ? Number(row[3]) : null;
-        const custo = row[4] != null ? parseFloat(String(row[4]).replace(",", ".")) : null;
+        const nomeSis = (row[1] as string).trim();
+        const qtd = row[3] != null && !isNaN(Number(row[3])) ? Number(row[3]) : null;
+        const custoRaw = row[4] != null ? parseFloat(String(row[4]).replace(",", ".")) : null;
+        const custo = custoRaw !== null && !isNaN(custoRaw) ? custoRaw : null;
         if (!nomeSis) continue;
         const idx = novosProdutos.findIndex(p =>
           p.nome.toLowerCase().includes(nomeSis.toLowerCase()) ||
