@@ -762,6 +762,19 @@ export default function CatalogoAdmin() {
       )}
       {msgSucesso && <div style={{ background: "#e3f2fd", padding: "10px 16px", textAlign: "center", color: "#1565c0", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}
       {secaoAdmin === "produtos_admin" && <div style={{ padding: 16 }}>
+        {/* ── Scanner & Cadastro ── */}
+        <BarcodeScanner
+          produtos={produtos}
+          onSalvar={(p) => {
+            const idx = produtos.findIndex(x => x.id === p.id);
+            if (idx >= 0) {
+              const novos = [...produtos]; novos[idx] = p; setProdutos(novos);
+            } else {
+              setProdutos([...produtos, p]);
+            }
+          }}
+        />
+        <div style={{ borderTop: "2px solid #e3f2fd", margin: "16px 0 14px" }} />
         {/* ── Cabeçalho com toggle ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
           <span style={{ fontSize: 13, color: "#888", fontFamily: "'Nunito', sans-serif" }}>{produtos.length} produto(s)</span>
