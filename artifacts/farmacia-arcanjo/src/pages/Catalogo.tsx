@@ -480,10 +480,14 @@ export default function CatalogoAdmin() {
   const enviarTodosAoFirebase = async () => {
     setSeedStatus("enviando");
     const total = produtos.length;
-    for (let i = 0; i < total; i++) {
-      const p = produtos[i];
-      setSeedProgresso(`Enviando ${i + 1}/${total}: ${p.nome}`);
-      await salvarProdutoFirebase(p);
+    const tamanhoChunk = 10;
+    let enviados = 0;
+    for (let i = 0; i < total; i += tamanhoChunk) {
+      const chunk = produtos.slice(i, i + tamanhoChunk);
+      await Promise.all(chunk.map(p => salvarProdutoFirebase(p)));
+      enviados = Math.min(i + tamanhoChunk, total);
+      setSeedProgresso(`Enviando ${enviados}/${total}...`);
+      await new Promise(res => setTimeout(res, 0));
     }
     setSeedProgresso("");
     setSeedStatus("concluido");
