@@ -8,6 +8,7 @@ export interface Produto {
   emoji: string;
   desc: string;
   prescricao?: boolean;
+  usoControlado?: boolean;
   estoque?: number;
   codigoBarras?: string;
   codigoSisMoura?: string;
@@ -164,6 +165,7 @@ export const PRODUTOS_INICIAIS: Produto[] = [
     Object.entries(categorias).forEach(([cat, prods]) => {
       resumo += `${cat}:\n`;
       prods.forEach(p => {
+        if (p.usoControlado) return;
         let linha = `• ${p.nome} - R$${p.preco.toFixed(2)}`;
         if (p.promocao) linha += ` (${p.promocao.descricao})`;
         if (p.prescricao) linha += " ⚠️ Receita médica";

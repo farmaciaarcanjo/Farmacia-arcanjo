@@ -411,7 +411,7 @@ export default function CatalogoAdmin() {
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todos");
   const [busca, setBusca] = useState("");
   const [editando, setEditando] = useState<number | null>(null);
-  const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
+  const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, usoControlado: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
   const [msgSucesso, setMsgSucesso] = useState("");
   const [secaoAdmin, setSecaoAdmin] = useState<string|null>(null);
   const [firebaseAtivo, setFirebaseAtivo] = useState<boolean | null>(null);
@@ -694,6 +694,7 @@ export default function CatalogoAdmin() {
   }, []);
 
   const produtosFiltrados = produtos.filter(p => {
+    if (p.usoControlado) return false;
     const matchCat = categoriaFiltro === "Todos" || p.categoria === categoriaFiltro;
     const matchBusca = busca === "" || p.nome.toLowerCase().includes(busca.toLowerCase());
     return matchCat && matchBusca;
@@ -752,6 +753,7 @@ export default function CatalogoAdmin() {
       emoji: form.emoji,
       desc: form.desc,
       prescricao: form.prescricao,
+      usoControlado: form.usoControlado || undefined,
       estoque: form.estoque ? parseInt(form.estoque) : undefined,
       codigoBarras: form.codigoBarras || undefined,
       promocao: form.promoQtd && form.promoPreco ? {
@@ -787,6 +789,7 @@ export default function CatalogoAdmin() {
         precoCusto: String(produto.precoCusto || ""),
         categoria: produto.categoria, emoji: produto.emoji, desc: produto.desc,
         prescricao: produto.prescricao || false,
+        usoControlado: produto.usoControlado || false,
         estoque: String(produto.estoque || ""),
         codigoBarras: produto.codigoBarras || "",
         promoQtd: String(produto.promocao?.quantidade || ""),
@@ -795,7 +798,7 @@ export default function CatalogoAdmin() {
       });
     } else {
       setEditando(null);
-      setForm({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
+      setForm({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, usoControlado: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
     }
     setModo("form");
   }
@@ -1016,6 +1019,7 @@ export default function CatalogoAdmin() {
                   <span style={{ background: badge.bg, color: badge.cor, borderRadius: 20, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>📦 {badge.txt}</span>
                 </div>
                 {p.prescricao && <div style={{ fontSize: 10, color: "#e53935", marginTop: 2 }}>⚠️ Receita médica</div>}
+                {p.usoControlado && <div style={{ fontSize: 10, color: "#c62828", fontWeight: 800, marginTop: 2 }}>🚫 Uso controlado</div>}
                 {(p as any).promocao && <div style={{ fontSize: 10, color: "#f57c00", marginTop: 2 }}>🔥 {(p as any).promocao.descricao}</div>}
               </div>
               <div style={{ display: "flex", gap: 5, flexShrink: 0 }}>
@@ -1048,7 +1052,8 @@ export default function CatalogoAdmin() {
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", textAlign: "center", marginBottom: 5, lineHeight: 1.3, padding: "0 4px" }}>{p.nome}</div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "#1565c0", marginBottom: 6 }}>R$ {p.preco.toFixed(2).replace(".", ",")}</div>
                   <span style={{ background: badge.bg, color: badge.cor, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 700, marginBottom: 8 }}>📦 {badge.txt}</span>
-                  {p.prescricao && <div style={{ fontSize: 9, color: "#e53935", marginBottom: 6 }}>⚠️ Receita</div>}
+                  {p.prescricao && <div style={{ fontSize: 9, color: "#e53935", marginBottom: 4 }}>⚠️ Receita</div>}
+                  {p.usoControlado && <div style={{ fontSize: 9, color: "#c62828", fontWeight: 800, marginBottom: 6 }}>🚫 Controlado</div>}
                   <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
                     <button onClick={() => imprimirEtiqueta(p)} title="Etiqueta" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 15, cursor: "pointer" }}>🏷️</button>
                     {podeEditar && <button onClick={() => abrirScan(p)} title="Código de barras" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: p.codigoBarras ? "#e8f5e9" : "#f3e5f5", color: p.codigoBarras ? "#2e7d32" : "#6a1b9a", fontSize: 15, cursor: "pointer" }}>📷</button>}
@@ -1246,6 +1251,10 @@ export default function CatalogoAdmin() {
           <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "flex", alignItems: "center", gap: 8, marginBottom: 14, cursor: "pointer" }}>
             <input type="checkbox" checked={form.prescricao} onChange={e => setForm(f => ({ ...f, prescricao: e.target.checked }))} style={{ width: 18, height: 18 }} />
             ⚠️ Venda sob prescrição médica
+          </label>
+          <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "flex", alignItems: "center", gap: 8, marginBottom: 14, cursor: "pointer" }}>
+            <input type="checkbox" checked={form.usoControlado} onChange={e => setForm(f => ({ ...f, usoControlado: e.target.checked }))} style={{ width: 18, height: 18, accentColor: "#c62828" }} />
+            🚫 Uso controlado (ocultar do catálogo público)
           </label>
           {msgSucesso && (
             <div style={{ marginBottom: 14, padding: "12px 16px", borderRadius: 12, background: msgSucesso.startsWith("❌") ? "#ffebee" : msgSucesso.startsWith("⏳") ? "#fff9c4" : "#e8f5e9", color: msgSucesso.startsWith("❌") ? "#c62828" : msgSucesso.startsWith("⏳") ? "#f57f17" : "#2e7d32", fontWeight: 700, fontSize: 14, textAlign: "center" }}>
