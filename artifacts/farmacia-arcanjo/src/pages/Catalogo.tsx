@@ -8,8 +8,14 @@ import GeradorPromocao from "./GeradorPromocao";
 import FechamentoCaixa from "./FechamentoCaixa";
 import AnalyticsDashboard from "./AnalyticsDashboard";
 import { trackWhatsAppClick, trackProdutoAdicionado } from "../lib/analytics";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import {
+  salvarProdutoFirebase,
+  buscarProdutosFirebase,
+  deletarProdutoFirebase,
+  escutarProdutosFirebase,
+  registrarPedidoFirebase,
+  registrarLogFirebase,
+} from "../lib/firebase";
 
 const WHATSAPP = "5588993375650";
 
@@ -32,7 +38,7 @@ function registrarLog(entry: LogEntry) {
   const log = carregarLog();
   log.push(entry);
   try { localStorage.setItem(LS_LOG_KEY, JSON.stringify(log.slice(-100))); } catch {}
-  try { addDoc(collection(db, "admin_log"), { ...entry, createdAt: serverTimestamp() }); } catch {}
+  registrarLogFirebase(entry as unknown as Record<string, unknown>);
 }
 
 interface ItemPedido {
@@ -108,6 +114,30 @@ export default function CatalogoAdmin() {
   const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
   const [msgSucesso, setMsgSucesso] = useState("");
   const [secaoAdmin, setSecaoAdmin] = useState<string|null>(null);
+  const [firebaseAtivo, setFirebaseAtivo] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    buscarProdutosFirebase().then(fbProdutos => {
+      if (fbProdutos && fbProdutos.length > 0) {
+        setProdutos(fbProdutos);
+        setFirebaseAtivo(true);
+        try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fbProdutos)); } catch {}
+      } else {
+        setFirebaseAtivo(false);
+      }
+    }).catch(() => setFirebaseAtivo(false));
+
+    const unsubscribe = escutarProdutosFirebase(
+      (fbProdutos) => {
+        setProdutos(fbProdutos);
+        setFirebaseAtivo(true);
+        try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fbProdutos)); } catch {}
+      },
+      () => setFirebaseAtivo(prev => prev === true ? true : false)
+    );
+    return () => unsubscribe();
+  }, []);
+
 // Hook para detectar leitor de código de barras (USB - digita rápido + Enter)
   useEffect(() => {
     let buffer = '';
@@ -209,8 +239,15 @@ export default function CatalogoAdmin() {
       } : undefined
     };
     const acao: TipoAcao = editando ? "produto_editado" : "produto_adicionado";
-    if (editando) { const novos = produtos.map(p => p.id === editando ? novo : p); setProdutos(novos); try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {} }
-    else { const novos = [...produtos, novo]; setProdutos(novos); try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {} }
+    if (editando) {
+      const novos = produtos.map(p => p.id === editando ? novo : p);
+      setProdutos(novos);
+      salvarProdutoFirebase(novo).then(ok => { if (!ok) { try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {} } });
+    } else {
+      const novos = [...produtos, novo];
+      setProdutos(novos);
+      salvarProdutoFirebase(novo).then(ok => { if (!ok) { try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {} } });
+    }
     registrarLog({ acao, usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: novo.nome, ts: Date.now() });
     setMsgSucesso(editando ? "✅ Produto atualizado!" : "✅ Produto adicionado!");
     setTimeout(() => setMsgSucesso(""), 2000);
@@ -240,6 +277,12 @@ export default function CatalogoAdmin() {
 
   function enviarWhatsApp() {
     trackWhatsAppClick(pedido.map(i => i.produto.nome).join(", "));
+    registrarPedidoFirebase({
+      cliente: "Anônimo",
+      itens: pedido.map(i => ({ produto: i.produto.nome, quantidade: i.quantidade, precoUnitario: i.produto.preco })),
+      total: totalPedido,
+      pagamento: "WhatsApp",
+    });
     const lista = pedido.map(i => {
       const total = calcularPreco(i.produto, i.quantidade);
       return `• ${i.quantidade}x ${i.produto.nome} — R$${total.toFixed(2)}`;
@@ -298,6 +341,23 @@ export default function CatalogoAdmin() {
             <button onClick={() => setModo("catalogo")} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>👁️ Ver</button>
             <button onClick={logout} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Sair</button>
           </div>
+        </div>
+        <div style={{ marginBottom: 10 }}>
+          {firebaseAtivo === true && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#a5d6a7", display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 9 }}>🟢</span> Sincronizado com a nuvem
+            </span>
+          )}
+          {firebaseAtivo === false && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#fff176", display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 9 }}>🟡</span> Modo offline (localStorage)
+            </span>
+          )}
+          {firebaseAtivo === null && (
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", gap: 4 }}>
+              ⏳ Conectando...
+            </span>
+          )}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {[
@@ -373,7 +433,11 @@ export default function CatalogoAdmin() {
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               {podeEditar && <button onClick={() => abrirForm(p)} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✏️</button>}
-              {podeDeletar && <button onClick={() => { registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() }); setProdutos(prev => prev.filter(x => x.id !== p.id)); }} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#ffebee", color: "#c62828", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🗑️</button>}
+              {podeDeletar && <button onClick={() => {
+                registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
+                setProdutos(prev => prev.filter(x => x.id !== p.id));
+                deletarProdutoFirebase(p.id).catch(() => {});
+              }} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#ffebee", color: "#c62828", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🗑️</button>}
             </div>
           </div>
         ))}
