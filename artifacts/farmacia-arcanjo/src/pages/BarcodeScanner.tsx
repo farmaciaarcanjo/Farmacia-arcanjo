@@ -157,6 +157,7 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
     onSalvar(form);
 
     try {
+      console.log("[BarcodeScanner] Salvando no Firebase:", { id: idFinal, idOriginal: form.id, preco: form.preco, nome: form.nome });
       const ok = await salvarProdutoFirebase({
         id: idFinal,
         nome: form.nome,
