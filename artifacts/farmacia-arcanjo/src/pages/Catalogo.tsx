@@ -447,10 +447,32 @@ export default function CatalogoAdmin() {
         const custoRaw = row[4] != null ? parseFloat(String(row[4]).replace(",", ".")) : null;
         const custo = custoRaw !== null && !isNaN(custoRaw) ? custoRaw : null;
         if (!nomeSis) continue;
-        const idx = novosProdutos.findIndex(p =>
-          p.nome.toLowerCase().includes(nomeSis.toLowerCase()) ||
-          nomeSis.toLowerCase().includes(p.nome.toLowerCase())
-        );
+        const nomeSisLow = nomeSis.toLowerCase();
+        const IGNORAR = new Set(["mg", "mcg", "g", "ml", "cx", "cxt", "com", "gen", "un", "un.", "cp", "cps", "cpr", "comp", "sol", "susp", "caps", "amp", "fr", "bs", "bsa", "kit"]);
+        const palavrasSis = nomeSisLow.split(/[\s,./\-+()]+/).filter(w => w.length > 2 && !IGNORAR.has(w));
+        const buscarIdx = (): number => {
+          // 1) Exata (case-insensitive)
+          let i = novosProdutos.findIndex(p => p.nome.toLowerCase() === nomeSisLow);
+          if (i !== -1) return i;
+          // 2) Nome do app contido no nome SIS Moura
+          i = novosProdutos.findIndex(p => nomeSisLow.includes(p.nome.toLowerCase()));
+          if (i !== -1) return i;
+          // 3) Palavras-chave do SIS Moura contidas no nome do app
+          i = novosProdutos.findIndex(p => {
+            const nomeAppLow = p.nome.toLowerCase();
+            return palavrasSis.length > 0 && palavrasSis.every(w => nomeAppLow.includes(w));
+          });
+          if (i !== -1) return i;
+          // 4) Maioria das palavras-chave (≥ 60%) contidas no nome do app
+          i = novosProdutos.findIndex(p => {
+            const nomeAppLow = p.nome.toLowerCase();
+            if (palavrasSis.length === 0) return false;
+            const matches = palavrasSis.filter(w => nomeAppLow.includes(w)).length;
+            return matches / palavrasSis.length >= 0.6;
+          });
+          return i;
+        };
+        const idx = buscarIdx();
         if (idx === -1) {
           if (!naoEncontrados.includes(nomeSis)) naoEncontrados.push(nomeSis);
           continue;
