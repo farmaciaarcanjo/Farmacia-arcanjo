@@ -679,32 +679,50 @@ export default function CatalogoAdmin() {
 
 
 
-  // ── Correção única: marcar controlado + deletar produto inválido ──
+  // ── Limpeza completa do catálogo (roda uma única vez após carregar) ──
   useEffect(() => {
     if (correcaoFeita.current || produtos.length === 0) return;
     correcaoFeita.current = true;
 
-    // 1. Marcar PARAC+COD como uso controlado no Firebase
-    const paracCod = produtos.find(p =>
-      p.nome.toUpperCase().includes("PARAC+COD") || p.nome.toUpperCase().includes("PARAC COD")
-    );
-    if (paracCod && !paracCod.usoControlado) {
-      const atualizado = { ...paracCod, usoControlado: true };
-      setProdutos(prev => prev.map(p => p.id === atualizado.id ? atualizado : p));
-      salvarProdutoFirebase(atualizado).catch(() => {});
-    }
+    const limparNome = (nome: string): string => {
+      let n = nome;
+      // Remove asteriscos do SIS Moura (ex: "PRODUTO *" ou "PRODUTO * *")
+      n = n.replace(/[\s*]+\*[\s*]*$/, "").trim();
+      // Corrige símbolo de número corrompido: N?1 → Nº1
+      n = n.replace(/N\?(\d)/g, "Nº$1");
+      // Comprime espaços duplos em simples
+      n = n.replace(/\s{2,}/g, " ").trim();
+      // Remove prefixo "FARMAÇA " equivocado
+      n = n.replace(/^FARMAÇA\s+/i, "");
+      return n;
+    };
 
-    // 2. Corrigir nome "FARMAÇA PARACETAMOL GOTAS 15ML" → "PARACETAMOL GOTAS 15ML"
-    const farmaParacetamol = produtos.find(p =>
-      p.nome.toUpperCase().includes("FARMAÇA PARACETAMOL")
-    );
-    if (farmaParacetamol) {
-      const nomeCorrigido = farmaParacetamol.nome
-        .replace(/FARMAÇA\s+/i, "")
-        .replace(/farmaça\s+/i, "");
-      const atualizado = { ...farmaParacetamol, nome: nomeCorrigido };
-      setProdutos(prev => prev.map(p => p.id === atualizado.id ? atualizado : p));
-      salvarProdutoFirebase(atualizado).catch(() => {});
+    for (const p of produtos) {
+      // 1. Deletar produtos genéricos junk ("Produto" / vazio)
+      if (!p.nome || p.nome.trim().toLowerCase() === "produto" || p.nome.trim() === "") {
+        setProdutos(prev => prev.filter(x => x.id !== p.id));
+        deletarProdutoFirebase(p.id).catch(() => {});
+        continue;
+      }
+
+      // 2. Marcar PARAC+COD como uso controlado
+      if (
+        (p.nome.toUpperCase().includes("PARAC+COD") || p.nome.toUpperCase().includes("PARAC COD"))
+        && !p.usoControlado
+      ) {
+        const atualizado = { ...p, usoControlado: true };
+        setProdutos(prev => prev.map(x => x.id === atualizado.id ? atualizado : x));
+        salvarProdutoFirebase(atualizado).catch(() => {});
+        continue;
+      }
+
+      // 3. Corrigir nome (asteriscos, N?1, espaços duplos, FARMAÇA)
+      const nomeLimpo = limparNome(p.nome);
+      if (nomeLimpo !== p.nome) {
+        const atualizado = { ...p, nome: nomeLimpo };
+        setProdutos(prev => prev.map(x => x.id === atualizado.id ? atualizado : x));
+        salvarProdutoFirebase(atualizado).catch(() => {});
+      }
     }
   }, [produtos]);
 
