@@ -155,9 +155,27 @@ export const PRODUTOS_INICIAIS: Produto[] = [
     { id: 116, nome: "Vitamina B12 metilcobalamina (60 cápsulas)", preco: 45.00, categoria: "Suplementos", emoji: "🌟", desc: "Vitamina B12 ativa" },
   ];
 
+const PALAVRAS_CONTROLADAS_RESUMO = [
+  "clonazepam","diazepam","alprazolam","bromazepam","lorazepam","midazolam",
+  "nitrazepam","clobazam","flunitrazepam","triazolam","clordiazepóxido",
+  "amitriptilina","nortriptilina","imipramina","clomipramina","desipramina",
+  "amoxapina","maprotilina","trimipramina","doxepina",
+  "paroxetina","metilfenidato","modafinila","zolpidem","zopiclona","eszopiclona","bupropiona",
+  "haloperidol","clorpromazina","trifluoperazina","levomepromazina",
+  "tioridazina","flufenazina","pimozida","sulpirida",
+  "fenobarbital","pentobarbital","secobarbital","amobarbital",
+  "tramadol","codeína","morfina","oxicodona","hidrocodona","buprenorfina",
+  "metadona","fentanila","meperidina","petidina","tapentadol",
+  "isotretinoína","acitretina","talidomida",
+  "anfetamina","lisdexanfetamina","femproporex","mazindol","sibutramina","anfepramona",
+];
+
   export function resumoCatalogo(produtos: Produto[]): string {
     const categorias: Record<string, Produto[]> = {};
     produtos.forEach(p => {
+      if (p.usoControlado) return;
+      const nomeLow = p.nome.toLowerCase();
+      if (PALAVRAS_CONTROLADAS_RESUMO.some(k => nomeLow.includes(k))) return;
       if (!categorias[p.categoria]) categorias[p.categoria] = [];
       categorias[p.categoria].push(p);
     });
@@ -165,7 +183,6 @@ export const PRODUTOS_INICIAIS: Produto[] = [
     Object.entries(categorias).forEach(([cat, prods]) => {
       resumo += `${cat}:\n`;
       prods.forEach(p => {
-        if (p.usoControlado) return;
         let linha = `• ${p.nome} - R$${p.preco.toFixed(2)}`;
         if (p.promocao) linha += ` (${p.promocao.descricao})`;
         if (p.prescricao) linha += " ⚠️ Receita médica";

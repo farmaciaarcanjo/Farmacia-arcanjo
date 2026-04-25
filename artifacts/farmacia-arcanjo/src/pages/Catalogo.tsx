@@ -693,8 +693,43 @@ export default function CatalogoAdmin() {
     }
   }, []);
 
+  const PALAVRAS_CONTROLADAS = [
+    // Benzodiazepínicos (Lista C1)
+    "clonazepam","diazepam","alprazolam","bromazepam","lorazepam","midazolam",
+    "nitrazepam","clobazam","flunitrazepam","triazolam","temazepam","clordiazepóxido",
+    "oxazepam","estazolam","flurazepam","quazepam",
+    // Antidepressivos tricíclicos (Lista C1)
+    "amitriptilina","nortriptilina","imipramina","clomipramina","desipramina",
+    "amoxapina","maprotilina","trimipramina","doxepina",
+    // Outros psicotrópicos C1
+    "paroxetina","cloridrato de paroxetina","metilfenidato","modafinila",
+    "zolpidem","zopiclona","eszopiclona","bupropiona",
+    // Antipsicóticos (Lista C1)
+    "haloperidol","clorpromazina","trifluoperazina","levomepromazina",
+    "tioridazina","flufenazina","pimozida","sulpirida",
+    // Barbitúricos
+    "fenobarbital","pentobarbital","secobarbital","amobarbital","butalbital",
+    // Opioides (Lista D)
+    "tramadol","codeína","morfina","oxicodona","hidrocodona","buprenorfina",
+    "metadona","fentanila","meperidina","petidina","tapentadol","naloxona",
+    "sufentanila","alfentanila","hidromorfona",
+    // Retinoides (Lista C2)
+    "isotretinoína","acitretina","talidomida",
+    // Estimulantes (Lista C1)
+    "anfetamina","dextroanfetamina","lisdexanfetamina","femproporex",
+    "mazindol","sibutramina","dietilpropiona","anfepramona",
+    // Outros
+    "cloreto de etila","gamma-hidroxibutirato","ghb","quetamina",
+  ];
+
+  const ehControlado = (nome: string): boolean => {
+    const n = nome.toLowerCase();
+    return PALAVRAS_CONTROLADAS.some(p => n.includes(p));
+  };
+
   const produtosFiltrados = produtos.filter(p => {
     if (p.usoControlado) return false;
+    if (ehControlado(p.nome)) return false;
     const matchCat = categoriaFiltro === "Todos" || p.categoria === categoriaFiltro;
     const matchBusca = busca === "" || p.nome.toLowerCase().includes(busca.toLowerCase());
     return matchCat && matchBusca;
