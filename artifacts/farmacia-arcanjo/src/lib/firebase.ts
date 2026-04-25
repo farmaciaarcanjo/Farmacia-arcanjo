@@ -2,7 +2,7 @@ import { initializeApp, getApps } from "firebase/app";
 import {
   getFirestore, collection, doc,
   addDoc, setDoc, getDocs, deleteDoc,
-  onSnapshot, orderBy, query, serverTimestamp,
+  onSnapshot, orderBy, query, serverTimestamp, limit,
   type Unsubscribe,
 } from "firebase/firestore";
 import type { Produto } from "../data/produtos";
@@ -125,6 +125,68 @@ export async function registrarAnalyticsFirebase(entry: Record<string, unknown>)
   try {
     await addDoc(collection(db, "analytics"), { ...entry, createdAt: serverTimestamp() });
   } catch {}
+}
+
+export interface InteracaoLara {
+  sessao: string;
+  primeiraMensagem: string;
+  ts: number;
+}
+
+export async function registrarInteracaoLara(dados: InteracaoLara): Promise<void> {
+  try {
+    await addDoc(collection(db, "interacoes_lara"), {
+      ...dados,
+      createdAt: serverTimestamp(),
+    });
+  } catch {}
+}
+
+export interface CliqueWhatsApp {
+  tipo: "clique_whatsapp";
+  ts: number;
+  produtos: string[];
+  url: string;
+}
+
+export async function registrarCliqueWhatsAppFirebase(dados: CliqueWhatsApp): Promise<void> {
+  try {
+    await addDoc(collection(db, "cliques_whatsapp"), {
+      ...dados,
+      createdAt: serverTimestamp(),
+    });
+  } catch {}
+}
+
+export async function buscarInteracoesLara(maxRegistros = 100): Promise<InteracaoLara[]> {
+  try {
+    const q = query(collection(db, "interacoes_lara"), orderBy("createdAt", "desc"), limit(maxRegistros));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => {
+      const data = d.data() as Record<string, unknown>;
+      return {
+        sessao: String(data.sessao ?? ""),
+        primeiraMensagem: String(data.primeiraMensagem ?? ""),
+        ts: Number(data.ts ?? 0),
+      };
+    });
+  } catch { return []; }
+}
+
+export async function buscarCliquesWhatsApp(maxRegistros = 100): Promise<CliqueWhatsApp[]> {
+  try {
+    const q = query(collection(db, "cliques_whatsapp"), orderBy("createdAt", "desc"), limit(maxRegistros));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => {
+      const data = d.data() as Record<string, unknown>;
+      return {
+        tipo: "clique_whatsapp" as const,
+        ts: Number(data.ts ?? 0),
+        produtos: (data.produtos as string[]) ?? [],
+        url: String(data.url ?? ""),
+      };
+    });
+  } catch { return []; }
 }
 
 export { addDoc, collection, serverTimestamp, query, orderBy, getDocs };

@@ -15,6 +15,11 @@ import {
   escutarProdutosFirebase,
   registrarPedidoFirebase,
   registrarLogFirebase,
+  registrarCliqueWhatsAppFirebase,
+  buscarInteracoesLara,
+  buscarCliquesWhatsApp,
+  type InteracaoLara,
+  type CliqueWhatsApp,
 } from "../lib/firebase";
 
 const WHATSAPP = "5588993375650";
@@ -39,6 +44,113 @@ function registrarLog(entry: LogEntry) {
   log.push(entry);
   try { localStorage.setItem(LS_LOG_KEY, JSON.stringify(log.slice(-100))); } catch {}
   registrarLogFirebase(entry as unknown as Record<string, unknown>);
+}
+
+function VisitantesLara() {
+  const [interacoes, setInteracoes] = useState<InteracaoLara[]>([]);
+  const [cliques, setCliques] = useState<CliqueWhatsApp[]>([]);
+  const [carregando, setCarregando] = useState(true);
+
+  useEffect(() => {
+    const lsInter: InteracaoLara[] = (() => { try { return JSON.parse(localStorage.getItem("farmacia_interacoes_lara") || "[]"); } catch { return []; } })();
+    const lsCliq: CliqueWhatsApp[] = (() => { try { return JSON.parse(localStorage.getItem("farmacia_cliques_whatsapp") || "[]"); } catch { return []; } })();
+    setInteracoes(lsInter);
+    setCliques(lsCliq);
+    Promise.all([buscarInteracoesLara(200), buscarCliquesWhatsApp(200)]).then(([fi, fc]) => {
+      if (fi.length > 0) setInteracoes(fi);
+      if (fc.length > 0) setCliques(fc);
+    }).finally(() => setCarregando(false));
+  }, []);
+
+  const hoje = new Date().toDateString();
+  const hojeInter = interacoes.filter(i => new Date(i.ts).toDateString() === hoje).length;
+  const hojeCliq = cliques.filter(c => new Date(c.ts).toDateString() === hoje).length;
+  const ultimas10 = [...interacoes].sort((a, b) => b.ts - a.ts).slice(0, 10);
+
+  const dias7: { label: string; conversas: number; cliques: number }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const str = d.toDateString();
+    dias7.push({
+      label: d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+      conversas: interacoes.filter(x => new Date(x.ts).toDateString() === str).length,
+      cliques: cliques.filter(x => new Date(x.ts).toDateString() === str).length,
+    });
+  }
+  const maxVal = Math.max(...dias7.map(d => d.conversas + d.cliques), 1);
+
+  return (
+    <div style={{ padding: 16, fontFamily: "'Nunito', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+      <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1565c0", margin: "0 0 14px" }}>📊 Visitantes</h3>
+
+      {carregando && <div style={{ textAlign: "center", color: "#888", fontSize: 13, padding: 16 }}>⏳ Carregando dados...</div>}
+
+      {/* Cards de hoje */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+        {[
+          { label: "Conversas com Lara hoje", valor: hojeInter, icon: "💬", cor: "#1565c0", fundo: "#e3f2fd" },
+          { label: "Cliques no WhatsApp hoje", valor: hojeCliq, icon: "📲", cor: "#2e7d32", fundo: "#e8f5e9" },
+        ].map(c => (
+          <div key={c.label} style={{ background: c.fundo, borderRadius: 14, padding: "14px 12px", textAlign: "center" }}>
+            <div style={{ fontSize: 24 }}>{c.icon}</div>
+            <div style={{ fontSize: 28, fontWeight: 800, color: c.cor, lineHeight: 1.1 }}>{c.valor}</div>
+            <div style={{ fontSize: 11, color: "#555", marginTop: 4, lineHeight: 1.3 }}>{c.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Gráfico 7 dias */}
+      <div style={{ background: "#fff", borderRadius: 14, padding: 14, marginBottom: 18, boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }}>
+        <p style={{ fontSize: 13, fontWeight: 800, color: "#333", margin: "0 0 12px" }}>📅 Últimos 7 dias</p>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
+          {dias7.map((d, i) => {
+            const total = d.conversas + d.cliques;
+            const altura = total === 0 ? 4 : Math.max(8, Math.round((total / maxVal) * 72));
+            return (
+              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: "#555" }}>{total > 0 ? total : ""}</div>
+                <div style={{ width: "100%", borderRadius: 6, overflow: "hidden", height: altura }}>
+                  <div style={{ height: `${d.conversas > 0 ? Math.round((d.conversas / Math.max(total, 1)) * 100) : 0}%`, background: "#1976d2", minHeight: d.conversas > 0 ? 4 : 0 }} />
+                  <div style={{ height: `${d.cliques > 0 ? Math.round((d.cliques / Math.max(total, 1)) * 100) : 0}%`, background: "#43a047", minHeight: d.cliques > 0 ? 4 : 0 }} />
+                  {total === 0 && <div style={{ height: "100%", background: "#e0e0e0", borderRadius: 6 }} />}
+                </div>
+                <div style={{ fontSize: 9, color: "#999", textTransform: "capitalize" }}>{d.label}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+          <span style={{ fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, background: "#1976d2", borderRadius: 2, display: "inline-block" }} />Conversas</span>
+          <span style={{ fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, background: "#43a047", borderRadius: 2, display: "inline-block" }} />WhatsApp</span>
+        </div>
+      </div>
+
+      {/* Últimas 10 interações */}
+      <div style={{ background: "#fff", borderRadius: 14, padding: 14, boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }}>
+        <p style={{ fontSize: 13, fontWeight: 800, color: "#333", margin: "0 0 10px" }}>💬 Últimas interações com a Lara</p>
+        {ultimas10.length === 0 ? (
+          <div style={{ textAlign: "center", color: "#bbb", fontSize: 12, padding: 16 }}>Nenhuma conversa registrada ainda.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {ultimas10.map((inter, i) => {
+              const data = new Date(inter.ts);
+              const dataStr = data.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+              const hora = data.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+              return (
+                <div key={i} style={{ borderLeft: "3px solid #1976d2", paddingLeft: 10, paddingTop: 2, paddingBottom: 2 }}>
+                  <div style={{ fontSize: 11, color: "#888" }}>{dataStr} às {hora}</div>
+                  <div style={{ fontSize: 13, color: "#333", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    "{inter.primeiraMensagem.length > 60 ? inter.primeiraMensagem.slice(0, 60) + "…" : inter.primeiraMensagem}"
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 interface ItemPedido {
@@ -277,6 +389,15 @@ export default function CatalogoAdmin() {
 
   function enviarWhatsApp() {
     trackWhatsAppClick(pedido.map(i => i.produto.nome).join(", "));
+    const nomesProdutos = pedido.map(i => i.produto.nome);
+    const tsClique = Date.now();
+    const urlClique = window.location.href;
+    try {
+      const arr = JSON.parse(localStorage.getItem("farmacia_cliques_whatsapp") || "[]");
+      arr.push({ tipo: "clique_whatsapp", ts: tsClique, produtos: nomesProdutos, url: urlClique });
+      localStorage.setItem("farmacia_cliques_whatsapp", JSON.stringify(arr.slice(-500)));
+    } catch {}
+    registrarCliqueWhatsAppFirebase({ tipo: "clique_whatsapp", ts: tsClique, produtos: nomesProdutos, url: urlClique });
     registrarPedidoFirebase({
       cliente: "Anônimo",
       itens: pedido.map(i => ({ produto: i.produto.nome, quantidade: i.quantidade, precoUnitario: i.produto.preco })),
@@ -314,6 +435,7 @@ export default function CatalogoAdmin() {
     { id: 'lembretes', emoji: '⏰', titulo: 'Lembretes', desc: 'Alertas automáticos', cor: '#e07b00', fundo: '#fff0e6' },
     { id: 'promocao', emoji: '📢', titulo: 'Promoção', desc: 'Gerador WhatsApp', cor: '#c0392b', fundo: '#fdecea' },
     { id: 'caixa', emoji: '🧾', titulo: 'Caixa', desc: 'Fechamento de caixa', cor: '#0d7680', fundo: '#e6f5f6' },
+    { id: 'visitantes', emoji: '👁️', titulo: 'Visitantes', desc: 'Conversas e WhatsApp', cor: '#1565c0', fundo: '#e3f2fd' },
     { id: 'analytics', emoji: '📈', titulo: 'Analytics', desc: 'Visitantes e engajamento', cor: '#145f2e', fundo: '#e8f5ee' },
     { id: 'logatividades', emoji: '📋', titulo: 'Log', desc: 'Atividades do admin', cor: '#4527a0', fundo: '#ede7f6' },
     { id: 'cupom', emoji: '🧾', titulo: 'Cupom', desc: 'Imprimir cupom', cor: '#6d4c41', fundo: '#efebe9', externo: '/cupom.html' },
@@ -415,6 +537,7 @@ export default function CatalogoAdmin() {
           {secaoAdmin === "lembretes" && <LembretesAutomaticos />}
           {secaoAdmin === "promocao" && <GeradorPromocao />}
           {secaoAdmin === "caixa" && <FechamentoCaixa produtos={produtos} onAtualizarEstoque={setProdutos} />}
+          {secaoAdmin === "visitantes" && <VisitantesLara />}
           {secaoAdmin === "analytics" && <AnalyticsDashboard />}
           {secaoAdmin === "logatividades" && <LogAtividades />}
         </div>

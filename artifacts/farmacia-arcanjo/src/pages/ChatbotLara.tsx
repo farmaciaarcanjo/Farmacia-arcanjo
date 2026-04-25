@@ -1,6 +1,26 @@
 import { useState, useRef, useEffect } from "react";
 import { PRODUTOS_INICIAIS, calcularPreco, resumoCatalogo, type Produto } from "../data/produtos";
 import { trackLaraMensagem, trackWhatsAppClick, trackProdutoAdicionado } from "../lib/analytics";
+import { registrarInteracaoLara, registrarCliqueWhatsAppFirebase } from "../lib/firebase";
+
+const LS_INTERACOES_KEY = "farmacia_interacoes_lara";
+const LS_CLIQUES_KEY = "farmacia_cliques_whatsapp";
+
+function salvarInteracaoLocal(sessao: string, primeiraMensagem: string, ts: number) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_INTERACOES_KEY) || "[]");
+    arr.push({ sessao, primeiraMensagem, ts });
+    localStorage.setItem(LS_INTERACOES_KEY, JSON.stringify(arr.slice(-500)));
+  } catch {}
+}
+
+function salvarCliqueLocal(produtos: string[], ts: number, url: string) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_CLIQUES_KEY) || "[]");
+    arr.push({ tipo: "clique_whatsapp", ts, produtos, url });
+    localStorage.setItem(LS_CLIQUES_KEY, JSON.stringify(arr.slice(-500)));
+  } catch {}
+}
 
 interface Message {
   id: string;
@@ -111,6 +131,8 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sessaoId = useRef<string>(crypto.randomUUID());
+  const primeiraMensagemRegistrada = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -135,6 +157,14 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     trackLaraMensagem();
+
+    if (!primeiraMensagemRegistrada.current) {
+      primeiraMensagemRegistrada.current = true;
+      const ts = Date.now();
+      const sessao = sessaoId.current;
+      salvarInteracaoLocal(sessao, trimmed, ts);
+      registrarInteracaoLara({ sessao, primeiraMensagem: trimmed, ts });
+    }
 
     const respostaRapida = detectarResposta(trimmed);
     if (respostaRapida) {
@@ -173,6 +203,10 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
 
   function pedirWhatsApp(produto: Produto) {
     trackWhatsAppClick(produto.nome);
+    const ts = Date.now();
+    const url = window.location.href;
+    salvarCliqueLocal([produto.nome], ts, url);
+    registrarCliqueWhatsAppFirebase({ tipo: "clique_whatsapp", ts, produtos: [produto.nome], url });
     const preco = calcularPreco(produto, 1);
     const msg = `Olá! Vi no app da Farmácia Arcanjo e gostaria de pedir:\n• ${produto.nome} — R$${preco.toFixed(2)}\n\nPoderia confirmar disponibilidade? 😊`;
     window.open(`https://wa.me/5588993375650?text=${encodeURIComponent(msg)}`, "_blank");
