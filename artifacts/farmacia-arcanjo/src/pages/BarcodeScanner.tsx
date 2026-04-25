@@ -38,7 +38,13 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
   const [form, setForm] = useState<Produto>(formVazio());
   const [erro, setErro] = useState("");
   const [statusFoto, setStatusFoto] = useState("");
+  const [toast, setToast] = useState<{ msg: string; tipo: "ok" | "erro" } | null>(null);
   const inputFotoRef = useRef<HTMLInputElement>(null);
+
+  const mostrarToast = (msg: string, tipo: "ok" | "erro") => {
+    setToast({ msg, tipo });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   const processarCodigo = (cod: string) => {
     setErro("");
@@ -140,20 +146,36 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
     document.head.appendChild(s);
   });
 
-  const salvar = () => {
+  const salvar = async () => {
     if (!form.nome.trim()) { setErro("Nome é obrigatório."); return; }
     if (form.preco <= 0) { setErro("Informe um preço válido."); return; }
+
+    const idNumerico = Number(form.id);
+    const idValido = !isNaN(idNumerico) && idNumerico > 0;
+    const idFinal = idValido ? idNumerico : Date.now();
+
     onSalvar(form);
-    salvarProdutoFirebase({
-      id: isNaN(Number(form.id)) ? Date.now() : Number(form.id),
-      nome: form.nome,
-      preco: form.preco,
-      categoria: form.categoria,
-      emoji: "💊",
-      desc: form.descricao || "",
-      estoque: form.estoque,
-      codigoBarras: form.codigoBarras,
-    });
+
+    try {
+      const ok = await salvarProdutoFirebase({
+        id: idFinal,
+        nome: form.nome,
+        preco: form.preco,
+        categoria: form.categoria,
+        emoji: "💊",
+        desc: form.descricao || "",
+        estoque: form.estoque,
+        codigoBarras: form.codigoBarras,
+      });
+      if (ok) {
+        mostrarToast(`✅ Salvo no Firebase com sucesso! (ID: ${idFinal})`, "ok");
+      } else {
+        mostrarToast("⚠️ Erro ao salvar no Firebase. Verifique a conexão.", "erro");
+      }
+    } catch {
+      mostrarToast("⚠️ Erro ao salvar no Firebase. Verifique a conexão.", "erro");
+    }
+
     setModo("sucesso");
     setTimeout(() => { setModo("inicio"); setErro(""); }, 2500);
   };
@@ -186,6 +208,21 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
     <div style={s.wrap}>
       <input ref={inputFotoRef} type="file" accept="image/*" capture="environment"
         style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) lerFoto(f); e.target.value = ""; }} />
+
+      {/* Toast Firebase */}
+      {toast && (
+        <div style={{
+          position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)",
+          background: toast.tipo === "ok" ? "#14532d" : "#450a0a",
+          border: `1.5px solid ${toast.tipo === "ok" ? "#22c55e" : "#dc2626"}`,
+          color: toast.tipo === "ok" ? "#bbf7d0" : "#fca5a5",
+          borderRadius: 14, padding: "12px 20px", fontSize: 13, fontWeight: 700,
+          zIndex: 9999, boxShadow: "0 4px 20px rgba(0,0,0,0.4)",
+          maxWidth: "90vw", textAlign: "center", whiteSpace: "pre-wrap",
+        }}>
+          {toast.msg}
+        </div>
+      )}
 
       <div style={s.header}>
         <p style={s.h1}>📷 Scanner & Cadastro</p>
