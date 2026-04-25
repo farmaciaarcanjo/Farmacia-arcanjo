@@ -418,6 +418,19 @@ export default function CatalogoAdmin() {
     return () => { cancelar?.(); };
   }, []);
 
+// Atualiza produtos automaticamente quando o usuário volta ao app
+  useEffect(() => {
+    const aoVoltar = () => {
+      if (document.visibilityState === 'visible') {
+        buscarProdutosFirebase()
+          .then(fb => { if (fb && fb.length > 0) { setProdutos(fb); setFirebaseAtivo(true); } })
+          .catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', aoVoltar);
+    return () => document.removeEventListener('visibilitychange', aoVoltar);
+  }, []);
+
 // Hook para detectar leitor de código de barras (USB - digita rápido + Enter)
   useEffect(() => {
     let buffer = '';
