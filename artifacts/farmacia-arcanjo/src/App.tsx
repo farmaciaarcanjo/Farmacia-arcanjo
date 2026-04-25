@@ -72,7 +72,7 @@ function AppContent() {
         <div className="max-w-lg mx-auto px-4 py-4 h-full">
           {activeTab === "chatbot" && (
             <div className="h-[calc(100vh-140px)] flex flex-col rounded-xl border border-border overflow-hidden shadow-md bg-card">
-              <ChatbotLara />
+              <ChatbotLara onNavigateTab={(tab) => setActiveTab(tab as "chatbot" | "instagram" | "catalogo")} />
             </div>
           )}
           {activeTab === "instagram" && (

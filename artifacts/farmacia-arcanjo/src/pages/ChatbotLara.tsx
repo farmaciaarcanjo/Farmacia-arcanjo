@@ -1,28 +1,38 @@
 import { useState, useRef, useEffect } from "react";
-import { PRODUTOS_INICIAIS, resumoCatalogo } from "../data/produtos";
+import { PRODUTOS_INICIAIS, calcularPreco, resumoCatalogo, type Produto } from "../data/produtos";
 
 interface Message {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  produtosDetectados?: Produto[];
 }
 
-const produtosSalvos = (() => { try { return JSON.parse(localStorage.getItem("farmacia_produtos_v3") || "[]"); } catch { return []; } })();
-const todosProdutos = [...PRODUTOS_INICIAIS, ...produtosSalvos];
+interface Props {
+  onNavigateTab?: (tab: string) => void;
+}
+
+const produtosSalvos = (() => {
+  try { return JSON.parse(localStorage.getItem("farmacia_produtos_v3") || "[]"); }
+  catch { return []; }
+})();
+const todosProdutos: Produto[] = [...PRODUTOS_INICIAIS, ...produtosSalvos];
+
 const CATALOGO_TEXTO = resumoCatalogo(todosProdutos);
 
-const PROMOCOES = PRODUTOS_INICIAIS.filter(
-  (p) => typeof p.desc === "string" && p.desc.includes("PROMOÇÃO")
+const PROMOCOES = todosProdutos.filter(
+  (p) => p.desc?.includes("PROMOÇÃO") || p.promocao
 );
 
 const MENSAGEM_BOAS_VINDAS =
   "Olá! Sou a Lara, assistente virtual da Farmácia Arcanjo 💊\n\n" +
   (PROMOCOES.length > 0
     ? "🔥 *Ofertas da Semana:*\n" +
-      PROMOCOES.map(
-        (p) => `• ${p.nome} — ${p.desc.replace("🔥 PROMOÇÃO: ", "")}`
-      ).join("\n") +
+      PROMOCOES.map((p) => {
+        const descPromo = p.promocao?.descricao ?? p.desc.replace("🔥 PROMOÇÃO: ", "");
+        return `• ${p.nome} — ${descPromo}`;
+      }).join("\n") +
       "\n\nComo posso te ajudar hoje? Posso indicar produtos pelo seu sintoma! 😊"
     : "Como posso te ajudar hoje?");
 
@@ -30,23 +40,34 @@ const SYSTEM_PROMPT = `Você é Lara, a assistente virtual da Farmácia Arcanjo,
 Você é simpática, prestativa, profissional e fala português brasileiro.
 
 INFORMAÇÕES DA FARMÁCIA:
-- Horários: Segunda a Sábado das 7h às 21h, Domingo das 8h às 14h
+- Horário: Segunda a Sábado das 7h30 às 20h. Aos domingos das 8h às 12h.
 - Localização: Meruoca, Ceará
-- WhatsApp: (88) 99337-5650
+- Telefone/WhatsApp: (88) 99337-5650
 
-CATÁLOGO DE PRODUTOS DISPONÍVEIS (com preços):
 ${CATALOGO_TEXTO}
 
 REGRAS IMPORTANTES:
-1. Quando o cliente descrever um SINTOMA (ex: "dor de cabeça", "azia", "tô com cólica", "febre", "tontura", "alergia", "queimadura", "diarreia", "constipação", "gases", "pressão alta", "diabetes", "infecção", "tosse", "gripe"), recomende 2 ou 3 produtos do CATÁLOGO acima que sejam apropriados, sempre incluindo nome e preço.
-2. Sempre destaque PROMOÇÕES quando aplicáveis (Nimesulida gotas: 2 por R$8, Losartana: 3 por R$10).
+1. Quando o cliente descrever um SINTOMA (ex: "dor de cabeça", "azia", "cólica", "febre", "tontura", "alergia", "queimadura", "diarreia", "constipação", "gases", "pressão alta", "diabetes", "infecção", "tosse", "gripe"), recomende 2 ou 3 produtos do CATÁLOGO acima pelo nome EXATO, sempre incluindo nome e preço.
+2. Sempre destaque promoções quando aplicáveis.
 3. Após recomendar, oriente: "Pra fazer o pedido, vai na aba Catálogo ou chama no WhatsApp (88) 99337-5650 😊"
 4. Se o cliente perguntar sobre um produto que NÃO está no catálogo, diga que vai consultar e oriente o WhatsApp.
 5. NUNCA dê diagnósticos médicos. Para sintomas graves, persistentes ou em crianças, sempre recomende consultar médico ou farmacêutico.
 6. Seja CONCISA (máximo 4-5 linhas), direta e simpática. Use 1 ou 2 emojis no máximo.
 7. NÃO recomende antibióticos sem mencionar que precisam de prescrição médica.`;
 
-export default function ChatbotLara() {
+function detectarProdutos(texto: string): Produto[] {
+  const ordenados = [...todosProdutos].sort((a, b) => b.nome.length - a.nome.length);
+  const encontrados: Produto[] = [];
+  const textoLower = texto.toLowerCase();
+  for (const p of ordenados) {
+    if (textoLower.includes(p.nome.toLowerCase()) && !encontrados.find(e => e.id === p.id)) {
+      encontrados.push(p);
+    }
+  }
+  return encontrados.slice(0, 3);
+}
+
+export default function ChatbotLara({ onNavigateTab }: Props) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -86,45 +107,31 @@ export default function ChatbotLara() {
     try {
       const conversationHistory = [...messages, userMessage]
         .filter((m) => m.id !== "welcome")
-        .map((m) => ({
-          role: m.role,
-          content: m.content,
-        }));
+        .map((m) => ({ role: m.role, content: m.content }));
 
       const response = await fetch("/api/lara", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemPrompt: SYSTEM_PROMPT,
-          messages: conversationHistory,
-        }),
+        body: JSON.stringify({ systemPrompt: SYSTEM_PROMPT, messages: conversationHistory }),
       });
 
-      if (!response.ok) {
-        throw new Error("Erro na API");
-      }
+      if (!response.ok) throw new Error("Erro na API");
 
       const data = await response.json();
-      const text =
-        data?.content ||
-        "Desculpe, não consegui processar sua mensagem. Tente novamente.";
+      const text = data?.content || "Desculpe, não consegui processar sua mensagem. Tente novamente.";
+      const produtosDetectados = detectarProdutos(text);
 
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: text,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, assistantMessage]);
+      setMessages((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "assistant", content: text, timestamp: new Date(), produtosDetectados },
+      ]);
     } catch {
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content:
-            "Ops! Ocorreu um erro ao processar sua mensagem. Por favor, tente novamente ou entre em contato pelo WhatsApp: (88) 99337-5650.",
+          content: "Ops! Ocorreu um erro. Tente novamente ou chame no WhatsApp: (88) 99337-5650.",
           timestamp: new Date(),
         },
       ]);
@@ -133,11 +140,19 @@ export default function ChatbotLara() {
     }
   };
 
+  function adicionarAoCatalogo(produto: Produto) {
+    localStorage.setItem("lara_produto_pendente", String(produto.id));
+    onNavigateTab?.("catalogo");
+  }
+
+  function pedirWhatsApp(produto: Produto) {
+    const preco = calcularPreco(produto, 1);
+    const msg = `Olá! Vi no app da Farmácia Arcanjo e gostaria de pedir:\n• ${produto.nome} — R$${preco.toFixed(2)}\n\nPoderia confirmar disponibilidade? 😊`;
+    window.open(`https://wa.me/5588993375650?text=${encodeURIComponent(msg)}`, "_blank");
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
 
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -154,9 +169,7 @@ export default function ChatbotLara() {
     <div className="flex flex-col h-full">
       <div className="bg-primary text-primary-foreground px-4 py-3 flex items-center gap-3 rounded-t-xl">
         <div className="relative">
-          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold">
-            L
-          </div>
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center text-xl font-bold">L</div>
           <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-primary rounded-full"></span>
         </div>
         <div className="flex-1">
@@ -164,9 +177,7 @@ export default function ChatbotLara() {
           <p className="text-xs text-primary-foreground/70">Assistente Virtual</p>
         </div>
         <a
-          href={`https://wa.me/5588993375650?text=${encodeURIComponent(
-            "Olá! Estou no app da Farmácia Arcanjo e gostaria de falar com o farmacêutico 😊"
-          )}`}
+          href={`https://wa.me/5588993375650?text=${encodeURIComponent("Olá! Estou no app da Farmácia Arcanjo e gostaria de falar com o farmacêutico 😊")}`}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-xs transition-all active:scale-95"
@@ -177,41 +188,84 @@ export default function ChatbotLara() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/30">
         {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            {msg.role === "assistant" && (
-              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold mr-2 mt-1 shrink-0">
-                L
-              </div>
-            )}
-            <div
-              className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-xs ${
-                msg.role === "user"
-                  ? "bg-primary text-primary-foreground rounded-br-sm"
-                  : "bg-card text-foreground border border-border rounded-bl-sm"
-              }`}
-            >
-              <p className="whitespace-pre-wrap">{msg.content}</p>
-              <p
-                className={`text-[10px] mt-1 ${
+          <div key={msg.id}>
+            <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              {msg.role === "assistant" && (
+                <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold mr-2 mt-1 shrink-0">L</div>
+              )}
+              <div
+                className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-xs ${
                   msg.role === "user"
-                    ? "text-primary-foreground/60 text-right"
-                    : "text-muted-foreground"
+                    ? "bg-primary text-primary-foreground rounded-br-sm"
+                    : "bg-card text-foreground border border-border rounded-bl-sm"
                 }`}
               >
-                {formatTime(msg.timestamp)}
-              </p>
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+                <p className={`text-[10px] mt-1 ${msg.role === "user" ? "text-primary-foreground/60 text-right" : "text-muted-foreground"}`}>
+                  {formatTime(msg.timestamp)}
+                </p>
+              </div>
             </div>
+
+            {msg.role === "assistant" && msg.produtosDetectados && msg.produtosDetectados.length > 0 && (
+              <div className="ml-9 mt-2 space-y-2">
+                {msg.produtosDetectados.map((produto) => {
+                  const emPromocao = produto.desc?.includes("PROMOÇÃO") || !!produto.promocao;
+                  const descPromo = produto.promocao?.descricao ?? produto.desc?.replace("🔥 PROMOÇÃO: ", "");
+                  return (
+                    <div
+                      key={produto.id}
+                      className="bg-card border rounded-xl p-3 shadow-xs"
+                      style={{ borderColor: emPromocao ? "#ff8c00" : "#e0e0e0" }}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">{produto.emoji}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm text-foreground truncate">{produto.nome}</p>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {produto.precoOriginal && (
+                              <span className="text-xs text-muted-foreground line-through">R${produto.precoOriginal.toFixed(2)}</span>
+                            )}
+                            <span className="text-sm font-bold" style={{ color: emPromocao ? "#ff6b00" : "#2e7d32" }}>
+                              R${produto.preco.toFixed(2)}
+                            </span>
+                            {emPromocao && (
+                              <span className="text-[10px] bg-orange-100 text-orange-700 font-bold px-2 py-0.5 rounded-full">
+                                🔥 {descPromo}
+                              </span>
+                            )}
+                          </div>
+                          {produto.prescricao && (
+                            <p className="text-[10px] text-red-600 font-semibold mt-0.5">⚠️ Requer receita médica</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => adicionarAoCatalogo(produto)}
+                          className="flex-1 text-xs font-bold py-1.5 rounded-lg border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
+                        >
+                          🛒 Adicionar ao Pedido
+                        </button>
+                        <button
+                          onClick={() => pedirWhatsApp(produto)}
+                          className="flex-1 text-xs font-bold py-1.5 rounded-lg text-white transition-all active:scale-95"
+                          style={{ background: "linear-gradient(135deg, #25d366, #128c7e)" }}
+                        >
+                          📲 Pedir pelo WhatsApp
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ))}
 
         {loading && (
           <div className="flex justify-start items-end gap-2">
-            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">
-              L
-            </div>
+            <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold shrink-0">L</div>
             <div className="bg-card border border-border px-4 py-3 rounded-2xl rounded-bl-sm shadow-xs">
               <div className="flex gap-1 items-center">
                 <span className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:0ms]"></span>
@@ -221,6 +275,7 @@ export default function ChatbotLara() {
             </div>
           </div>
         )}
+
         {messages.length === 1 && !loading && (
           <div className="flex flex-wrap gap-2 mt-3 px-1">
             {[
@@ -261,12 +316,7 @@ export default function ChatbotLara() {
             className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary/90 transition-all active:scale-95"
             aria-label="Enviar"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="w-4 h-4"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
               <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
             </svg>
           </button>

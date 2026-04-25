@@ -62,6 +62,21 @@ export default function CatalogoAdmin() {
     try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(produtos)); } catch {}
   }, [produtos]);
 
+  useEffect(() => {
+    const pendente = localStorage.getItem("lara_produto_pendente");
+    if (!pendente) return;
+    localStorage.removeItem("lara_produto_pendente");
+    const id = Number(pendente);
+    const produto = produtos.find(p => p.id === id);
+    if (produto) {
+      setPedido(prev => {
+        const existe = prev.find(i => i.produto.id === id);
+        if (existe) return prev.map(i => i.produto.id === id ? { ...i, quantidade: i.quantidade + 1 } : i);
+        return [...prev, { produto, quantidade: 1 }];
+      });
+    }
+  }, []);
+
   const produtosFiltrados = produtos.filter(p => {
     const matchCat = categoriaFiltro === "Todos" || p.categoria === categoriaFiltro;
     const matchBusca = busca === "" || p.nome.toLowerCase().includes(busca.toLowerCase());
