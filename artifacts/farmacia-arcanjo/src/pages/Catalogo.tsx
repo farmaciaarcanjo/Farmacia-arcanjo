@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import * as XLSX from "xlsx";
 import { PRODUTOS_INICIAIS, VERSAO_CATALOGO, calcularPreco, Produto } from "../data/produtos";
 import BarcodeScanner from "./BarcodeScanner";
 import RelatorioPedidos from "./RelatorioPedidos";
@@ -418,6 +419,47 @@ export default function CatalogoAdmin() {
     (localStorage.getItem("farmacia_admin_view_produtos") as "lista" | "grade") ?? "lista"
   );
   const setView = (v: "lista" | "grade") => { setViewProdutos(v); localStorage.setItem("farmacia_admin_view_produtos", v); };
+  const [importando, setImportando] = useState(false);
+  const [importResult, setImportResult] = useState<{ atualizados: number; naoEncontrados: string[] } | null>(null);
+  const inputImportRef = useRef<HTMLInputElement>(null);
+
+  const importarVendas = async (file: File) => {
+    setImportando(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: "array" });
+      const ws = wb.Sheets["Relatorio"];
+      if (!ws) { alert("Aba 'Relatorio' não encontrada no arquivo."); setImportando(false); return; }
+      const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const linhas = (data.slice(6) as any[][]).filter((row: any[]) => row[4] != null && row[5] != null);
+      let atualizados = 0;
+      const naoEncontrados: string[] = [];
+      const novosProdutos = [...produtos];
+      for (const row of linhas) {
+        const nomeVenda = String(row[4]).trim();
+        const qty = Number(row[5]);
+        if (!nomeVenda || isNaN(qty) || qty <= 0) continue;
+        const idx = novosProdutos.findIndex(p =>
+          p.nome.toLowerCase().includes(nomeVenda.toLowerCase()) ||
+          nomeVenda.toLowerCase().includes(p.nome.toLowerCase())
+        );
+        if (idx === -1 || novosProdutos[idx].estoque === undefined || novosProdutos[idx].estoque === null) {
+          if (!naoEncontrados.includes(nomeVenda)) naoEncontrados.push(nomeVenda);
+          continue;
+        }
+        const novoEstoque = Math.max(0, (novosProdutos[idx].estoque ?? 0) - qty);
+        novosProdutos[idx] = { ...novosProdutos[idx], estoque: novoEstoque };
+        await salvarProdutoFirebase(novosProdutos[idx]).catch(() => {});
+        atualizados++;
+      }
+      setProdutos(novosProdutos);
+      setImportResult({ atualizados, naoEncontrados });
+    } catch {
+      alert("Erro ao ler o arquivo. Verifique se é um .xlsx válido.");
+    } finally {
+      setImportando(false);
+    }
+  };
 
   useEffect(() => {
     let cancelar: (() => void) | null = null;
@@ -775,6 +817,16 @@ export default function CatalogoAdmin() {
             }
           }}
         />
+        {/* ── Importar Vendas ── */}
+        <input ref={inputImportRef} type="file" accept=".xlsx" style={{ display: "none" }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) importarVendas(f); if (e.target) e.target.value = ""; }} />
+        <button
+          onClick={() => inputImportRef.current?.click()}
+          disabled={importando}
+          style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "2px dashed #1565c0", background: "#e3f2fd", color: "#1565c0", fontSize: 14, fontWeight: 700, cursor: importando ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 14, opacity: importando ? 0.7 : 1 }}>
+          {importando ? "⏳ Importando..." : "📥 Importar Vendas (Excel)"}
+        </button>
+
         {/* ── Cabeçalho com toggle ── */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, marginTop: 0 }}>
           <span style={{ fontSize: 13, color: "#888", fontFamily: "'Nunito', sans-serif" }}>{produtos.length} produto(s)</span>
@@ -850,6 +902,27 @@ export default function CatalogoAdmin() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* ── Modal resultado importação ── */}
+        {importResult && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <div style={{ background: "#fff", borderRadius: 20, padding: 24, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px rgba(0,0,0,0.3)", fontFamily: "'Nunito', sans-serif" }}>
+              <h3 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 800, color: "#1a1a1a" }}>Resultado da Importação</h3>
+              <div style={{ background: "#e8f5e9", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#2e7d32" }}>✅ {importResult.atualizados} produto(s) atualizados</span>
+              </div>
+              {importResult.naoEncontrados.length > 0 && (
+                <div style={{ background: "#fff9c4", borderRadius: 12, padding: "12px 16px", marginBottom: 12, maxHeight: 200, overflowY: "auto" }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#f57f17", marginBottom: 8 }}>⚠️ {importResult.naoEncontrados.length} não encontrado(s):</div>
+                  {importResult.naoEncontrados.map((n, i) => (
+                    <div key={i} style={{ fontSize: 12, color: "#666", marginBottom: 3 }}>• {n}</div>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => setImportResult(null)} style={{ width: "100%", padding: 13, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #0d47a1, #1565c0)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Fechar</button>
+            </div>
           </div>
         )}
       </div>}
