@@ -61,7 +61,10 @@ export async function salvarProdutoFirebase(produto: Produto): Promise<boolean> 
       { merge: true }
     );
     return true;
-  } catch { return false; }
+  } catch (err) {
+    console.error("[Firebase] Erro ao salvar produto:", err);
+    return false;
+  }
 }
 
 export async function buscarProdutosFirebase(): Promise<Produto[] | null> {

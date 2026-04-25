@@ -506,7 +506,7 @@ export default function CatalogoAdmin() {
 
   const podeDeletar = usuarioLogado?.nivel === "master";
 
-  function salvarProduto() {
+  async function salvarProduto() {
     if (!form.nome || !form.preco) return;
     const novo: Produto = {
       id: editando || Date.now(),
@@ -518,7 +518,7 @@ export default function CatalogoAdmin() {
       desc: form.desc,
       prescricao: form.prescricao,
       estoque: form.estoque ? parseInt(form.estoque) : undefined,
-        codigoBarras: form.codigoBarras || undefined,
+      codigoBarras: form.codigoBarras || undefined,
       promocao: form.promoQtd && form.promoPreco ? {
         quantidade: parseInt(form.promoQtd),
         precoTotal: parseFloat(form.promoPreco),
@@ -526,14 +526,14 @@ export default function CatalogoAdmin() {
       } : undefined
     };
     const acao: TipoAcao = editando ? "produto_editado" : "produto_adicionado";
-    if (editando) {
-      const novos = produtos.map(p => p.id === editando ? novo : p);
-      setProdutos(novos);
-      salvarProdutoFirebase(novo).then(ok => { if (!ok) { try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {} } });
-    } else {
-      const novos = [...produtos, novo];
-      setProdutos(novos);
-      salvarProdutoFirebase(novo).then(ok => { if (!ok) { try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {} } });
+    const novos = editando
+      ? produtos.map(p => p.id === editando ? novo : p)
+      : [...produtos, novo];
+    setProdutos(novos);
+    const ok = await salvarProdutoFirebase(novo);
+    alert('Firebase ok: ' + ok + ' | ID: ' + novo.id + ' | Preço: ' + novo.preco + ' | Nome: ' + novo.nome);
+    if (!ok) {
+      try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {}
     }
     registrarLog({ acao, usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: novo.nome, ts: Date.now() });
     setMsgSucesso(editando ? "✅ Produto atualizado!" : "✅ Produto adicionado!");
