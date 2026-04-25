@@ -411,7 +411,7 @@ export default function CatalogoAdmin() {
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todos");
   const [busca, setBusca] = useState("");
   const [editando, setEditando] = useState<number | null>(null);
-  const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
+  const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
   const [msgSucesso, setMsgSucesso] = useState("");
   const [secaoAdmin, setSecaoAdmin] = useState<string|null>(null);
   const [firebaseAtivo, setFirebaseAtivo] = useState<boolean | null>(null);
@@ -719,6 +719,7 @@ export default function CatalogoAdmin() {
       nome: form.nome,
       preco: parseFloat(form.preco),
       precoOriginal: form.precoOriginal ? parseFloat(form.precoOriginal) : undefined,
+      precoCusto: form.precoCusto ? parseFloat(form.precoCusto) : undefined,
       categoria: form.categoria || "Geral",
       emoji: form.emoji,
       desc: form.desc,
@@ -755,16 +756,18 @@ export default function CatalogoAdmin() {
       setForm({
         nome: produto.nome, preco: String(produto.preco),
         precoOriginal: String(produto.precoOriginal || ""),
+        precoCusto: String(produto.precoCusto || ""),
         categoria: produto.categoria, emoji: produto.emoji, desc: produto.desc,
         prescricao: produto.prescricao || false,
         estoque: String(produto.estoque || ""),
+        codigoBarras: produto.codigoBarras || "",
         promoQtd: String(produto.promocao?.quantidade || ""),
         promoPreco: String(produto.promocao?.precoTotal || ""),
         promoDesc: produto.promocao?.descricao || ""
       });
     } else {
       setEditando(null);
-      setForm({ nome: "", preco: "", precoOriginal: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
+      setForm({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
     }
     setModo("form");
   }
@@ -1144,7 +1147,7 @@ export default function CatalogoAdmin() {
       </div>
       <div style={{ padding: 16 }}>
         <div style={{ background: "#fff", borderRadius: 20, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
-          {([["Nome *", "nome", "Ex: Dipirona 500mg"], ["Preço (R$) *", "preco", "Ex: 12.90"], ["Preço original (antes da promoção)", "precoOriginal", "Ex: 18.00"], ["Categoria", "categoria", "Ex: Analgésicos"], ["Descrição", "desc", "Ex: Para dor e febre"], ["Código de Barras", "codigoBarras", "Escanear ou digitar"], ["Estoque (qtd)", "estoque", "Ex: 50"], ["Promoção — Quantidade mínima", "promoQtd", "Ex: 3"], ["Promoção — Preço total", "promoPreco", "Ex: 10.00"], ["Promoção — Descrição", "promoDesc", "Ex: LEVE 3 por R$10,00"]] as [string, string, string][]).map(([label, key, placeholder]) => (
+          {([["Nome *", "nome", "Ex: Dipirona 500mg"], ["Preço de Venda (R$) *", "preco", "Ex: 12.90"], ["Preço de Custo (R$)", "precoCusto", "Ex: 8.50"], ["Preço original (antes da promoção)", "precoOriginal", "Ex: 18.00"], ["Categoria", "categoria", "Ex: Analgésicos"], ["Descrição", "desc", "Ex: Para dor e febre"], ["Código de Barras", "codigoBarras", "Escanear ou digitar"], ["Estoque (qtd)", "estoque", "Ex: 50"], ["Promoção — Quantidade mínima", "promoQtd", "Ex: 3"], ["Promoção — Preço total", "promoPreco", "Ex: 10.00"], ["Promoção — Descrição", "promoDesc", "Ex: LEVE 3 por R$10,00"]] as [string, string, string][]).map(([label, key, placeholder]) => (
             <div key={key} style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "block", marginBottom: 6 }}>{label}</label>
               <input value={(form as any)[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} placeholder={placeholder}
