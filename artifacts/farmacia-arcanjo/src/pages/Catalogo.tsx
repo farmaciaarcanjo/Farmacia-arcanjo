@@ -7,6 +7,7 @@ import LembretesAutomaticos from "./LembretesAutomaticos";
 import GeradorPromocao from "./GeradorPromocao";
 import FechamentoCaixa from "./FechamentoCaixa";
 import AnalyticsDashboard from "./AnalyticsDashboard";
+import Financeiro from "./Financeiro";
 import { trackWhatsAppClick, trackProdutoAdicionado } from "../lib/analytics";
 import {
   salvarProdutoFirebase,
@@ -658,6 +659,7 @@ export default function CatalogoAdmin() {
     { id: 'logatividades', emoji: '📋', titulo: 'Log', desc: 'Atividades do admin', cor: '#37474f', fundo: '#eceff1' },
     ...(usuarioLogado?.nivel === "master" ? [{ id: 'usuarios', emoji: '🔐', titulo: 'Usuários', desc: 'Gerenciar logins', cor: '#f57f17', fundo: '#fff9c4' }] : []),
     { id: 'cupom', emoji: '🧾', titulo: 'Cupom', desc: 'Imprimir cupom', cor: '#6d4c41', fundo: '#efebe9', externo: '/cupom.html' },
+    { id: 'financeiro', emoji: '💰', titulo: 'Financeiro', desc: 'Caixa, contas e DRE', cor: '#2e7d32', fundo: '#e8f5e9' },
     { id: 'etiquetas', emoji: '🏷️', titulo: 'Etiquetas', desc: 'Imprimir etiquetas', cor: '#37474f', fundo: '#eceff1', externo: '/etiquetas.html' },
   ];
 
@@ -758,6 +760,7 @@ export default function CatalogoAdmin() {
           {secaoAdmin === "caixa" && <FechamentoCaixa produtos={produtos} onAtualizarEstoque={setProdutos} />}
           {secaoAdmin === "visitantes" && <VisitantesLara />}
           {secaoAdmin === "analytics" && <AnalyticsDashboard />}
+          {secaoAdmin === "financeiro" && <Financeiro produtos={produtos} />}
           {secaoAdmin === "logatividades" && <LogAtividades />}
           {secaoAdmin === "usuarios" && usuarioLogado?.nivel === "master" && (
             <GerenciarUsuarios usuarios={usuariosAdmin} setUsuarios={setUsuariosAdmin} />

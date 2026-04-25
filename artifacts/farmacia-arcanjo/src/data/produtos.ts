@@ -3,6 +3,7 @@ export interface Produto {
   nome: string;
   preco: number;
   precoOriginal?: number;
+  precoCusto?: number;
   categoria: string;
   emoji: string;
   desc: string;

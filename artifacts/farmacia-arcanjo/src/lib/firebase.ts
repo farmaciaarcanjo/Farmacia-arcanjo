@@ -2,7 +2,7 @@ import { initializeApp, getApps } from "firebase/app";
 import {
   getFirestore, collection, doc,
   addDoc, setDoc, getDocs, deleteDoc,
-  onSnapshot, orderBy, query, serverTimestamp, limit,
+  onSnapshot, orderBy, query, serverTimestamp, limit, where,
   type Unsubscribe,
 } from "firebase/firestore";
 import type { Produto } from "../data/produtos";
@@ -26,6 +26,7 @@ function produtoParaFirestore(p: Produto): Record<string, unknown> {
     nome:          p.nome,
     preco:         p.preco,
     precoOriginal: p.precoOriginal ?? null,
+    precoCusto:    p.precoCusto ?? null,
     categoria:     p.categoria,
     emoji:         p.emoji,
     desc:          p.desc ?? "",
@@ -43,6 +44,7 @@ function firestoreParaProduto(data: Record<string, unknown>): Produto {
     nome:          String(data.nome ?? ""),
     preco:         Number(data.preco ?? 0),
     precoOriginal: data.precoOriginal != null ? Number(data.precoOriginal) : undefined,
+    precoCusto:    data.precoCusto != null ? Number(data.precoCusto) : undefined,
     categoria:     String(data.categoria ?? "Geral"),
     emoji:         String(data.emoji ?? "💊"),
     desc:          String(data.desc ?? ""),
@@ -209,4 +211,4 @@ export async function buscarClientesDividaFirebase(): Promise<Record<string, unk
   } catch { return []; }
 }
 
-export { addDoc, collection, serverTimestamp, query, orderBy, getDocs };
+export { addDoc, collection, serverTimestamp, query, orderBy, getDocs, doc, setDoc, deleteDoc, where };

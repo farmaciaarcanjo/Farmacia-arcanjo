@@ -7,6 +7,7 @@ interface Produto {
   nome: string;
   categoria: string;
   preco: number;
+  precoCusto?: number;
   estoque: number;
   descricao?: string;
 }
@@ -25,7 +26,7 @@ const categorias = [
 const formVazio = (codigo = ""): Produto => ({
   id: Date.now().toString(),
   codigoBarras: codigo,
-  nome: "", categoria: "Outros", preco: 0, estoque: 0, descricao: "",
+  nome: "", categoria: "Outros", preco: 0, precoCusto: 0, estoque: 0, descricao: "",
 });
 
 type Modo = "inicio" | "manual" | "busca" | "edicao" | "novo" | "sucesso" | "foto";
@@ -190,6 +191,7 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
         id: idFinal,
         nome: form.nome,
         preco: form.preco,
+        precoCusto: form.precoCusto && form.precoCusto > 0 ? form.precoCusto : undefined,
         categoria: form.categoria,
         emoji: "💊",
         desc: form.descricao || "",
@@ -364,9 +366,13 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
             <select style={{ ...s.input, marginBottom: 12 }} value={form.categoria} onChange={e => setForm({ ...form, categoria: e.target.value })}>
               {categorias.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <label style={s.label}>Preço (R$)</label>
+            <label style={s.label}>Preço de Venda (R$)</label>
             <input style={s.input} type="number" step="0.01" min="0" value={form.preco}
               onChange={e => setForm({ ...form, preco: parseFloat(e.target.value) || 0 })} />
+            <label style={s.label}>Preço de Custo (R$)</label>
+            <input style={s.input} type="number" step="0.01" min="0" placeholder="0,00 — usado no DRE financeiro"
+              value={form.precoCusto || ""}
+              onChange={e => setForm({ ...form, precoCusto: parseFloat(e.target.value) || 0 })} />
             <label style={s.label}>Estoque (unidades)</label>
             <input style={s.input} type="number" min="0" value={form.estoque}
               onChange={e => setForm({ ...form, estoque: parseInt(e.target.value) || 0 })} />
@@ -400,9 +406,13 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
               onChange={e => setForm({ ...form, categoria: e.target.value })}>
               {categorias.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <label style={s.label}>Preço (R$) *</label>
+            <label style={s.label}>Preço de Venda (R$) *</label>
             <input style={s.input} type="number" step="0.01" min="0" placeholder="0,00"
               value={form.preco || ""} onChange={e => setForm({ ...form, preco: parseFloat(e.target.value) || 0 })} />
+            <label style={s.label}>Preço de Custo (R$)</label>
+            <input style={s.input} type="number" step="0.01" min="0" placeholder="0,00 — usado no DRE financeiro"
+              value={form.precoCusto || ""}
+              onChange={e => setForm({ ...form, precoCusto: parseFloat(e.target.value) || 0 })} />
             <label style={s.label}>Estoque (unidades)</label>
             <input style={s.input} type="number" min="0" placeholder="0"
               value={form.estoque || ""} onChange={e => setForm({ ...form, estoque: parseInt(e.target.value) || 0 })} />
