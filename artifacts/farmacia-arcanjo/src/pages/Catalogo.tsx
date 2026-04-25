@@ -718,6 +718,8 @@ export default function CatalogoAdmin() {
     // Estimulantes (Lista C1)
     "anfetamina","dextroanfetamina","lisdexanfetamina","femproporex",
     "mazindol","sibutramina","dietilpropiona","anfepramona",
+    // Anticonvulsivantes controlados (Lista C1)
+    "gabapentina","pregabalina","vigabatrina","tiagabina","felbamato",
     // Outros
     "cloreto de etila","gamma-hidroxibutirato","ghb","quetamina",
   ];

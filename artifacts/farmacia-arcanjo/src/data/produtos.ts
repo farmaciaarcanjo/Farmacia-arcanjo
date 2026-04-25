@@ -168,6 +168,7 @@ const PALAVRAS_CONTROLADAS_RESUMO = [
   "metadona","fentanila","meperidina","petidina","tapentadol",
   "isotretinoína","acitretina","talidomida",
   "anfetamina","lisdexanfetamina","femproporex","mazindol","sibutramina","anfepramona",
+  "gabapentina","pregabalina","vigabatrina","tiagabina","felbamato",
 ];
 
   export function resumoCatalogo(produtos: Produto[]): string {
