@@ -372,6 +372,8 @@ export default function CatalogoAdmin() {
   const [msgSucesso, setMsgSucesso] = useState("");
   const [secaoAdmin, setSecaoAdmin] = useState<string|null>(null);
   const [firebaseAtivo, setFirebaseAtivo] = useState<boolean | null>(null);
+  const [seedProgresso, setSeedProgresso] = useState("");
+  const [seedStatus, setSeedStatus] = useState<"idle" | "enviando" | "concluido">("idle");
 
   useEffect(() => {
     const inicializar = async () => {
@@ -474,6 +476,19 @@ export default function CatalogoAdmin() {
   function logout() { setUsuarioLogado(null); setModo("catalogo"); }
 
   const podeEditar = usuarioLogado?.nivel === "master" || usuarioLogado?.nivel === "editor";
+
+  const enviarTodosAoFirebase = async () => {
+    setSeedStatus("enviando");
+    const total = produtos.length;
+    for (let i = 0; i < total; i++) {
+      const p = produtos[i];
+      setSeedProgresso(`Enviando ${i + 1}/${total}: ${p.nome}`);
+      await salvarProdutoFirebase(p);
+    }
+    setSeedProgresso("");
+    setSeedStatus("concluido");
+    setTimeout(() => setSeedStatus("idle"), 4000);
+  };
   const podeDeletar = usuarioLogado?.nivel === "master";
 
   function salvarProduto() {
@@ -673,6 +688,17 @@ export default function CatalogoAdmin() {
                 <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>{s.desc}</div>
               </div>
             ))}
+          </div>
+          <div style={{ padding: "0 16px 24px" }}>
+            <button
+              onClick={enviarTodosAoFirebase}
+              disabled={seedStatus === "enviando"}
+              style={{ width: "100%", padding: "14px 0", borderRadius: 14, border: "none", background: seedStatus === "concluido" ? "#1b5e20" : seedStatus === "enviando" ? "#555" : "#b71c1c", color: "#fff", fontSize: 15, fontWeight: 800, cursor: seedStatus === "enviando" ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif", transition: "background 0.3s" }}
+            >
+              {seedStatus === "idle" && "🔥 Enviar produtos ao Firebase"}
+              {seedStatus === "enviando" && (seedProgresso || "Enviando...")}
+              {seedStatus === "concluido" && "✅ Concluído! Todos os produtos enviados"}
+            </button>
           </div>
         </div>
       ) : (
