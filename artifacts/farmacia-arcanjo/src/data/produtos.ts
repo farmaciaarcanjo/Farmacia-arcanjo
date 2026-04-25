@@ -169,6 +169,7 @@ const PALAVRAS_CONTROLADAS_RESUMO = [
   "isotretinoína","acitretina","talidomida",
   "anfetamina","lisdexanfetamina","femproporex","mazindol","sibutramina","anfepramona",
   "gabapentina","pregabalina","vigabatrina","tiagabina","felbamato",
+  "parac+cod","parac cod","(a2)","+codeína",
 ];
 
   export function resumoCatalogo(produtos: Produto[]): string {

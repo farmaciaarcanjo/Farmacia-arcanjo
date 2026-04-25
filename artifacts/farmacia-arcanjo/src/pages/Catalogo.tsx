@@ -426,6 +426,7 @@ export default function CatalogoAdmin() {
   const [importResultEstoque, setImportResultEstoque] = useState<{ atualizados: number; novosCadastrados: number; naoEncontrados: string[] } | null>(null);
   const inputImportEstoqueRef = useRef<HTMLInputElement>(null);
   const inputImportCadastroRef = useRef<HTMLInputElement>(null);
+  const correcaoFeita = useRef(false);
   const [scanProduto, setScanProduto] = useState<Produto | null>(null);
   const [scanCodigo, setScanCodigo] = useState("");
   const [salvandoScan, setSalvandoScan] = useState(false);
@@ -678,6 +679,31 @@ export default function CatalogoAdmin() {
 
 
 
+  // ── Correção única: marcar controlado + deletar produto inválido ──
+  useEffect(() => {
+    if (correcaoFeita.current || produtos.length === 0) return;
+    correcaoFeita.current = true;
+
+    // 1. Marcar PARAC+COD como uso controlado no Firebase
+    const paracCod = produtos.find(p =>
+      p.nome.toUpperCase().includes("PARAC+COD") || p.nome.toUpperCase().includes("PARAC COD")
+    );
+    if (paracCod && !paracCod.usoControlado) {
+      const atualizado = { ...paracCod, usoControlado: true };
+      setProdutos(prev => prev.map(p => p.id === atualizado.id ? atualizado : p));
+      salvarProdutoFirebase(atualizado).catch(() => {});
+    }
+
+    // 2. Deletar "FARMAÇA PARACETAMOL GOTAS 15ML" do Firebase
+    const paraExcluir = produtos.filter(p =>
+      p.nome.toUpperCase().includes("FARMAÇA PARACETAMOL")
+    );
+    paraExcluir.forEach(p => {
+      setProdutos(prev => prev.filter(x => x.id !== p.id));
+      deletarProdutoFirebase(p.id).catch(() => {});
+    });
+  }, [produtos]);
+
   useEffect(() => {
     const pendente = localStorage.getItem("lara_produto_pendente");
     if (!pendente) return;
@@ -720,6 +746,8 @@ export default function CatalogoAdmin() {
     "mazindol","sibutramina","dietilpropiona","anfepramona",
     // Anticonvulsivantes controlados (Lista C1)
     "gabapentina","pregabalina","vigabatrina","tiagabina","felbamato",
+    // Paracetamol + Codeína (A2) e outros com abreviação
+    "parac+cod","parac cod","(a2)","+codeína",
     // Outros
     "cloreto de etila","gamma-hidroxibutirato","ghb","quetamina",
   ];
