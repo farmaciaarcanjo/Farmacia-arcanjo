@@ -357,13 +357,7 @@ function LogAtividades() {
 }
 
 export default function CatalogoAdmin() {
-  const [produtos, setProdutos] = useState<Produto[]>(() => {
-    try {
-      const saved = localStorage.getItem("farmacia_produtos_v3");
-      const local: Produto[] = saved ? JSON.parse(saved) : [];
-      return local.length > 0 ? local : PRODUTOS_INICIAIS;
-    } catch { return PRODUTOS_INICIAIS; }
-  });
+  const [produtos, setProdutos] = useState<Produto[]>(PRODUTOS_INICIAIS);
   const [carregandoProdutos, setCarregandoProdutos] = useState(false);
   const [usuariosAdmin, setUsuariosAdmin] = useState<UsuarioAdmin[]>(() => carregarUsuarios());
   const [modo, setModo] = useState<"catalogo" | "login" | "admin" | "form">("catalogo");
@@ -383,37 +377,22 @@ export default function CatalogoAdmin() {
     const inicializar = async () => {
       try {
         const fbProdutos = await buscarProdutosFirebase();
-        if (fbProdutos && fbProdutos.length >= 10) {
+        if (fbProdutos && fbProdutos.length > 0) {
           setProdutos(fbProdutos);
           setFirebaseAtivo(true);
-          try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fbProdutos)); } catch {}
-        } else {
-          let fonte: Produto[] = [];
           try {
-            const saved = localStorage.getItem("farmacia_produtos_v3");
-            const local: Produto[] = saved ? JSON.parse(saved) : [];
-            fonte = local.length > 0 ? local : PRODUTOS_INICIAIS;
-          } catch {
-            fonte = PRODUTOS_INICIAIS;
-          }
-          setProdutos(fonte);
-          setFirebaseAtivo(true);
-          for (const p of fonte) {
+            localStorage.removeItem("farmacia_produtos_v3");
+            localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fbProdutos));
+          } catch {}
+        } else {
+          setFirebaseAtivo(false);
+          // Firebase vazio — seed com PRODUTOS_INICIAIS
+          for (const p of PRODUTOS_INICIAIS) {
             await salvarProdutoFirebase(p);
           }
-          try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(fonte)); } catch {}
         }
       } catch {
         setFirebaseAtivo(false);
-        try {
-          const saved = localStorage.getItem("farmacia_produtos_v3");
-          const local: Produto[] = saved ? JSON.parse(saved) : [];
-          setProdutos(local.length > 0 ? local : PRODUTOS_INICIAIS);
-        } catch {
-          setProdutos(PRODUTOS_INICIAIS);
-        }
-      } finally {
-        setCarregandoProdutos(false);
       }
     };
     inicializar();
@@ -444,9 +423,6 @@ export default function CatalogoAdmin() {
   }, [produtos, modo]);
 
 
-  useEffect(() => {
-    try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(produtos)); } catch {}
-  }, [produtos]);
 
   useEffect(() => {
     const pendente = localStorage.getItem("lara_produto_pendente");
