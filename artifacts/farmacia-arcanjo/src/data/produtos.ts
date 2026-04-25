@@ -161,7 +161,7 @@ const PALAVRAS_CONTROLADAS_RESUMO = [
   "amitriptilina","nortriptilina","imipramina","clomipramina","desipramina",
   "amoxapina","maprotilina","trimipramina","doxepina",
   "paroxetina","metilfenidato","modafinila","zolpidem","zopiclona","eszopiclona","bupropiona",
-  "haloperidol","clorpromazina","trifluoperazina","levomepromazina",
+  "haloperidol","risperidona","clorpromazina","trifluoperazina","levomepromazina",
   "tioridazina","flufenazina","pimozida","sulpirida",
   "fenobarbital","pentobarbital","secobarbital","amobarbital",
   "tramadol","codeína","morfina","oxicodona","hidrocodona","buprenorfina",

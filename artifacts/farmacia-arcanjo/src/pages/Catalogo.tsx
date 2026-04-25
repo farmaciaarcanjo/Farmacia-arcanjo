@@ -705,7 +705,7 @@ export default function CatalogoAdmin() {
     "paroxetina","cloridrato de paroxetina","metilfenidato","modafinila",
     "zolpidem","zopiclona","eszopiclona","bupropiona",
     // Antipsicóticos (Lista C1)
-    "haloperidol","clorpromazina","trifluoperazina","levomepromazina",
+    "haloperidol","risperidona","clorpromazina","trifluoperazina","levomepromazina",
     "tioridazina","flufenazina","pimozida","sulpirida",
     // Barbitúricos
     "fenobarbital","pentobarbital","secobarbital","amobarbital","butalbital",
