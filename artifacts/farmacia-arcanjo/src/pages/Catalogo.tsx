@@ -423,10 +423,13 @@ export default function CatalogoAdmin() {
   const [importResult, setImportResult] = useState<{ atualizados: number; naoEncontrados: string[] } | null>(null);
   const inputImportRef = useRef<HTMLInputElement>(null);
   const [importandoEstoque, setImportandoEstoque] = useState(false);
-  const [importResultEstoque, setImportResultEstoque] = useState<{ atualizados: number; naoEncontrados: string[] } | null>(null);
+  const [importResultEstoque, setImportResultEstoque] = useState<{ atualizados: number; novosCadastrados: number; naoEncontrados: string[] } | null>(null);
   const inputImportEstoqueRef = useRef<HTMLInputElement>(null);
+  const inputImportCadastroRef = useRef<HTMLInputElement>(null);
 
-  const importarEstoqueSisMoura = async (file: File) => {
+  const IGNORAR_SIS = new Set(["mg", "mcg", "g", "ml", "cx", "cxt", "com", "gen", "un", "un.", "cp", "cps", "cpr", "comp", "sol", "susp", "caps", "amp", "fr", "bs", "bsa", "kit"]);
+
+  const processarSisMoura = async (file: File, cadastrarNovos: boolean) => {
     setImportandoEstoque(true);
     try {
       const buffer = await file.arrayBuffer();
@@ -438,55 +441,82 @@ export default function CatalogoAdmin() {
         typeof row[1] === "string" && row[1].trim() !== ""
       );
       let atualizados = 0;
+      let novosCadastrados = 0;
       const naoEncontrados: string[] = [];
       const novosProdutos = [...produtos];
       for (const row of linhas) {
-        const nomeSis = (row[1] as string).trim();
-        const referencia = row[2] != null && String(row[2]).trim() !== "" ? String(row[2]).trim() : null;
-        const qtd = row[3] != null && !isNaN(Number(row[3])) ? Number(row[3]) : null;
-        const custoRaw = row[4] != null ? parseFloat(String(row[4]).replace(",", ".")) : null;
-        const custo = custoRaw !== null && !isNaN(custoRaw) ? custoRaw : null;
+        const codigoSis   = row[0] != null ? String(row[0]).trim() : null;
+        const nomeSis     = (row[1] as string).trim();
+        const referencia  = row[2] != null && String(row[2]).trim() !== "" ? String(row[2]).trim() : null;
+        const qtd         = row[3] != null && !isNaN(Number(row[3])) ? Number(row[3]) : null;
+        const custoRaw    = row[4] != null ? parseFloat(String(row[4]).replace(",", ".")) : null;
+        const custo       = custoRaw !== null && !isNaN(custoRaw) ? custoRaw : null;
+        const vendaRaw    = row[6] != null ? parseFloat(String(row[6]).replace(",", ".")) : null;
+        const venda       = vendaRaw !== null && !isNaN(vendaRaw) && vendaRaw > 0 ? vendaRaw : null;
         if (!nomeSis) continue;
-        const nomeSisLow = nomeSis.toLowerCase();
-        const IGNORAR = new Set(["mg", "mcg", "g", "ml", "cx", "cxt", "com", "gen", "un", "un.", "cp", "cps", "cpr", "comp", "sol", "susp", "caps", "amp", "fr", "bs", "bsa", "kit"]);
-        const palavrasSis = nomeSisLow.split(/[\s,./\-+()]+/).filter(w => w.length > 2 && !IGNORAR.has(w));
+        const nomeSisLow  = nomeSis.toLowerCase();
+        const palavrasSis = nomeSisLow.split(/[\s,./\-+()]+/).filter(w => w.length > 2 && !IGNORAR_SIS.has(w));
         const buscarIdx = (): number => {
+          // 0) Código SIS Moura (match preciso)
+          if (codigoSis) {
+            const i = novosProdutos.findIndex(p => p.codigoSisMoura === codigoSis);
+            if (i !== -1) return i;
+          }
           // 1) Exata (case-insensitive)
           let i = novosProdutos.findIndex(p => p.nome.toLowerCase() === nomeSisLow);
           if (i !== -1) return i;
           // 2) Nome do app contido no nome SIS Moura
           i = novosProdutos.findIndex(p => nomeSisLow.includes(p.nome.toLowerCase()));
           if (i !== -1) return i;
-          // 3) Palavras-chave do SIS Moura contidas no nome do app
+          // 3) Todas as palavras-chave contidas no nome do app
           i = novosProdutos.findIndex(p => {
-            const nomeAppLow = p.nome.toLowerCase();
-            return palavrasSis.length > 0 && palavrasSis.every(w => nomeAppLow.includes(w));
+            const a = p.nome.toLowerCase();
+            return palavrasSis.length > 0 && palavrasSis.every(w => a.includes(w));
           });
           if (i !== -1) return i;
-          // 4) Maioria das palavras-chave (≥ 60%) contidas no nome do app
+          // 4) ≥ 60% das palavras-chave contidas no nome do app
           i = novosProdutos.findIndex(p => {
-            const nomeAppLow = p.nome.toLowerCase();
+            const a = p.nome.toLowerCase();
             if (palavrasSis.length === 0) return false;
-            const matches = palavrasSis.filter(w => nomeAppLow.includes(w)).length;
-            return matches / palavrasSis.length >= 0.6;
+            return palavrasSis.filter(w => a.includes(w)).length / palavrasSis.length >= 0.6;
           });
           return i;
         };
         const idx = buscarIdx();
         if (idx === -1) {
-          if (!naoEncontrados.includes(nomeSis)) naoEncontrados.push(nomeSis);
+          if (cadastrarNovos) {
+            const novo: Produto = {
+              id: Date.now() + novosCadastrados,
+              nome: nomeSis,
+              preco: venda ?? 0,
+              precoCusto: custo ?? undefined,
+              categoria: "Importado SIS Moura",
+              emoji: "💊",
+              desc: "",
+              estoque: qtd ?? undefined,
+              codigoBarras: referencia ?? undefined,
+              codigoSisMoura: codigoSis ?? undefined,
+            };
+            novosProdutos.push(novo);
+            await salvarProdutoFirebase(novo).catch(() => {});
+            novosCadastrados++;
+          } else {
+            if (!naoEncontrados.includes(nomeSis)) naoEncontrados.push(nomeSis);
+          }
           continue;
         }
         const atualizado = { ...novosProdutos[idx] };
         if (qtd !== null) atualizado.estoque = qtd;
         if (custo !== null && custo > 0) atualizado.precoCusto = custo;
+        if (venda !== null) atualizado.preco = venda;
         if (referencia) atualizado.codigoBarras = referencia;
+        if (codigoSis) atualizado.codigoSisMoura = codigoSis;
         novosProdutos[idx] = atualizado;
         await salvarProdutoFirebase(atualizado).catch(() => {});
         atualizados++;
       }
       setProdutos(novosProdutos);
-      setImportResultEstoque({ atualizados, naoEncontrados });
+      setImportResultEstoque({ atualizados, novosCadastrados, naoEncontrados });
     } catch {
       alert("Erro ao ler o arquivo. Verifique se é um .xlsx válido.");
     } finally {
@@ -900,12 +930,20 @@ export default function CatalogoAdmin() {
 
         {/* ── Importar Estoque SIS Moura ── */}
         <input ref={inputImportEstoqueRef} type="file" accept=".xlsx" style={{ display: "none" }}
-          onChange={e => { const f = e.target.files?.[0]; if (f) importarEstoqueSisMoura(f); if (e.target) e.target.value = ""; }} />
+          onChange={e => { const f = e.target.files?.[0]; if (f) processarSisMoura(f, false); if (e.target) e.target.value = ""; }} />
         <button
           onClick={() => inputImportEstoqueRef.current?.click()}
           disabled={importando || importandoEstoque}
-          style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "2px dashed #2e7d32", background: "#e8f5e9", color: "#2e7d32", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 14, opacity: (importando || importandoEstoque) ? 0.6 : 1 }}>
+          style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "2px dashed #2e7d32", background: "#e8f5e9", color: "#2e7d32", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 8, opacity: (importando || importandoEstoque) ? 0.6 : 1 }}>
           {importandoEstoque ? "⏳ Importando..." : "📦 Importar Estoque (SIS Moura)"}
+        </button>
+        <input ref={inputImportCadastroRef} type="file" accept=".xlsx" style={{ display: "none" }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) processarSisMoura(f, true); if (e.target) e.target.value = ""; }} />
+        <button
+          onClick={() => inputImportCadastroRef.current?.click()}
+          disabled={importando || importandoEstoque}
+          style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "2px dashed #6a1b9a", background: "#f3e5f5", color: "#6a1b9a", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 14, opacity: (importando || importandoEstoque) ? 0.6 : 1 }}>
+          {importandoEstoque ? "⏳ Importando..." : "➕ Importar E Cadastrar Novos"}
         </button>
 
         {/* ── Cabeçalho com toggle ── */}
@@ -1011,14 +1049,19 @@ export default function CatalogoAdmin() {
         {importResultEstoque && (
           <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
             <div style={{ background: "#fff", borderRadius: 20, padding: 24, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px rgba(0,0,0,0.3)", fontFamily: "'Nunito', sans-serif" }}>
-              <h3 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800, color: "#1a1a1a" }}>Estoque SIS Moura</h3>
-              <p style={{ margin: "0 0 16px", fontSize: 12, color: "#888" }}>Estoque e custo unitário atualizados</p>
-              <div style={{ background: "#e8f5e9", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
+              <h3 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800, color: "#1a1a1a" }}>Resultado — SIS Moura</h3>
+              <p style={{ margin: "0 0 14px", fontSize: 12, color: "#888" }}>Estoque, custo e preço de venda atualizados</p>
+              <div style={{ background: "#e8f5e9", borderRadius: 12, padding: "12px 16px", marginBottom: 10 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: "#2e7d32" }}>✅ {importResultEstoque.atualizados} produto(s) atualizados</span>
               </div>
+              {importResultEstoque.novosCadastrados > 0 && (
+                <div style={{ background: "#f3e5f5", borderRadius: 12, padding: "12px 16px", marginBottom: 10 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#6a1b9a" }}>➕ {importResultEstoque.novosCadastrados} novo(s) cadastrado(s)</span>
+                </div>
+              )}
               {importResultEstoque.naoEncontrados.length > 0 && (
-                <div style={{ background: "#fff9c4", borderRadius: 12, padding: "12px 16px", marginBottom: 12, maxHeight: 200, overflowY: "auto" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "#f57f17", marginBottom: 8 }}>⚠️ {importResultEstoque.naoEncontrados.length} não encontrado(s) no catálogo:</div>
+                <div style={{ background: "#fff9c4", borderRadius: 12, padding: "12px 16px", marginBottom: 10, maxHeight: 200, overflowY: "auto" }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#f57f17", marginBottom: 8 }}>⚠️ {importResultEstoque.naoEncontrados.length} não encontrado(s):</div>
                   {importResultEstoque.naoEncontrados.map((n, i) => (
                     <div key={i} style={{ fontSize: 12, color: "#666", marginBottom: 3 }}>• {n}</div>
                   ))}

@@ -10,6 +10,7 @@ export interface Produto {
   prescricao?: boolean;
   estoque?: number;
   codigoBarras?: string;
+  codigoSisMoura?: string;
   promocao?: {
     quantidade: number;
     precoTotal: number;

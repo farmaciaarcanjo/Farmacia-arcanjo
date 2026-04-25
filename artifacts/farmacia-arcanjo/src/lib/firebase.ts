@@ -32,8 +32,9 @@ function produtoParaFirestore(p: Produto): Record<string, unknown> {
     desc:          p.desc ?? "",
     prescricao:    p.prescricao ?? false,
     estoque:       p.estoque ?? null,
-    codigoBarras:  p.codigoBarras ?? null,
-    promocao:      p.promocao ?? null,
+    codigoBarras:    p.codigoBarras ?? null,
+    codigoSisMoura:  p.codigoSisMoura ?? null,
+    promocao:        p.promocao ?? null,
     updatedAt:     serverTimestamp(),
   };
 }
@@ -50,7 +51,8 @@ function firestoreParaProduto(data: Record<string, unknown>): Produto {
     desc:          String(data.desc ?? ""),
     prescricao:    Boolean(data.prescricao),
     estoque:       data.estoque != null ? Number(data.estoque) : undefined,
-    codigoBarras:  data.codigoBarras != null ? String(data.codigoBarras) : undefined,
+    codigoBarras:   data.codigoBarras   != null ? String(data.codigoBarras)   : undefined,
+    codigoSisMoura: data.codigoSisMoura != null ? String(data.codigoSisMoura) : undefined,
     promocao:      (data.promocao as Produto["promocao"]) ?? undefined,
   };
 }
