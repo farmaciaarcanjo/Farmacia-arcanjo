@@ -650,6 +650,7 @@ export default function CatalogoAdmin() {
 
   
   const secoesAdmin = [
+    { id: 'produtos_admin', emoji: '📦', titulo: 'Produtos', desc: 'Gerenciar estoque', cor: '#1565c0', fundo: '#e3f2fd' },
     { id: 'relatorio', emoji: '📊', titulo: 'Relatório', desc: 'Pedidos e faturamento', cor: '#0066cc', fundo: '#e6f0ff' },
     { id: 'clientes', emoji: '👥', titulo: 'Clientes', desc: 'Cadastro de clientes', cor: '#1565c0', fundo: '#e3f2fd' },
     { id: 'lembretes', emoji: '🔔', titulo: 'Alertas', desc: 'Lembretes automáticos', cor: '#e07b00', fundo: '#fff0e6' },
@@ -770,7 +771,7 @@ export default function CatalogoAdmin() {
         </div>
       )}
       {msgSucesso && <div style={{ background: "#e3f2fd", padding: "10px 16px", textAlign: "center", color: "#1565c0", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}
-      {(secaoAdmin !== "financeiro" && secaoAdmin !== "etiquetas") && <div style={{ padding: 16 }}>
+      {secaoAdmin === "produtos_admin" && <div style={{ padding: 16 }}>
         {produtos.map(p => (
           <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: p.estoque !== undefined && p.estoque <= 5 ? "2px solid #ff9800" : "2px solid transparent" }}>
             <span style={{ fontSize: 28 }}>{p.emoji}</span>
