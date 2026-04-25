@@ -442,6 +442,7 @@ export default function CatalogoAdmin() {
       const novosProdutos = [...produtos];
       for (const row of linhas) {
         const nomeSis = (row[1] as string).trim();
+        const referencia = row[2] != null && String(row[2]).trim() !== "" ? String(row[2]).trim() : null;
         const qtd = row[3] != null && !isNaN(Number(row[3])) ? Number(row[3]) : null;
         const custoRaw = row[4] != null ? parseFloat(String(row[4]).replace(",", ".")) : null;
         const custo = custoRaw !== null && !isNaN(custoRaw) ? custoRaw : null;
@@ -455,8 +456,9 @@ export default function CatalogoAdmin() {
           continue;
         }
         const atualizado = { ...novosProdutos[idx] };
-        if (qtd !== null && !isNaN(qtd)) atualizado.estoque = qtd;
-        if (custo !== null && !isNaN(custo) && custo > 0) atualizado.precoCusto = custo;
+        if (qtd !== null) atualizado.estoque = qtd;
+        if (custo !== null && custo > 0) atualizado.precoCusto = custo;
+        if (referencia) atualizado.codigoBarras = referencia;
         novosProdutos[idx] = atualizado;
         await salvarProdutoFirebase(atualizado).catch(() => {});
         atualizados++;
