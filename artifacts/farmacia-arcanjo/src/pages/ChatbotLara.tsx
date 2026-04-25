@@ -25,14 +25,14 @@ const PROMOCOES = todosProdutos.filter((p) => p.desc?.includes("PROMOÇÃO") || 
 
 const MENSAGEM_BOAS_VINDAS =
   "Olá! 👋 Sou a Lara, assistente virtual da Farmácia Arcanjo!\n" +
-  "Posso te ajudar a encontrar medicamentos, tirar dúvidas sobre sintomas e fazer pedidos.\n" +
+  "Posso te ajudar a encontrar medicamentos, tirar dúvidas e fazer pedidos.\n" +
   "Como posso te ajudar hoje? 💊";
 
 const SYSTEM_PROMPT = `Você é Lara, a assistente virtual da Farmácia Arcanjo, localizada em Meruoca-CE.
 Você é simpática, prestativa, profissional e fala português brasileiro.
 
 INFORMAÇÕES DA FARMÁCIA:
-- Horário: Segunda a Sábado das 7h30 às 20h. Aos domingos das 8h às 12h.
+- Horário: Segunda a Sábado das 7h às 19h. Aos domingos das 8h às 13h.
 - Localização: Meruoca, Ceará
 - Telefone/WhatsApp: (88) 99337-5650
 - Entrega: Sim! Fazemos entrega. Ligue ou chame no WhatsApp.
@@ -52,19 +52,19 @@ REGRAS IMPORTANTES:
 const RESPOSTAS_RAPIDAS: Array<{ padroes: RegExp; resposta: string }> = [
   {
     padroes: /hor[aá]rio|que horas|quando abre|quando fecha|funciona/i,
-    resposta: "🕐 Nosso horário de funcionamento:\n• Segunda a Sábado: 7h30 às 20h\n• Domingos: 8h às 12h\n\nQualquer dúvida, chame no WhatsApp: (88) 99337-5650 😊",
+    resposta: "Funcionamos de segunda a sábado das 7h às 19h e domingos das 8h às 13h 🕐",
   },
   {
     padroes: /onde fica|endere[çc]o|localiza[çc]|como chegar/i,
-    resposta: "📍 Estamos localizados em Meruoca, Ceará!\n\nPode nos ligar ou chamar no WhatsApp: (88) 99337-5650 😊",
+    resposta: "Estamos em Meruoca, Ceará 📍 Tel: (88) 99337-5650",
   },
   {
     padroes: /delivery|entrega|entreg|motoboy/i,
-    resposta: "🛵 Sim! Fazemos entrega.\n\nChame no WhatsApp para combinar: (88) 99337-5650 😊",
+    resposta: "Sim! Fazemos entrega. Chame no WhatsApp: (88) 99337-5650 🛵",
   },
   {
     padroes: /pagamento|pagar|pix|cart[aã]o|cr[eé]dito|d[eé]bito|dinheiro/i,
-    resposta: "💳 Formas de pagamento aceitas:\n• Dinheiro\n• Pix\n• Cartão de débito\n• Cartão de crédito\n\nPrecisa de mais alguma informação? 😊",
+    resposta: "Aceitamos dinheiro, Pix, débito e crédito 💳",
   },
   {
     padroes: /promo[çc][aã]o|oferta|desconto|promo/i,
@@ -195,7 +195,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
   const ACOES_RAPIDAS = [
     { label: "💊 Ver Catálogo", acao: () => onNavigateTab?.("catalogo") },
     { label: "🔥 Promoções", acao: () => sendMessage("Quais são as promoções da semana?") },
-    { label: "📍 Localização e Horário", acao: () => sendMessage("Onde fica e qual o horário?") },
+    { label: "📍 Horário e Localização", acao: () => sendMessage("Qual o horário e onde fica a farmácia?") },
     { label: "📲 Falar com Atendente", acao: () => window.open("https://wa.me/5588993375650?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20um%20atendente.", "_blank") },
   ];
 
