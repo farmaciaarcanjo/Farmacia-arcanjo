@@ -173,7 +173,6 @@ export default function BarcodeScanner({ produtos, onSalvar }: BarcodeScannerPro
       } else {
         mostrarToast("⚠️ Erro ao salvar no Firebase. Verifique a conexão.", "erro");
       }
-      alert('ID: ' + idFinal + ' | Preço: ' + form.preco + ' | Firebase ok: ' + ok);
       await new Promise(res => setTimeout(res, 1000));
       setModo("sucesso");
       setTimeout(() => { setModo("inicio"); setErro(""); }, 2500);

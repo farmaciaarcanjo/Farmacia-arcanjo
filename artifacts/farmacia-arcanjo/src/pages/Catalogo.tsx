@@ -525,19 +525,20 @@ export default function CatalogoAdmin() {
         descricao: form.promoDesc || `LEVE ${form.promoQtd} por R$${form.promoPreco}`
       } : undefined
     };
+    setMsgSucesso("⏳ Salvando no Firebase...");
+    const ok = await salvarProdutoFirebase(novo);
+    if (!ok) {
+      setMsgSucesso("❌ Erro ao salvar. Verifique as regras do Firebase e tente novamente.");
+      return;
+    }
     const acao: TipoAcao = editando ? "produto_editado" : "produto_adicionado";
     const novos = editando
       ? produtos.map(p => p.id === editando ? novo : p)
       : [...produtos, novo];
     setProdutos(novos);
-    const ok = await salvarProdutoFirebase(novo);
-    alert('Firebase ok: ' + ok + ' | ID: ' + novo.id + ' | Preço: ' + novo.preco + ' | Nome: ' + novo.nome);
-    if (!ok) {
-      try { localStorage.setItem("farmacia_produtos_v3", JSON.stringify(novos)); } catch {}
-    }
     registrarLog({ acao, usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: novo.nome, ts: Date.now() });
     setMsgSucesso(editando ? "✅ Produto atualizado!" : "✅ Produto adicionado!");
-    setTimeout(() => setMsgSucesso(""), 2000);
+    setTimeout(() => setMsgSucesso(""), 3000);
     setModo("admin");
     setEditando(null);
   }
@@ -765,9 +766,14 @@ export default function CatalogoAdmin() {
             <input type="checkbox" checked={form.prescricao} onChange={e => setForm(f => ({ ...f, prescricao: e.target.checked }))} style={{ width: 18, height: 18 }} />
             ⚠️ Venda sob prescrição médica
           </label>
-          <button onClick={salvarProduto} disabled={!form.nome || !form.preco}
+          {msgSucesso && (
+            <div style={{ marginBottom: 14, padding: "12px 16px", borderRadius: 12, background: msgSucesso.startsWith("❌") ? "#ffebee" : msgSucesso.startsWith("⏳") ? "#fff9c4" : "#e8f5e9", color: msgSucesso.startsWith("❌") ? "#c62828" : msgSucesso.startsWith("⏳") ? "#f57f17" : "#2e7d32", fontWeight: 700, fontSize: 14, textAlign: "center" }}>
+              {msgSucesso}
+            </div>
+          )}
+          <button onClick={salvarProduto} disabled={!form.nome || !form.preco || msgSucesso.startsWith("⏳")}
             style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: (!form.nome || !form.preco) ? "#e0e0e0" : "linear-gradient(135deg, #0d47a1, #1565c0)", color: (!form.nome || !form.preco) ? "#aaa" : "#fff", fontSize: 15, fontWeight: 800, cursor: (!form.nome || !form.preco) ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif" }}>
-            {editando ? "💾 Salvar" : "✅ Adicionar"}
+            {msgSucesso.startsWith("⏳") ? "⏳ Salvando..." : editando ? "💾 Salvar" : "✅ Adicionar"}
           </button>
         </div>
       </div>
