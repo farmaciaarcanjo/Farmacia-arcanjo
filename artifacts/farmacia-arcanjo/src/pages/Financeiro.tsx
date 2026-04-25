@@ -37,7 +37,7 @@ const bgStatus: Record<StatusContas, string> = { Pendente: "#fff9c4", Pago: "#e8
 const f = "'Nunito', 'Segoe UI', sans-serif";
 
 export default function Financeiro({ produtos }: { produtos: Produto[] }) {
-  type Aba = "caixa" | "contas" | "dre" | "fornecedores";
+  type Aba = "caixa" | "contas" | "dre" | "fornecedores" | "produtos";
   const [aba, setAba] = useState<Aba>("caixa");
 
   const [caixa, setCaixa] = useState(0);
@@ -241,8 +241,8 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
       </div>
 
       {/* ── Abas ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", borderBottom: "2px solid #e0e0e0", background: "#fff", marginTop: 12 }}>
-        {([ { id: "caixa", label: "💰 Caixa" }, { id: "contas", label: "📋 Contas" }, { id: "dre", label: "📊 DRE" }, { id: "fornecedores", label: "🤝 Fornec." } ] as { id: Aba; label: string }[]).map(t => (
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr", borderBottom: "2px solid #e0e0e0", background: "#fff", marginTop: 12 }}>
+        {([ { id: "caixa", label: "💰 Caixa" }, { id: "contas", label: "📋 Contas" }, { id: "dre", label: "📊 DRE" }, { id: "fornecedores", label: "🤝 Fornec." }, { id: "produtos", label: "📦 Prod." } ] as { id: Aba; label: string }[]).map(t => (
           <button key={t.id} onClick={() => setAba(t.id)}
             style={{ padding: "10px 2px", border: "none", background: "none", fontSize: 11, fontWeight: aba === t.id ? 800 : 600, color: aba === t.id ? "#1565c0" : "#888", borderBottom: aba === t.id ? "3px solid #1565c0" : "3px solid transparent", cursor: "pointer", fontFamily: f }}>
             {t.label}
@@ -468,6 +468,58 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+
+        {/* ══ ABA PRODUTOS ══ */}
+        {aba === "produtos" && (
+          <div>
+            <h3 style={{ margin: "0 0 4px", color: "#0d47a1", fontSize: 16 }}>📦 Produtos — Preço & Margem</h3>
+            <p style={{ margin: "0 0 14px", fontSize: 12, color: "#888" }}>
+              {produtos.filter(p => p.precoCusto && p.precoCusto > 0).length} de {produtos.length} produto(s) com custo cadastrado
+            </p>
+            {produtos.length === 0 ? (
+              <div style={{ textAlign: "center", color: "#aaa", padding: 24 }}>Nenhum produto no catálogo</div>
+            ) : produtos.map(p => {
+              const temCusto = p.precoCusto && p.precoCusto > 0;
+              const margem = temCusto ? ((p.preco - p.precoCusto!) / p.precoCusto!) * 100 : null;
+              const margemCor = margem === null ? "#888" : margem >= 30 ? "#2e7d32" : margem >= 10 ? "#f57f17" : "#c62828";
+              const margemBg  = margem === null ? "#f5f5f5" : margem >= 30 ? "#e8f5e9" : margem >= 10 ? "#fff3e0" : "#ffebee";
+              return (
+                <div key={p.id} style={{ background: "#fff", borderRadius: 14, padding: "12px 14px", marginBottom: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1, marginRight: 8 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>
+                        {p.emoji} {p.nome}
+                      </div>
+                      <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, color: "#1565c0" }}>
+                          <strong>Venda:</strong> R$ {p.preco.toFixed(2).replace(".", ",")}
+                        </span>
+                        {temCusto ? (
+                          <span style={{ fontSize: 12, color: "#555" }}>
+                            <strong>Custo:</strong> R$ {p.precoCusto!.toFixed(2).replace(".", ",")}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: 12, color: "#bbb", fontStyle: "italic" }}>Custo não informado</span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ background: margemBg, color: margemCor, borderRadius: 12, padding: "6px 12px", textAlign: "center", flexShrink: 0 }}>
+                      {margem !== null ? (
+                        <>
+                          <div style={{ fontSize: 16, fontWeight: 800 }}>{margem.toFixed(0)}%</div>
+                          <div style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>margem</div>
+                        </>
+                      ) : (
+                        <div style={{ fontSize: 11, color: "#aaa" }}>—</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 

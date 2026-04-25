@@ -8,6 +8,7 @@ import GeradorPromocao from "./GeradorPromocao";
 import FechamentoCaixa from "./FechamentoCaixa";
 import AnalyticsDashboard from "./AnalyticsDashboard";
 import Financeiro from "./Financeiro";
+import GeradorEtiquetas from "./GeradorEtiquetas";
 import { trackWhatsAppClick, trackProdutoAdicionado } from "../lib/analytics";
 import {
   salvarProdutoFirebase,
@@ -660,7 +661,7 @@ export default function CatalogoAdmin() {
     ...(usuarioLogado?.nivel === "master" ? [{ id: 'usuarios', emoji: '🔐', titulo: 'Usuários', desc: 'Gerenciar logins', cor: '#f57f17', fundo: '#fff9c4' }] : []),
     { id: 'cupom', emoji: '🧾', titulo: 'Cupom', desc: 'Imprimir cupom', cor: '#6d4c41', fundo: '#efebe9', externo: '/cupom.html' },
     { id: 'financeiro', emoji: '💰', titulo: 'Financeiro', desc: 'Caixa, contas e DRE', cor: '#2e7d32', fundo: '#e8f5e9' },
-    { id: 'etiquetas', emoji: '🏷️', titulo: 'Etiquetas', desc: 'Imprimir etiquetas', cor: '#37474f', fundo: '#eceff1', externo: '/etiquetas.html' },
+    { id: 'etiquetas', emoji: '🏷️', titulo: 'Etiquetas', desc: 'Imprimir etiquetas', cor: '#37474f', fundo: '#eceff1' },
   ];
 
   if (modo === "admin") return (
@@ -761,6 +762,7 @@ export default function CatalogoAdmin() {
           {secaoAdmin === "visitantes" && <VisitantesLara />}
           {secaoAdmin === "analytics" && <AnalyticsDashboard />}
           {secaoAdmin === "financeiro" && <Financeiro produtos={produtos} />}
+          {secaoAdmin === "etiquetas" && <div style={{ padding: 16 }}><GeradorEtiquetas produtos={produtos} /></div>}
           {secaoAdmin === "logatividades" && <LogAtividades />}
           {secaoAdmin === "usuarios" && usuarioLogado?.nivel === "master" && (
             <GerenciarUsuarios usuarios={usuariosAdmin} setUsuarios={setUsuariosAdmin} />
@@ -768,7 +770,7 @@ export default function CatalogoAdmin() {
         </div>
       )}
       {msgSucesso && <div style={{ background: "#e3f2fd", padding: "10px 16px", textAlign: "center", color: "#1565c0", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}
-      <div style={{ padding: 16 }}>
+      {(secaoAdmin !== "financeiro" && secaoAdmin !== "etiquetas") && <div style={{ padding: 16 }}>
         {produtos.map(p => (
           <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: p.estoque !== undefined && p.estoque <= 5 ? "2px solid #ff9800" : "2px solid transparent" }}>
             <span style={{ fontSize: 28 }}>{p.emoji}</span>
@@ -790,7 +792,7 @@ export default function CatalogoAdmin() {
             </div>
           </div>
         ))}
-      </div>
+      </div>}
     </div>
   );if (modo === "form") return (
     <div style={{ minHeight: "100vh", background: "#f5f5f5", fontFamily: "'Nunito', sans-serif" }}>
