@@ -657,7 +657,7 @@ export default function CatalogoAdmin() {
     { id: 'produtos_admin', emoji: '📦', titulo: 'Produtos', desc: 'Gerenciar estoque', cor: '#1565c0', fundo: '#e3f2fd' },
     { id: 'relatorio', emoji: '📊', titulo: 'Relatório', desc: 'Pedidos e faturamento', cor: '#0066cc', fundo: '#e6f0ff' },
     { id: 'clientes', emoji: '👥', titulo: 'Clientes', desc: 'Cadastro de clientes', cor: '#1565c0', fundo: '#e3f2fd' },
-    { id: 'lembretes', emoji: '🔔', titulo: 'Alertas', desc: 'Lembretes automáticos', cor: '#e07b00', fundo: '#fff0e6' },
+    { id: 'lembretes', emoji: '🔔', titulo: 'Alertas', desc: 'Lembretes e alertas', cor: '#e07b00', fundo: '#fff0e6' },
     { id: 'promocao', emoji: '📢', titulo: 'Promoção', desc: 'Gerador WhatsApp', cor: '#c62828', fundo: '#ffebee' },
     { id: 'caixa', emoji: '🧾', titulo: 'Caixa', desc: 'Fechamento de caixa', cor: '#0d47a1', fundo: '#e3f2fd' },
     { id: 'visitantes', emoji: '👁️', titulo: 'Visitantes', desc: 'Conversas e WhatsApp', cor: '#1565c0', fundo: '#e3f2fd' },
@@ -783,7 +783,7 @@ export default function CatalogoAdmin() {
             {(["lista", "grade"] as const).map(v => (
               <button key={v} onClick={() => setView(v)}
                 style={{ padding: "6px 14px", borderRadius: 18, border: "none", background: viewProdutos === v ? "#1565c0" : "transparent", color: viewProdutos === v ? "#fff" : "#666", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", transition: "background 0.15s" }}>
-                {v === "lista" ? "☰ Lista" : "⊞ Grade"}
+                {v === "lista" ? "≡ Lista" : "▦ Grade"}
               </button>
             ))}
           </div>
