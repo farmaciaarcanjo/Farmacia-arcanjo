@@ -166,21 +166,45 @@ export default function CatalogoAdmin() {
 
   
   const secoesAdmin = [
-    { id: 'relatorio', emoji: '📊', titulo: 'Relatório', desc: 'Pedidos e faturamento' },
-    { id: 'clientes', emoji: '👥', titulo: 'Clientes', desc: 'Cadastro de clientes' },
-    { id: 'lembretes', emoji: '⏰', titulo: 'Lembretes', desc: 'Alertas automáticos' },
-    { id: 'promocao', emoji: '📢', titulo: 'Promoção', desc: 'Gerador WhatsApp' },
-    { id: 'caixa', emoji: '🧾', titulo: 'Caixa', desc: 'Fechamento de caixa' },
+    { id: 'relatorio', emoji: '📊', titulo: 'Relatório', desc: 'Pedidos e faturamento', cor: '#0066cc', fundo: '#e6f0ff' },
+    { id: 'clientes', emoji: '👥', titulo: 'Clientes', desc: 'Cadastro de clientes', cor: '#7c3aed', fundo: '#f0ebff' },
+    { id: 'lembretes', emoji: '⏰', titulo: 'Lembretes', desc: 'Alertas automáticos', cor: '#e07b00', fundo: '#fff0e6' },
+    { id: 'promocao', emoji: '📢', titulo: 'Promoção', desc: 'Gerador WhatsApp', cor: '#c0392b', fundo: '#fdecea' },
+    { id: 'caixa', emoji: '🧾', titulo: 'Caixa', desc: 'Fechamento de caixa', cor: '#0d7680', fundo: '#e6f5f6' },
+    { id: 'cupom', emoji: '🧾', titulo: 'Cupom', desc: 'Imprimir cupom', cor: '#6d4c41', fundo: '#efebe9', externo: '/cupom.html' },
+    { id: 'etiquetas', emoji: '🏷️', titulo: 'Etiquetas', desc: 'Imprimir etiquetas', cor: '#37474f', fundo: '#eceff1', externo: '/etiquetas.html' },
   ];
 
   if (modo === "admin") return (
     <div style={{ minHeight: "100vh", background: "#f5f5f5", fontFamily: "'Nunito', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
-      <div style={{ background: "linear-gradient(135deg, #1b5e20, #2e7d32)", padding: "20px 16px", display: "block" }}>
-        <div>
-          <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0 }}>⚙️ Gerenciar Produtos</h1>
-          <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, margin: "2px 0 0" }}>{produtos.length} produtos cadastrados</p>
+      <div style={{ background: "linear-gradient(135deg, #1b5e20, #2e7d32)", padding: "20px 16px 16px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div>
+            <h1 style={{ color: "#fff", fontSize: 18, fontWeight: 800, margin: 0 }}>⚙️ Gerenciar</h1>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, margin: "2px 0 0" }}>Farmácia Arcanjo</p>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>+ Novo</button>
+            <button onClick={() => setModo("catalogo")} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>👁️ Ver</button>
+          </div>
         </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {[
+            { label: "Produtos", valor: `${produtos.length}`, icon: "💊" },
+            { label: "Baixo estoque", valor: `${produtos.filter(p => (p as any).estoque !== undefined && (p as any).estoque <= 5).length}`, icon: "⚠️" },
+            { label: "Promoções ativas", valor: `${produtos.filter(p => p.desc?.includes("PROMOÇÃO")).length}`, icon: "🔥" },
+          ].map(stat => (
+            <div key={stat.label} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 12, padding: "6px 12px", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 14 }}>{stat.icon}</span>
+              <div>
+                <div style={{ color: "#fff", fontSize: 14, fontWeight: 800, lineHeight: 1 }}>{stat.valor}</div>
+                <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, lineHeight: 1.2 }}>{stat.label}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
         <BarcodeScanner
   produtos={produtos}
   onSalvar={(p) => {
@@ -197,19 +221,25 @@ export default function CatalogoAdmin() {
 <RelatorioPedidos />
       {!secaoAdmin ? (
         <div style={{ padding: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
             {secoesAdmin.map(s => (
-              <div key={s.id} onClick={() => setSecaoAdmin(s.id)} style={{ background: "#fff", borderRadius: 16, padding: "20px 12px", textAlign: "center", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>{s.emoji}</div>
-                <div style={{ fontWeight: 700, fontSize: 14, color: "#1b5e20" }}>{s.titulo}</div>
-                <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>{s.desc}</div>
+              <div
+                key={s.id}
+                onClick={() => s.externo ? window.open(s.externo, '_blank') : setSecaoAdmin(s.id)}
+                style={{ background: "#fff", borderRadius: 16, padding: "20px 14px", textAlign: "center", cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.10)", border: "2px solid transparent", transition: "all 0.2s" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = s.cor; (e.currentTarget as HTMLDivElement).style.transform = "translateY(-3px)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = "transparent"; (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; }}
+              >
+                <div style={{ width: 52, height: 52, borderRadius: 14, background: s.fundo, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", fontSize: 26 }}>{s.emoji}</div>
+                <div style={{ fontWeight: 800, fontSize: 14, color: s.cor }}>{s.titulo}</div>
+                <div style={{ fontSize: 11, color: "#888", marginTop: 4 }}>{s.desc}</div>
               </div>
             ))}
           </div>
         </div>
       ) : (
         <div>
-          <button onClick={() => setSecaoAdmin(null)} style={{ margin: 16, padding: "8px 16px", borderRadius: 20, border: "none", background: "#1b5e20", color: "#fff", fontWeight: 700, cursor: "pointer" }}>← Voltar</button>
+          <button onClick={() => setSecaoAdmin(null)} style={{ margin: 16, padding: "8px 16px", borderRadius: 20, border: "none", background: "#1b5e20", color: "#fff", fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>← Voltar</button>
           {secaoAdmin === "relatorio" && <RelatorioPedidos />}
           {secaoAdmin === "clientes" && <CadastroClientes />}
           {secaoAdmin === "lembretes" && <LembretesAutomaticos />}
@@ -217,11 +247,6 @@ export default function CatalogoAdmin() {
           {secaoAdmin === "caixa" && <FechamentoCaixa produtos={produtos} onAtualizarEstoque={setProdutos} />}
         </div>
       )}
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => abrirForm()} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#fff", color: "#1b5e20", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>+ Novo</button>
-          <button onClick={() => setModo("catalogo")} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "rgba(255,255,255,0.2)", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>👁️ Ver</button>
-        </div>
-      </div>
       {msgSucesso && <div style={{ background: "#e8f5e9", padding: "10px 16px", textAlign: "center", color: "#2e7d32", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}
       <div style={{ padding: 16 }}>
         {produtos.map(p => (
@@ -232,7 +257,7 @@ export default function CatalogoAdmin() {
               <div style={{ fontSize: 13, color: "#2e7d32", fontWeight: 700 }}>R${p.preco.toFixed(2)}</div>
               {p.estoque !== undefined && <div style={{ fontSize: 11, color: p.estoque <= 5 ? "#ff9800" : "#888" }}>Estoque: {p.estoque} {p.estoque <= 5 ? "⚠️ Baixo!" : ""}</div>}
               {p.prescricao && <div style={{ fontSize: 11, color: "#e53935" }}>⚠️ Receita médica</div>}
-              {p.promocao && <div style={{ fontSize: 11, color: "#f57c00" }}>🔥 {p.promocao.descricao}</div>}
+              {(p as any).promocao && <div style={{ fontSize: 11, color: "#f57c00" }}>🔥 {(p as any).promocao.descricao}</div>}
             </div>
             <div style={{ display: "flex", gap: 6 }}>
               <button onClick={() => abrirForm(p)} style={{ padding: "6px 12px", borderRadius: 10, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>✏️</button>
