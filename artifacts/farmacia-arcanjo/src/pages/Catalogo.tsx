@@ -422,6 +422,50 @@ export default function CatalogoAdmin() {
   const [importando, setImportando] = useState(false);
   const [importResult, setImportResult] = useState<{ atualizados: number; naoEncontrados: string[] } | null>(null);
   const inputImportRef = useRef<HTMLInputElement>(null);
+  const [importandoEstoque, setImportandoEstoque] = useState(false);
+  const [importResultEstoque, setImportResultEstoque] = useState<{ atualizados: number; naoEncontrados: string[] } | null>(null);
+  const inputImportEstoqueRef = useRef<HTMLInputElement>(null);
+
+  const importarEstoqueSisMoura = async (file: File) => {
+    setImportandoEstoque(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const wb = XLSX.read(buffer, { type: "array" });
+      const ws = wb.Sheets["Relatorio"];
+      if (!ws) { alert("Aba 'Relatorio' não encontrada no arquivo."); setImportandoEstoque(false); return; }
+      const data: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      const linhas = (data.slice(1) as any[][]).filter((row: any[]) => row[1] != null);
+      let atualizados = 0;
+      const naoEncontrados: string[] = [];
+      const novosProdutos = [...produtos];
+      for (const row of linhas) {
+        const nomeSis = String(row[1]).trim();
+        const qtd = row[3] != null ? Number(row[3]) : null;
+        const custo = row[4] != null ? parseFloat(String(row[4]).replace(",", ".")) : null;
+        if (!nomeSis) continue;
+        const idx = novosProdutos.findIndex(p =>
+          p.nome.toLowerCase().includes(nomeSis.toLowerCase()) ||
+          nomeSis.toLowerCase().includes(p.nome.toLowerCase())
+        );
+        if (idx === -1) {
+          if (!naoEncontrados.includes(nomeSis)) naoEncontrados.push(nomeSis);
+          continue;
+        }
+        const atualizado = { ...novosProdutos[idx] };
+        if (qtd !== null && !isNaN(qtd)) atualizado.estoque = qtd;
+        if (custo !== null && !isNaN(custo) && custo > 0) atualizado.precoCusto = custo;
+        novosProdutos[idx] = atualizado;
+        await salvarProdutoFirebase(atualizado).catch(() => {});
+        atualizados++;
+      }
+      setProdutos(novosProdutos);
+      setImportResultEstoque({ atualizados, naoEncontrados });
+    } catch {
+      alert("Erro ao ler o arquivo. Verifique se é um .xlsx válido.");
+    } finally {
+      setImportandoEstoque(false);
+    }
+  };
 
   const importarVendas = async (file: File) => {
     setImportando(true);
@@ -822,9 +866,19 @@ export default function CatalogoAdmin() {
           onChange={e => { const f = e.target.files?.[0]; if (f) importarVendas(f); if (e.target) e.target.value = ""; }} />
         <button
           onClick={() => inputImportRef.current?.click()}
-          disabled={importando}
-          style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "2px dashed #1565c0", background: "#e3f2fd", color: "#1565c0", fontSize: 14, fontWeight: 700, cursor: importando ? "not-allowed" : "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 14, opacity: importando ? 0.7 : 1 }}>
+          disabled={importando || importandoEstoque}
+          style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "2px dashed #1565c0", background: "#e3f2fd", color: "#1565c0", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 8, opacity: (importando || importandoEstoque) ? 0.6 : 1 }}>
           {importando ? "⏳ Importando..." : "📥 Importar Vendas (Excel)"}
+        </button>
+
+        {/* ── Importar Estoque SIS Moura ── */}
+        <input ref={inputImportEstoqueRef} type="file" accept=".xlsx" style={{ display: "none" }}
+          onChange={e => { const f = e.target.files?.[0]; if (f) importarEstoqueSisMoura(f); if (e.target) e.target.value = ""; }} />
+        <button
+          onClick={() => inputImportEstoqueRef.current?.click()}
+          disabled={importando || importandoEstoque}
+          style={{ width: "100%", padding: "12px 16px", borderRadius: 12, border: "2px dashed #2e7d32", background: "#e8f5e9", color: "#2e7d32", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", marginBottom: 14, opacity: (importando || importandoEstoque) ? 0.6 : 1 }}>
+          {importandoEstoque ? "⏳ Importando..." : "📦 Importar Estoque (SIS Moura)"}
         </button>
 
         {/* ── Cabeçalho com toggle ── */}
@@ -922,6 +976,28 @@ export default function CatalogoAdmin() {
                 </div>
               )}
               <button onClick={() => setImportResult(null)} style={{ width: "100%", padding: 13, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #0d47a1, #1565c0)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Fechar</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Modal resultado SIS Moura ── */}
+        {importResultEstoque && (
+          <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <div style={{ background: "#fff", borderRadius: 20, padding: 24, width: "100%", maxWidth: 360, boxShadow: "0 20px 60px rgba(0,0,0,0.3)", fontFamily: "'Nunito', sans-serif" }}>
+              <h3 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800, color: "#1a1a1a" }}>Estoque SIS Moura</h3>
+              <p style={{ margin: "0 0 16px", fontSize: 12, color: "#888" }}>Estoque e custo unitário atualizados</p>
+              <div style={{ background: "#e8f5e9", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#2e7d32" }}>✅ {importResultEstoque.atualizados} produto(s) atualizados</span>
+              </div>
+              {importResultEstoque.naoEncontrados.length > 0 && (
+                <div style={{ background: "#fff9c4", borderRadius: 12, padding: "12px 16px", marginBottom: 12, maxHeight: 200, overflowY: "auto" }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#f57f17", marginBottom: 8 }}>⚠️ {importResultEstoque.naoEncontrados.length} não encontrado(s) no catálogo:</div>
+                  {importResultEstoque.naoEncontrados.map((n, i) => (
+                    <div key={i} style={{ fontSize: 12, color: "#666", marginBottom: 3 }}>• {n}</div>
+                  ))}
+                </div>
+              )}
+              <button onClick={() => setImportResultEstoque(null)} style={{ width: "100%", padding: 13, borderRadius: 12, border: "none", background: "linear-gradient(135deg, #1b5e20, #2e7d32)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>Fechar</button>
             </div>
           </div>
         )}
