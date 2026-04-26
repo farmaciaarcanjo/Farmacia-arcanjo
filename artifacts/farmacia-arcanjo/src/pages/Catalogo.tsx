@@ -770,8 +770,10 @@ export default function CatalogoAdmin() {
     }
 
     try {
+      const qtd: Record<string, number> = JSON.parse(localStorage.getItem("lara_carrinho_qtd") || "{}");
       const carrinho: number[] = JSON.parse(localStorage.getItem("lara_carrinho") || "[]");
-      for (const id of carrinho) {
+      const ids = Object.keys(qtd).length > 0 ? Object.keys(qtd).map(Number) : carrinho;
+      for (const id of ids) {
         const produto = produtos.find(p => p.id === id);
         if (produto && !itensParaAdicionar.find(x => x.id === id)) {
           itensParaAdicionar.push(produto);
@@ -780,14 +782,17 @@ export default function CatalogoAdmin() {
     } catch {}
 
     if (itensParaAdicionar.length > 0) {
+      let qtdMap: Record<string, number> = {};
+      try { qtdMap = JSON.parse(localStorage.getItem("lara_carrinho_qtd") || "{}"); } catch {}
       setPedido(prev => {
         let novo = [...prev];
         for (const produto of itensParaAdicionar) {
+          const qty = qtdMap[String(produto.id)] || 1;
           const existe = novo.find(i => i.produto.id === produto.id);
           if (existe) {
-            novo = novo.map(i => i.produto.id === produto.id ? { ...i, quantidade: i.quantidade + 1 } : i);
+            novo = novo.map(i => i.produto.id === produto.id ? { ...i, quantidade: qty } : i);
           } else {
-            novo = [...novo, { produto, quantidade: 1 }];
+            novo = [...novo, { produto, quantidade: qty }];
           }
         }
         return novo;

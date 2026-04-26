@@ -232,11 +232,10 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
   });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [adicionadosIds, setAdicionadosIds] = useState<Set<number>>(() => {
+  const [quantidades, setQuantidades] = useState<Record<number, number>>(() => {
     try {
-      const carrinho: number[] = JSON.parse(localStorage.getItem("lara_carrinho") || "[]");
-      return new Set(carrinho);
-    } catch { return new Set(); }
+      return JSON.parse(localStorage.getItem("lara_carrinho_qtd") || "{}") as Record<number, number>;
+    } catch { return {}; }
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMsgRef = useRef<HTMLDivElement>(null);
@@ -244,7 +243,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
   const sessaoId = useRef<string>(crypto.randomUUID());
   const primeiraMensagemRegistrada = useRef(false);
 
-  const carrinhoCount = adicionadosIds.size;
+  const carrinhoCount = Object.values(quantidades).reduce((a, b) => a + b, 0);
 
   useEffect(() => {
     salvarConversa(messages);
@@ -332,15 +331,24 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
     }
   };
 
-  function adicionarAoCatalogo(produto: Produto) {
-    trackProdutoAdicionado(produto.nome);
-    try {
-      const carrinho: number[] = JSON.parse(localStorage.getItem("lara_carrinho") || "[]");
-      if (!carrinho.includes(produto.id)) carrinho.push(produto.id);
-      localStorage.setItem("lara_carrinho", JSON.stringify(carrinho));
-      localStorage.setItem("lara_produto_pendente", String(produto.id));
-    } catch {}
-    setAdicionadosIds((prev) => new Set([...prev, produto.id]));
+  function atualizarQuantidade(produto: Produto, delta: number) {
+    if (delta > 0) trackProdutoAdicionado(produto.nome);
+    setQuantidades((prev) => {
+      const atual = prev[produto.id] || 0;
+      const nova = Math.max(0, atual + delta);
+      const novoEstado: Record<number, number> = { ...prev };
+      if (nova === 0) {
+        delete novoEstado[produto.id];
+      } else {
+        novoEstado[produto.id] = nova;
+      }
+      try {
+        const ids = Object.keys(novoEstado).map(Number);
+        localStorage.setItem("lara_carrinho", JSON.stringify(ids));
+        localStorage.setItem("lara_carrinho_qtd", JSON.stringify(novoEstado));
+      } catch {}
+      return novoEstado;
+    });
   }
 
   function verCarrinho() {
@@ -513,17 +521,28 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                         </div>
                       </div>
                       {!semEstoque && (
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => adicionarAoCatalogo(produto)}
-                            className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-all active:scale-95 ${
-                              adicionadosIds.has(produto.id)
-                                ? "bg-green-100 text-green-700 border border-green-400"
-                                : "border border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                            }`}
-                          >
-                            {adicionadosIds.has(produto.id) ? "✅ Adicionado" : "🛒 Adicionar"}
-                          </button>
+                        <div className="flex gap-2 items-center">
+                          {(quantidades[produto.id] || 0) > 0 ? (
+                            <div className="flex items-center gap-1.5 flex-1 bg-blue-50 rounded-lg px-2 py-1">
+                              <button
+                                onClick={() => atualizarQuantidade(produto, -1)}
+                                className="w-7 h-7 rounded-full bg-white border border-gray-200 text-gray-700 font-bold text-base flex items-center justify-center active:scale-90 shadow-sm"
+                              >−</button>
+                              <span className="flex-1 text-center font-bold text-sm text-primary">{quantidades[produto.id]}</span>
+                              <button
+                                onClick={() => atualizarQuantidade(produto, 1)}
+                                className="w-7 h-7 rounded-full text-white font-bold text-base flex items-center justify-center active:scale-90 shadow-sm"
+                                style={{ background: "#1565c0" }}
+                              >+</button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => atualizarQuantidade(produto, 1)}
+                              className="flex-1 text-xs font-bold py-1.5 rounded-lg border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
+                            >
+                              🛒 Adicionar
+                            </button>
+                          )}
                           <button
                             onClick={() => pedirWhatsApp(produto)}
                             className="flex-1 text-xs font-bold py-1.5 rounded-lg text-white transition-all active:scale-95"
