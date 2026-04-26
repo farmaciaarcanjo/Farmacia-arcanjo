@@ -1058,7 +1058,7 @@ export default function CatalogoAdmin() {
           <button onClick={() => setSecaoAdmin(null)} style={{ margin: 16, padding: "8px 16px", borderRadius: 20, border: "none", background: "#1565c0", color: "#fff", fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>← Voltar</button>
           {secaoAdmin === "relatorio" && <RelatorioPedidos />}
           {secaoAdmin === "clientes" && <CadastroClientes />}
-          {secaoAdmin === "lembretes" && <LembretesAutomaticos />}
+          {secaoAdmin === "lembretes" && <LembretesAutomaticos produtos={produtos} />}
           {secaoAdmin === "promocao" && <GeradorPromocao />}
           {secaoAdmin === "caixa" && <FechamentoCaixa produtos={produtos} onAtualizarEstoque={setProdutos} />}
           {secaoAdmin === "visitantes" && <VisitantesLara />}
