@@ -1,4 +1,13 @@
 import React, { useState } from "react";
+import { salvarPedidoCaixaFirebase, type PedidoFirebase } from "../lib/firebase";
+
+const CHAVE_PEDIDOS = "farmacia_arcanjo_pedidos";
+function salvarPedidoLocal(pedido: PedidoFirebase) {
+  try {
+    const lista = JSON.parse(localStorage.getItem(CHAVE_PEDIDOS) || "[]");
+    localStorage.setItem(CHAVE_PEDIDOS, JSON.stringify([pedido, ...lista]));
+  } catch {}
+}
 
 interface Produto {
   id: string;
@@ -65,6 +74,23 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
       return p;
     });
     onAtualizarEstoque(novos);
+
+    const pedido: PedidoFirebase = {
+      id: Date.now().toString(),
+      data: new Date().toISOString(),
+      itens: itens.map(i => ({
+        produtoId: i.produto.id,
+        nome: i.produto.nome,
+        quantidade: i.qtd,
+        precoUnitario: i.produto.preco,
+      })),
+      total,
+      formaPagamento,
+      status: "concluido",
+    };
+    salvarPedidoLocal(pedido);
+    salvarPedidoCaixaFirebase(pedido);
+
     setFechado(true);
   }
 

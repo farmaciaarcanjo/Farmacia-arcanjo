@@ -215,4 +215,73 @@ export async function buscarClientesDividaFirebase(): Promise<Record<string, unk
   } catch { return []; }
 }
 
+export async function deletarClienteDividaFirebase(id: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, "clientes_dividas", id));
+  } catch {}
+}
+
+export function escutarClientesFirebase(
+  onData: (clientes: Record<string, unknown>[]) => void
+): () => void {
+  return onSnapshot(
+    collection(db, "clientes_dividas"),
+    snap => {
+      onData(snap.docs.map(d => d.data() as Record<string, unknown>));
+    },
+    () => {}
+  );
+}
+
+// ── Lembretes de Clientes ─────────────────────────────────────────────────────
+export async function salvarLembreteFirebase(lembrete: Record<string, unknown>): Promise<void> {
+  try {
+    await setDoc(doc(db, "lembretes_clientes", String(lembrete.id)), {
+      ...lembrete,
+      updatedAt: serverTimestamp(),
+    });
+  } catch {}
+}
+
+export async function buscarLembretesFirebase(): Promise<Record<string, unknown>[]> {
+  try {
+    const snap = await getDocs(collection(db, "lembretes_clientes"));
+    return snap.docs.map(d => d.data() as Record<string, unknown>);
+  } catch { return []; }
+}
+
+export async function deletarLembreteFirebase(id: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, "lembretes_clientes", id));
+  } catch {}
+}
+
+// ── Pedidos / Fechamento de Caixa ─────────────────────────────────────────────
+export interface PedidoFirebase {
+  id: string;
+  data: string;
+  cliente?: string;
+  itens: Array<{ produtoId: string; nome: string; quantidade: number; precoUnitario: number }>;
+  total: number;
+  formaPagamento: string;
+  status: "concluido" | "pendente" | "cancelado";
+}
+
+export async function salvarPedidoCaixaFirebase(pedido: PedidoFirebase): Promise<void> {
+  try {
+    await setDoc(doc(db, "pedidos_caixa", pedido.id), {
+      ...pedido,
+      createdAt: serverTimestamp(),
+    });
+  } catch {}
+}
+
+export async function buscarPedidosCaixaFirebase(): Promise<PedidoFirebase[]> {
+  try {
+    const q = query(collection(db, "pedidos_caixa"), orderBy("createdAt", "desc"), limit(200));
+    const snap = await getDocs(q);
+    return snap.docs.map(d => d.data() as PedidoFirebase);
+  } catch { return []; }
+}
+
 export { addDoc, collection, serverTimestamp, query, orderBy, getDocs, doc, setDoc, deleteDoc, where };

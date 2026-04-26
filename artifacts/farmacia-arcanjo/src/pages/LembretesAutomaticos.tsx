@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Produto } from "../data/produtos";
+import { salvarLembreteFirebase, buscarLembretesFirebase, deletarLembreteFirebase } from "../lib/firebase";
 
 interface Props { produtos?: Produto[] }
 
@@ -82,15 +83,23 @@ export default function LembretesAutomaticos({ produtos = [] }: Props) {
   const [buscaEstoque, setBuscaEstoque] = useState("");
 
   useEffect(() => {
-    let lc = load<LembreteCliente>(CHAVE_LC);
     const nt = load<Notificacao>(CHAVE_NT);
     const th = loadObj<Record<string, number>>(CHAVE_MIN);
-    let demo = false;
-    if (lc.length === 0) { lc = demoClientes(); demo = true; }
-    setLcs(lc);
     setNotifs(nt);
     setThresholds(th);
-    setUsandoDemo(demo);
+
+    let lc = load<LembreteCliente>(CHAVE_LC);
+    if (lc.length === 0) { setLcs(demoClientes()); setUsandoDemo(true); }
+    else { setLcs(lc); setUsandoDemo(false); }
+
+    buscarLembretesFirebase().then((dados) => {
+      if (dados.length > 0) {
+        const doFirebase = dados as unknown as LembreteCliente[];
+        setLcs(doFirebase);
+        save(CHAVE_LC, doFirebase);
+        setUsandoDemo(false);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -135,14 +144,20 @@ export default function LembretesAutomaticos({ produtos = [] }: Props) {
   const enviarWhatsApp = (l: LembreteCliente) => {
     const msg = `Olá, ${l.clienteNome}! 👋\n\nPassando aqui da *Farmácia Arcanjo* para lembrar que está na hora de renovar seu medicamento de uso contínuo:\n\n💊 *${l.medicamento}*\n\nEstamos aqui para te atender! 😊\n\n📍 Meruoca-CE\n📞 (88) 99337-5650`;
     abrirWhatsApp(l.clienteTelefone, msg);
-    const at = lcs.map(lc => lc.id === l.id ? { ...lc, ultimoEnvio: new Date().toISOString(), proximoEnvio: proximaData(l.frequenciaDias) } : lc);
+    const atualizado = { ...l, ultimoEnvio: new Date().toISOString(), proximoEnvio: proximaData(l.frequenciaDias) };
+    const at = lcs.map(lc => lc.id === l.id ? atualizado : lc);
     setLcs(at);
-    if (!usandoDemo) save(CHAVE_LC, at);
+    if (!usandoDemo) { save(CHAVE_LC, at); salvarLembreteFirebase(atualizado as unknown as Record<string, unknown>); }
   };
 
   const toggleCliente = (id: string) => {
     const at = lcs.map(l => l.id === id ? { ...l, ativo: !l.ativo } : l);
-    setLcs(at); if (!usandoDemo) save(CHAVE_LC, at);
+    setLcs(at);
+    if (!usandoDemo) {
+      save(CHAVE_LC, at);
+      const updated = at.find(l => l.id === id);
+      if (updated) salvarLembreteFirebase(updated as unknown as Record<string, unknown>);
+    }
   };
 
   const salvarCliente = () => {
@@ -152,10 +167,17 @@ export default function LembretesAutomaticos({ produtos = [] }: Props) {
       medicamento: fcMed, frequenciaDias: parseInt(fcDias) || 30,
       proximoEnvio: proximaData(parseInt(fcDias) || 30), ativo: true,
     };
-    const at = [novo, ...lcs];
+    const at = [novo, ...lcs.filter(l => l.id !== "lc1" && l.id !== "lc2")];
     setLcs(at); save(CHAVE_LC, at); setUsandoDemo(false);
+    salvarLembreteFirebase(novo as unknown as Record<string, unknown>);
     setFcNome(""); setFcTel(""); setFcMed(""); setFcDias("30");
     setShowFormCliente(false);
+  };
+
+  const excluirLembrete = (id: string) => {
+    const at = lcs.filter(l => l.id !== id);
+    setLcs(at); save(CHAVE_LC, at);
+    deletarLembreteFirebase(id);
   };
 
   const salvarThreshold = (produtoId: string, valor: string) => {
@@ -309,7 +331,10 @@ export default function LembretesAutomaticos({ produtos = [] }: Props) {
                     <p style={{ margin: 0, fontSize: 12, color: urgCor(dias), fontWeight: 700 }}>📅 {urgLabel(dias)}</p>
                     <p style={{ margin: "2px 0 0", fontSize: 11, color: cor.muted }}>A cada {l.frequenciaDias} dias</p>
                   </div>
-                  <button style={s.btnWpp} onClick={() => enviarWhatsApp(l)}>📱 Enviar WhatsApp</button>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button style={s.btnWpp} onClick={() => enviarWhatsApp(l)}>📱 Enviar WhatsApp</button>
+                    {!usandoDemo && <button onClick={() => excluirLembrete(l.id)} style={{ background: "none", border: "none", color: cor.muted, cursor: "pointer", fontSize: 16, padding: "0 4px" }}>🗑️</button>}
+                  </div>
                 </div>
               </div>
             );

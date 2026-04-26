@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { salvarClienteDividaFirebase } from "../lib/firebase";
+import { salvarClienteDividaFirebase, escutarClientesFirebase, deletarClienteDividaFirebase } from "../lib/firebase";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 interface FiadoEntry {
@@ -101,7 +101,20 @@ export default function CadastroClientes() {
   const [fiadoValor, setFiadoValor] = useState("");
   const [fiadoDesc, setFiadoDesc] = useState("");
 
-  useEffect(() => { setClientes(carregarClientes()); }, []);
+  useEffect(() => {
+    setClientes(carregarClientes());
+    const unsubscribe = escutarClientesFirebase((dados) => {
+      if (dados.length > 0) {
+        const doFirebase = (dados as unknown as Cliente[]).map((c) => ({
+          ...c,
+          divida: c.divida ?? dividaVazia(),
+        }));
+        setClientes(doFirebase);
+        persistir(doFirebase);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const clientesFiltrados = useMemo(() => {
     if (!busca.trim()) return clientes;
@@ -159,6 +172,7 @@ export default function CadastroClientes() {
 
   const excluir = (id: string) => {
     salvarClientes(clientes.filter(c => c.id !== id));
+    deletarClienteDividaFirebase(id);
     setConfirmDelete(null);
     if (tela === "detalhe") setTela("lista");
   };

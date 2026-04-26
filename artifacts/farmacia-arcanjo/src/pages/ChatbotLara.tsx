@@ -199,31 +199,12 @@ interface AnvisaItem {
 
 async function buscarAnvisa(termo: string): Promise<AnvisaDados | null> {
   try {
-    const url =
-      `https://consultas.anvisa.gov.br/api/medicamento/?count=5` +
-      `&filter%5BnomeProduto%5D=${encodeURIComponent(termo.toUpperCase())}`;
-
-    const res = await fetch(url, {
-      headers: {
-        Accept: "application/json, text/plain, */*",
-        "Accept-Language": "pt-BR,pt;q=0.9",
-      },
-      signal: AbortSignal.timeout(5000),
+    const res = await fetch(`/api/anvisa/buscar?q=${encodeURIComponent(termo)}`, {
+      signal: AbortSignal.timeout(8000),
     });
-
     if (!res.ok) return null;
-
-    const data = (await res.json()) as { content?: AnvisaItem[]; totalElements?: number };
-    const items = data?.content;
-    if (!items || items.length === 0) return { encontrado: false };
-
-    const item = items[0];
-    return {
-      encontrado: true,
-      nomeProduto: item.nomeProduto,
-      principioAtivo: item.nomeGenerico || item.principioAtivo,
-      fonte: "ANVISA",
-    };
+    const data = (await res.json()) as AnvisaDados;
+    return data;
   } catch {
     return null;
   }

@@ -14,6 +14,7 @@
 // ============================================================
 
 import { useState, useEffect, useMemo } from "react";
+import { buscarPedidosCaixaFirebase, type PedidoFirebase } from "../lib/firebase";
 
 // ── Tipos ────────────────────────────────────────────────────
 interface ItemPedido {
@@ -107,12 +108,33 @@ export default function RelatorioPedidos() {
   useEffect(() => {
     const salvos = carregarPedidos();
     if (salvos.length === 0) {
-      const demo = gerarDemoData();
-      setPedidos(demo);
+      setPedidos(gerarDemoData());
       setUsandoDemo(true);
     } else {
       setPedidos(salvos);
     }
+
+    buscarPedidosCaixaFirebase().then((doFirebase: PedidoFirebase[]) => {
+      if (doFirebase.length > 0) {
+        const convertidos: Pedido[] = doFirebase.map(p => ({
+          id: p.id,
+          data: p.data,
+          cliente: p.cliente,
+          itens: p.itens.map(it => ({
+            produtoId: it.produtoId,
+            nome: it.nome,
+            quantidade: it.quantidade,
+            precoUnitario: it.precoUnitario,
+          })),
+          total: p.total,
+          status: p.status,
+        }));
+        convertidos.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
+        setPedidos(convertidos);
+        localStorage.setItem(CHAVE, JSON.stringify(convertidos));
+        setUsandoDemo(false);
+      }
+    });
   }, []);
 
   const pedidosFiltrados = useMemo(() => {
