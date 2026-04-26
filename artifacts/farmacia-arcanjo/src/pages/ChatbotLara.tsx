@@ -73,10 +73,19 @@ const ASSOCIACOES_TEXTO = (() => {
   return `\nASSOCIAÇÕES TERAPÊUTICAS (sugira automaticamente quando o cliente mencionar ou pedir o produto principal):\n${linhas}\nAo sugerir, use a frase: "💊 Clientes também levam junto:" e liste os associados com o preço.\n`;
 })();
 
-const MENSAGEM_BOAS_VINDAS =
-  "Olá! 👋 Sou a Lara, assistente virtual da Farmácia Arcanjo!\n" +
-  "Posso te ajudar a encontrar medicamentos, tirar dúvidas e fazer pedidos.\n" +
-  "Como posso te ajudar hoje? 💊";
+function getMensagemBoasVindas(): string {
+  try {
+    const count = parseInt(localStorage.getItem("fa_visit_count") || "0") + 1;
+    localStorage.setItem("fa_visit_count", String(count));
+    if (count >= 5) {
+      return "Olá, cliente fiel! 🌟 Fico sempre feliz quando você volta!\nComo posso te ajudar hoje? 💊";
+    } else if (count >= 2) {
+      return `Bem-vindo de volta! 👋 Que bom te ver de novo!\nComo posso te ajudar hoje? 💊`;
+    }
+  } catch {}
+  return "Olá! 👋 Sou a Lara, assistente virtual da Farmácia Arcanjo!\nPosso te ajudar a encontrar medicamentos, tirar dúvidas e fazer pedidos.\nComo posso te ajudar hoje? 💊";
+}
+const MENSAGEM_BOAS_VINDAS = getMensagemBoasVindas();
 
 const SYSTEM_PROMPT = `Você é Lara, a assistente virtual da Farmácia Arcanjo, localizada em Meruoca-CE.
 Você é simpática, prestativa, profissional e fala português brasileiro.
@@ -112,6 +121,7 @@ REGRAS PARA PERGUNTAS SOBRE MEDICAMENTOS (bula, princípio ativo, posologia, ind
 12. OBRIGATÓRIO: TODA resposta sobre medicamentos (indicação, bula, posologia, interações) DEVE TERMINAR EXATAMENTE COM: "Consulte um farmacêutico para orientações completas."
 13. Para interações medicamentosas, alerte claramente e sempre indique consulta ao farmacêutico ou médico.
 14. Quando receber DADOS ANVISA no contexto, mencione: "✔️ Registro ANVISA confirmado" e use esses dados como referência oficial para nome e princípio ativo.
+15. GENÉRICO vs. MARCA: Quando o cliente perguntar por um medicamento de marca (ex: "Tylenol", "Buscopan", "Cataflam"), SEMPRE verifique se há genérico equivalente no catálogo. Se houver, informe: "💸 Alternativa genérica: [nome do genérico] — R$ [preço]". Isso ajuda o cliente a economizar. Se não tiver no catálogo, oriente consultar pelo WhatsApp.
 ${ASSOCIACOES_TEXTO}`;
 
 const RESPOSTAS_RAPIDAS: Array<{ padroes: RegExp; resposta: string }> = [
@@ -293,12 +303,55 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
     } catch { return {}; }
   });
   const [imagemPendente, setImagemPendente] = useState<string | null>(null);
+  const [escutando, setEscutando] = useState(false);
+  const [vozAtiva, setVozAtiva] = useState(() => localStorage.getItem("fa_voz_ativa") === "1");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMsgRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const sessaoId = useRef<string>(crypto.randomUUID());
   const primeiraMensagemRegistrada = useRef(false);
+  const recognitionRef = useRef<any>(null);
+
+  function toggleVoz() {
+    const novo = !vozAtiva;
+    setVozAtiva(novo);
+    localStorage.setItem("fa_voz_ativa", novo ? "1" : "0");
+    if (!novo) window.speechSynthesis?.cancel();
+  }
+
+  function falarTexto(texto: string) {
+    if (!vozAtiva) return;
+    window.speechSynthesis?.cancel();
+    const limpo = texto.replace(/[*#_~`]/g, "").replace(/\n+/g, ". ").slice(0, 500);
+    const utt = new SpeechSynthesisUtterance(limpo);
+    utt.lang = "pt-BR";
+    utt.rate = 1.05;
+    utt.pitch = 1.1;
+    const vozes = window.speechSynthesis?.getVoices() ?? [];
+    const voz = vozes.find(v => v.lang === "pt-BR") ?? vozes.find(v => v.lang.startsWith("pt"));
+    if (voz) utt.voice = voz;
+    window.speechSynthesis?.speak(utt);
+  }
+
+  function iniciarMicrofone() {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { alert("Microfone não suportado neste navegador. Use o Chrome!"); return; }
+    if (escutando) { recognitionRef.current?.stop(); return; }
+    const rec = new SR();
+    recognitionRef.current = rec;
+    rec.lang = "pt-BR";
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.onstart = () => setEscutando(true);
+    rec.onresult = (e: any) => {
+      const texto = e.results[0][0].transcript;
+      setInput(prev => prev + texto);
+    };
+    rec.onerror = () => setEscutando(false);
+    rec.onend = () => setEscutando(false);
+    rec.start();
+  }
 
   const carrinhoCount = Object.values(quantidades).reduce((a, b) => a + b, 0);
 
@@ -327,6 +380,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
       ...prev,
       { id: crypto.randomUUID(), role: "assistant", content, timestamp: new Date(), produtosDetectados, mostrarBotaoCatalogo, mostrarMapa },
     ]);
+    falarTexto(content);
   }
 
   const sendMessage = async (textoOverride?: string) => {
@@ -449,12 +503,23 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
     onNavigateTab?.("catalogo");
   }
 
+  const LS_HISTORICO_KEY = "fa_historico_pedidos";
+
+  function salvarHistoricoPedido(nomes: string[]) {
+    try {
+      const hist: Array<{ ts: number; produtos: string[] }> = JSON.parse(localStorage.getItem(LS_HISTORICO_KEY) || "[]");
+      hist.unshift({ ts: Date.now(), produtos: nomes });
+      localStorage.setItem(LS_HISTORICO_KEY, JSON.stringify(hist.slice(0, 30)));
+    } catch {}
+  }
+
   function pedirWhatsApp(produto: Produto) {
     trackWhatsAppClick(produto.nome);
     const ts = Date.now();
     const url = window.location.href;
     salvarCliqueLocal([produto.nome], ts, url);
     registrarCliqueWhatsAppFirebase({ tipo: "clique_whatsapp", ts, produtos: [produto.nome], url });
+    salvarHistoricoPedido([produto.nome]);
     const preco = calcularPreco(produto, 1);
     const msg = `Olá! Vi no app da Farmácia Arcanjo e gostaria de pedir:\n• ${produto.nome} — R$${preco.toFixed(2)}\n\nPoderia confirmar disponibilidade? 😊`;
     window.open(`https://wa.me/5588993375650?text=${encodeURIComponent(msg)}`, "_blank");
@@ -467,6 +532,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
     const url = window.location.href;
     salvarCliqueLocal(nomes, ts, url);
     registrarCliqueWhatsAppFirebase({ tipo: "clique_whatsapp", ts, produtos: nomes, url });
+    salvarHistoricoPedido(nomes);
     const linhas = produtos
       .map((p) => {
         const preco = calcularPreco(p, 1);
@@ -477,6 +543,11 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
     const msg = `Olá! Vi no app da Farmácia Arcanjo e gostaria de pedir:\n${linhas}\n\nPoderia confirmar disponibilidade e entrega? 😊`;
     window.open(`https://wa.me/5588993375650?text=${encodeURIComponent(msg)}`, "_blank");
   }
+
+  const [mostrarHistorico, setMostrarHistorico] = useState(false);
+  const historicoPedidos: Array<{ ts: number; produtos: string[] }> = (() => {
+    try { return JSON.parse(localStorage.getItem(LS_HISTORICO_KEY) || "[]"); } catch { return []; }
+  })();
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
@@ -511,6 +582,22 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
           <p className="font-semibold text-sm">Lara</p>
           <p className="text-xs text-primary-foreground/70">Assistente Virtual · Online</p>
         </div>
+        <button
+          onClick={() => setMostrarHistorico(true)}
+          title="Meu histórico de pedidos"
+          className="p-1.5 rounded-full text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/10 transition-all active:scale-95"
+          aria-label="Histórico de pedidos"
+        >
+          🕐
+        </button>
+        <button
+          onClick={toggleVoz}
+          title={vozAtiva ? "Desativar voz da Lara" : "Ativar voz da Lara"}
+          className="p-1.5 rounded-full text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/10 transition-all active:scale-95"
+          aria-label="Ativar/desativar voz"
+        >
+          {vozAtiva ? "🔊" : "🔇"}
+        </button>
         <button
           onClick={() => {
             if (confirm("Apagar toda a conversa com a Lara?")) {
@@ -857,6 +944,19 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                 <circle cx="12" cy="13" r="4"/>
               </svg>
             </button>
+            <button
+              onClick={iniciarMicrofone}
+              disabled={loading}
+              title={escutando ? "Parar microfone" : "Falar com a Lara"}
+              className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all active:scale-95 disabled:opacity-40 ${
+                escutando
+                  ? "bg-red-500 text-white animate-pulse"
+                  : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+              }`}
+              aria-label="Falar com a Lara por voz"
+            >
+              🎤
+            </button>
             <textarea
               ref={textareaRef}
               value={input}
@@ -899,6 +999,39 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
           Lara pode cometer erros. Consulte um farmacêutico para orientações.
         </p>
       </div>
+
+      {/* Modal histórico de pedidos */}
+      {mostrarHistorico && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-0">
+          <div className="bg-white rounded-t-3xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
+            <div className="px-5 pt-5 pb-3 flex items-center justify-between border-b">
+              <div>
+                <p className="font-bold text-base text-gray-900">🕐 Meu Histórico de Pedidos</p>
+                <p className="text-xs text-gray-400 mt-0.5">{historicoPedidos.length} pedido(s) pelo WhatsApp</p>
+              </div>
+              <button onClick={() => setMostrarHistorico(false)} className="w-8 h-8 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-lg font-bold hover:bg-gray-200">✕</button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 py-3">
+              {historicoPedidos.length === 0 ? (
+                <div className="text-center py-10 text-gray-400">
+                  <div className="text-4xl mb-3">📭</div>
+                  <p className="text-sm">Nenhum pedido ainda.</p>
+                  <p className="text-xs mt-1">Seus pedidos enviados via WhatsApp aparecerão aqui.</p>
+                </div>
+              ) : historicoPedidos.map((pedido, i) => (
+                <div key={i} className="py-3 border-b last:border-b-0">
+                  <p className="text-[11px] text-gray-400 mb-1">
+                    {new Date(pedido.ts).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}
+                  </p>
+                  {pedido.produtos.map((nome, j) => (
+                    <p key={j} className="text-sm text-gray-700 font-semibold">• {nome}</p>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

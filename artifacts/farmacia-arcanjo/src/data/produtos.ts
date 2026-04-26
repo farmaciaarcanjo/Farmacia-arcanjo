@@ -13,6 +13,7 @@ export interface Produto {
   codigoBarras?: string;
   codigoSisMoura?: string;
   produtosAssociados?: number[];
+  dataValidade?: string;
   promocao?: {
     quantidade: number;
     precoTotal: number;

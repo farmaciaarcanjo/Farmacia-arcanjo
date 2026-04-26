@@ -11,6 +11,7 @@ import FechamentoCaixa from "./FechamentoCaixa";
 import AnalyticsDashboard from "./AnalyticsDashboard";
 import Financeiro from "./Financeiro";
 import GeradorEtiquetas from "./GeradorEtiquetas";
+import PushNotificacoes from "./PushNotificacoes";
 import { trackWhatsAppClick, trackProdutoAdicionado } from "../lib/analytics";
 import {
   salvarProdutoFirebase,
@@ -510,7 +511,7 @@ export default function CatalogoAdmin() {
   const [filtroBarras, setFiltroBarras] = useState<"todos" | "com" | "sem">("todos");
   const scrollAntesScan = useRef(0);
   const [editando, setEditando] = useState<number | null>(null);
-  const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, usoControlado: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
+  const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, usoControlado: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "", dataValidade: "" });
   const [formAssocIds, setFormAssocIds] = useState<number[]>([]);
   const [assocBusca, setAssocBusca] = useState("");
   const [msgSucesso, setMsgSucesso] = useState("");
@@ -1001,6 +1002,7 @@ export default function CatalogoAdmin() {
       usoControlado: form.usoControlado || undefined,
       estoque: form.estoque ? parseInt(form.estoque) : undefined,
       codigoBarras: form.codigoBarras || undefined,
+      dataValidade: form.dataValidade || undefined,
       produtosAssociados: formAssocIds.length > 0 ? formAssocIds : undefined,
       promocao: form.promoQtd && form.promoPreco ? {
         quantidade: parseInt(form.promoQtd),
@@ -1038,6 +1040,7 @@ export default function CatalogoAdmin() {
         usoControlado: produto.usoControlado || false,
         estoque: String(produto.estoque || ""),
         codigoBarras: produto.codigoBarras || "",
+        dataValidade: (produto as any).dataValidade || "",
         promoQtd: String(produto.promocao?.quantidade || ""),
         promoPreco: String(produto.promocao?.precoTotal || ""),
         promoDesc: produto.promocao?.descricao || ""
@@ -1045,7 +1048,7 @@ export default function CatalogoAdmin() {
       setFormAssocIds(produto.produtosAssociados || []);
     } else {
       setEditando(null);
-      setForm({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, usoControlado: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
+      setForm({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, usoControlado: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "", dataValidade: "" });
       setFormAssocIds([]);
     }
     setAssocBusca("");
@@ -1109,6 +1112,8 @@ export default function CatalogoAdmin() {
     { id: 'financeiro', emoji: '💰', titulo: 'Financeiro', desc: 'Caixa, contas e DRE', cor: '#2e7d32', fundo: '#e8f5e9' },
     { id: 'etiquetas', emoji: '🏷️', titulo: 'Etiquetas', desc: 'Imprimir etiquetas', cor: '#37474f', fundo: '#eceff1' },
     { id: 'qrcode', emoji: '🔳', titulo: 'QR Code', desc: 'Divulgar o app', cor: '#1565c0', fundo: '#e3f2fd' },
+    { id: 'validade', emoji: '📅', titulo: 'Validade', desc: 'Vencimentos e reposição', cor: '#c62828', fundo: '#ffebee' },
+    { id: 'push', emoji: '🔔', titulo: 'Notificações', desc: 'Push para clientes', cor: '#6a1b9a', fundo: '#f3e5f5' },
   ];
 
   if (modo === "admin") return (
@@ -1151,11 +1156,16 @@ export default function CatalogoAdmin() {
           )}
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {[
-            { label: "Produtos", valor: `${produtos.length}`, icon: "💊" },
-            { label: "Baixo estoque", valor: `${produtos.filter(p => (p as any).estoque !== undefined && (p as any).estoque <= 5).length}`, icon: "⚠️" },
-            { label: "Promoções ativas", valor: `${produtos.filter(p => p.desc?.includes("PROMOÇÃO")).length}`, icon: "🔥" },
-          ].map(stat => (
+          {(() => {
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+            const em30 = new Date(hoje); em30.setDate(em30.getDate() + 30);
+            const vencendoEm30 = produtos.filter(p => { const dv = (p as any).dataValidade; if (!dv) return false; const d = new Date(dv + "T00:00:00"); return d <= em30; }).length;
+            return [
+              { label: "Produtos", valor: `${produtos.length}`, icon: "💊" },
+              { label: "Baixo estoque", valor: `${produtos.filter(p => (p as any).estoque !== undefined && (p as any).estoque <= 5).length}`, icon: "⚠️" },
+              { label: "A vencer (30d)", valor: `${vencendoEm30}`, icon: "📅" },
+              { label: "Promoções", valor: `${produtos.filter(p => p.desc?.includes("PROMOÇÃO")).length}`, icon: "🔥" },
+            ].map(stat => (
             <div key={stat.label} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", borderRadius: 12, padding: "6px 12px", display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 14 }}>{stat.icon}</span>
               <div>
@@ -1163,7 +1173,8 @@ export default function CatalogoAdmin() {
                 <div style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, lineHeight: 1.2 }}>{stat.label}</div>
               </div>
             </div>
-          ))}
+          ));
+          })()}
         </div>
       </div>
       {!secaoAdmin ? (
@@ -1203,6 +1214,64 @@ export default function CatalogoAdmin() {
           {secaoAdmin === "qrcode" && (
             <QRCodeAdmin />
           )}
+          {secaoAdmin === "push" && <PushNotificacoes />}
+          {secaoAdmin === "validade" && (() => {
+            const hoje = new Date(); hoje.setHours(0,0,0,0);
+            const em7 = new Date(hoje); em7.setDate(em7.getDate() + 7);
+            const em30 = new Date(hoje); em30.setDate(em30.getDate() + 30);
+            const vencidos = produtos.filter(p => { const dv = (p as any).dataValidade; if (!dv) return false; return new Date(dv + "T00:00:00") < hoje; });
+            const urgentes = produtos.filter(p => { const dv = (p as any).dataValidade; if (!dv) return false; const d = new Date(dv + "T00:00:00"); return d >= hoje && d <= em7; });
+            const proximos = produtos.filter(p => { const dv = (p as any).dataValidade; if (!dv) return false; const d = new Date(dv + "T00:00:00"); return d > em7 && d <= em30; });
+            const reposicao = produtos.filter(p => p.estoque !== undefined && p.estoque !== null && p.estoque <= 5);
+            const gerarListaReposicao = () => {
+              const texto = reposicao.map(p => `- ${p.emoji} ${p.nome}: ${p.estoque} un. → repor para ${Math.max(20, (p.estoque ?? 0) + 20)} un.`).join("\n");
+              const msg = `📦 *Lista de Reposição — Farmácia Arcanjo*\n${new Date().toLocaleDateString("pt-BR")}\n\n${texto || "Nenhum item com estoque baixo no momento."}`;
+              navigator.clipboard?.writeText(msg).then(() => alert("Lista copiada! Cole no WhatsApp ou e-mail."));
+            };
+            return (
+              <div style={{ padding: 16, fontFamily: "'Nunito', sans-serif" }}>
+                {vencidos.length > 0 && (
+                  <div style={{ background: "#ffebee", borderRadius: 16, padding: 16, marginBottom: 14, border: "2px solid #c62828" }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#c62828", marginBottom: 10 }}>🚫 Vencidos ({vencidos.length})</div>
+                    {vencidos.map(p => <div key={p.id} style={{ fontSize: 13, color: "#b71c1c", marginBottom: 4, fontWeight: 700 }}>{p.emoji} {p.nome} — venceu em {new Date((p as any).dataValidade + "T00:00:00").toLocaleDateString("pt-BR")}</div>)}
+                  </div>
+                )}
+                {urgentes.length > 0 && (
+                  <div style={{ background: "#fff9c4", borderRadius: 16, padding: 16, marginBottom: 14, border: "2px solid #f57f17" }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#e65100", marginBottom: 10 }}>⚠️ Vence em até 7 dias ({urgentes.length})</div>
+                    {urgentes.map(p => <div key={p.id} style={{ fontSize: 13, color: "#bf360c", marginBottom: 4, fontWeight: 700 }}>{p.emoji} {p.nome} — {new Date((p as any).dataValidade + "T00:00:00").toLocaleDateString("pt-BR")}</div>)}
+                  </div>
+                )}
+                {proximos.length > 0 && (
+                  <div style={{ background: "#fff3e0", borderRadius: 16, padding: 16, marginBottom: 14, border: "2px solid #ff9800" }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#e65100", marginBottom: 10 }}>📅 Vence em até 30 dias ({proximos.length})</div>
+                    {proximos.map(p => <div key={p.id} style={{ fontSize: 13, color: "#e65100", marginBottom: 4 }}>{p.emoji} {p.nome} — {new Date((p as any).dataValidade + "T00:00:00").toLocaleDateString("pt-BR")}</div>)}
+                  </div>
+                )}
+                {vencidos.length === 0 && urgentes.length === 0 && proximos.length === 0 && (
+                  <div style={{ background: "#e8f5e9", borderRadius: 16, padding: 20, marginBottom: 14, textAlign: "center" }}>
+                    <div style={{ fontSize: 28, marginBottom: 8 }}>✅</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "#2e7d32" }}>Nenhum produto vencendo nos próximos 30 dias</div>
+                    <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>Cadastre datas de validade nos produtos para monitorar.</div>
+                  </div>
+                )}
+                <div style={{ background: "#fff", borderRadius: 16, padding: 16, border: "2px solid #e0e0e0" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "#1565c0" }}>📦 Lista de Reposição ({reposicao.length})</div>
+                    <button onClick={gerarListaReposicao} style={{ padding: "8px 14px", borderRadius: 20, border: "none", background: "#1565c0", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>📋 Copiar</button>
+                  </div>
+                  {reposicao.length === 0 ? (
+                    <div style={{ fontSize: 13, color: "#888", textAlign: "center", padding: "10px 0" }}>Nenhum produto com estoque baixo ≤ 5 un.</div>
+                  ) : reposicao.map(p => (
+                    <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #f0f0f0" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>{p.emoji} {p.nome}</div>
+                      <span style={{ background: "#ffebee", color: "#c62828", borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 800 }}>{p.estoque ?? 0} un.</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
       {msgSucesso && <div style={{ background: "#e3f2fd", padding: "10px 16px", textAlign: "center", color: "#1565c0", fontWeight: 700, fontSize: 14 }}>{msgSucesso}</div>}
@@ -1547,6 +1616,11 @@ export default function CatalogoAdmin() {
                 style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: "2px solid #e0e0e0", fontSize: 14, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" as any }} />
             </div>
           ))}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 13, fontWeight: 700, color: "#c62828", display: "block", marginBottom: 6 }}>📅 Data de Validade</label>
+            <input type="date" value={form.dataValidade} onChange={e => setForm(f => ({ ...f, dataValidade: e.target.value }))}
+              style={{ width: "100%", padding: "11px 14px", borderRadius: 12, border: "2px solid #ffcdd2", fontSize: 14, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" as any, color: "#c62828" }} />
+          </div>
           <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "flex", alignItems: "center", gap: 8, marginBottom: 14, cursor: "pointer" }}>
             <input type="checkbox" checked={form.prescricao} onChange={e => setForm(f => ({ ...f, prescricao: e.target.checked }))} style={{ width: 18, height: 18 }} />
             ⚠️ Venda sob prescrição médica
