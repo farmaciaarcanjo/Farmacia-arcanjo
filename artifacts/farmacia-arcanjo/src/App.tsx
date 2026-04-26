@@ -96,7 +96,7 @@ function AppContent() {
           Farmácia Arcanjo · Rua Dom José, 135 — Centro, Meruoca-CE
         </p>
         <p className="text-center text-[10px] text-muted-foreground">
-          (88) 3571-1773 · WhatsApp (88) 99337-5650
+          WhatsApp (88) 99337-5650
         </p>
       </footer>
     </div>

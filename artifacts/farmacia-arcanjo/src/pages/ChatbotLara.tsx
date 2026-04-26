@@ -84,9 +84,8 @@ Você é simpática, prestativa, profissional e fala português brasileiro.
 INFORMAÇÕES DA FARMÁCIA:
 - Horário: Segunda a Sábado das 8h às 20h. Aos domingos das 8h às 12h.
 - Endereço: Rua Dom José, 135 — Centro, Meruoca-CE, CEP 62.130-000
-- Telefone fixo: (88) 3571-1773
 - WhatsApp: (88) 99337-5650
-- Entrega: Sim! Fazemos entrega gratuita. Ligue ou chame no WhatsApp.
+- Entrega: Sim! Fazemos entrega. Chame no WhatsApp.
 - Pagamento: Aceitamos dinheiro, Pix, débito e crédito.
 
 ${CATALOGO_TEXTO}
@@ -122,11 +121,11 @@ const RESPOSTAS_RAPIDAS: Array<{ padroes: RegExp; resposta: string }> = [
   },
   {
     padroes: /onde fica|endere[çc]o|localiza[çc]|como chegar|mapa|gps/i,
-    resposta: "📍 Rua Dom José, 135 — Centro, Meruoca-CE\n🕐 Seg–Sáb: 8h às 20h · Dom: 8h às 12h\n📞 (88) 3571-1773 · WhatsApp: (88) 99337-5650\n\n🗺️ Abra no mapa para me encontrar!",
+    resposta: "📍 Rua Dom José, 135 — Centro, Meruoca-CE\n🕐 Seg–Sáb: 8h às 20h · Dom: 8h às 12h\n📲 WhatsApp: (88) 99337-5650\n\n🗺️ Abra no mapa para me encontrar!",
   },
   {
     padroes: /delivery|entrega|entreg|motoboy/i,
-    resposta: "Sim! Fazemos entrega gratuita. Chame no WhatsApp: (88) 99337-5650 🛵",
+    resposta: "Sim! Fazemos entrega. Chame no WhatsApp: (88) 99337-5650 🛵",
   },
   {
     padroes: /pagamento|pagar|pix|cart[aã]o|cr[eé]dito|d[eé]bito|dinheiro/i,
