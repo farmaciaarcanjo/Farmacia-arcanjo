@@ -130,7 +130,7 @@ function detectarProdutos(texto: string): Produto[] {
       encontrados.push(p);
     }
   }
-  return encontrados.slice(0, 3);
+  return encontrados.slice(0, 8);
 }
 
 function detectarBotaoCatalogo(texto: string): boolean {
@@ -213,12 +213,22 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const lastMsgRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sessaoId = useRef<string>(crypto.randomUUID());
   const primeiraMensagemRegistrada = useRef(false);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messages.length === 0) return;
+    const lastMsg = messages[messages.length - 1];
+    const delay = lastMsg.role === "assistant" ? 80 : 30;
+    setTimeout(() => {
+      if (lastMsg.role === "assistant") {
+        lastMsgRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    }, delay);
   }, [messages]);
 
   function appendAssistantMessage(content: string) {
@@ -307,6 +317,24 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
     window.open(`https://wa.me/5588993375650?text=${encodeURIComponent(msg)}`, "_blank");
   }
 
+  function pedirWhatsAppLista(produtos: Produto[]) {
+    const nomes = produtos.map((p) => p.nome);
+    trackWhatsAppClick(nomes.join(", "));
+    const ts = Date.now();
+    const url = window.location.href;
+    salvarCliqueLocal(nomes, ts, url);
+    registrarCliqueWhatsAppFirebase({ tipo: "clique_whatsapp", ts, produtos: nomes, url });
+    const linhas = produtos
+      .map((p) => {
+        const preco = calcularPreco(p, 1);
+        const semEstoque = p.estoque === 0 ? " ❌ (verificar estoque)" : "";
+        return `• ${p.nome} — R$${preco.toFixed(2)}${semEstoque}`;
+      })
+      .join("\n");
+    const msg = `Olá! Vi no app da Farmácia Arcanjo e gostaria de pedir:\n${linhas}\n\nPoderia confirmar disponibilidade e entrega? 😊`;
+    window.open(`https://wa.me/5588993375650?text=${encodeURIComponent(msg)}`, "_blank");
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   };
@@ -352,8 +380,10 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-muted/30">
-        {messages.map((msg) => (
-          <div key={msg.id}>
+        {messages.map((msg, idx) => {
+          const isLast = idx === messages.length - 1;
+          return (
+          <div key={msg.id} ref={isLast && msg.role === "assistant" ? lastMsgRef : undefined}>
             <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
               {msg.role === "assistant" && (
                 <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold mr-2 mt-1 shrink-0">L</div>
@@ -391,21 +421,31 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                 {msg.produtosDetectados.map((produto) => {
                   const emPromocao = produto.desc?.includes("PROMOÇÃO") || !!produto.promocao;
                   const descPromo = produto.promocao?.descricao ?? produto.desc?.replace("🔥 PROMOÇÃO: ", "");
+                  const semEstoque = produto.estoque === 0;
                   return (
-                    <div key={produto.id} className="bg-card border rounded-xl p-3 shadow-xs" style={{ borderColor: emPromocao ? "#c62828" : "#e0e0e0" }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xl">{produto.emoji}</span>
+                    <div
+                      key={produto.id}
+                      className="bg-card border rounded-xl p-3 shadow-xs"
+                      style={{ borderColor: semEstoque ? "#9e9e9e" : emPromocao ? "#c62828" : "#e0e0e0", opacity: semEstoque ? 0.75 : 1 }}
+                    >
+                      <div className="flex items-start gap-2 mb-2">
+                        <span className="text-xl mt-0.5">{produto.emoji}</span>
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-sm text-foreground truncate">{produto.nome}</p>
-                          <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-bold text-sm text-foreground">{produto.nome}</p>
+                          <div className="flex items-center gap-2 flex-wrap mt-0.5">
                             {produto.precoOriginal && (
                               <span className="text-xs text-muted-foreground line-through">R${produto.precoOriginal.toFixed(2)}</span>
                             )}
-                            <span className="text-sm font-bold" style={{ color: emPromocao ? "#c62828" : "#1565c0" }}>
-                              R${produto.preco.toFixed(2)}
-                            </span>
-                            {emPromocao && (
+                            {!semEstoque && (
+                              <span className="text-sm font-bold" style={{ color: emPromocao ? "#c62828" : "#1565c0" }}>
+                                R${produto.preco.toFixed(2)}
+                              </span>
+                            )}
+                            {emPromocao && !semEstoque && (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "#ffebee", color: "#c62828" }}>🔥 {descPromo}</span>
+                            )}
+                            {semEstoque && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">🔴 Sem Estoque</span>
                             )}
                           </div>
                           {produto.prescricao && (
@@ -413,28 +453,47 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => adicionarAoCatalogo(produto)}
-                          className="flex-1 text-xs font-bold py-1.5 rounded-lg border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
-                        >
-                          🛒 Adicionar ao Pedido
-                        </button>
-                        <button
-                          onClick={() => pedirWhatsApp(produto)}
-                          className="flex-1 text-xs font-bold py-1.5 rounded-lg text-white transition-all active:scale-95"
-                          style={{ background: "linear-gradient(135deg, #25d366, #128c7e)" }}
-                        >
-                          📲 Pedir pelo WhatsApp
-                        </button>
-                      </div>
+                      {!semEstoque && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => adicionarAoCatalogo(produto)}
+                            className="flex-1 text-xs font-bold py-1.5 rounded-lg border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
+                          >
+                            🛒 Adicionar ao Pedido
+                          </button>
+                          <button
+                            onClick={() => pedirWhatsApp(produto)}
+                            className="flex-1 text-xs font-bold py-1.5 rounded-lg text-white transition-all active:scale-95"
+                            style={{ background: "linear-gradient(135deg, #25d366, #128c7e)" }}
+                          >
+                            📲 WhatsApp
+                          </button>
+                        </div>
+                      )}
+                      {semEstoque && (
+                        <p className="text-[11px] text-muted-foreground text-center mt-1">
+                          Consulte disponibilidade pelo WhatsApp: (88) 99337-5650
+                        </p>
+                      )}
                     </div>
                   );
                 })}
+
+                {/* Botão "Pedir Todos" quando há 2+ produtos disponíveis */}
+                {msg.produtosDetectados.filter((p) => p.estoque !== 0).length >= 2 && (
+                  <button
+                    onClick={() => pedirWhatsAppLista(msg.produtosDetectados!.filter((p) => p.estoque !== 0))}
+                    className="w-full text-sm font-bold py-2.5 rounded-xl text-white transition-all active:scale-95 shadow-sm mt-1"
+                    style={{ background: "linear-gradient(135deg, #25d366, #128c7e)" }}
+                  >
+                    📲 Pedir Todos pelo WhatsApp
+                  </button>
+                )}
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
 
         {/* Loading */}
         {loading && (
