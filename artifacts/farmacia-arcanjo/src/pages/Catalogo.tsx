@@ -488,16 +488,32 @@ export default function CatalogoAdmin() {
       const naoEncontrados: string[] = [];
       const novosProdutos = [...produtos];
       for (const row of linhas) {
+        // ── Filtros iniciais obrigatórios ─────────────────────────────────────
+        // Ignora linha de cabeçalho ou com nome inválido (col B)
+        const nomeRaw = row[1];
+        if (nomeRaw == null || typeof nomeRaw !== "string") continue;
+        const nomeTrimmed = nomeRaw.trim();
+        if (
+          nomeTrimmed === "" ||
+          nomeTrimmed.toLowerCase() === "produto" ||
+          nomeTrimmed.toLowerCase() === "nome" ||
+          nomeTrimmed.toLowerCase() === "descricao" ||
+          nomeTrimmed.toLowerCase() === "descrição" ||
+          nomeTrimmed.toLowerCase() === "item"
+        ) continue;
+        // Ignora linha com preço zerado, vazio ou não numérico (col G)
+        const vendaCheck = row[6] != null ? parseFloat(String(row[6]).replace(",", ".")) : NaN;
+        if (isNaN(vendaCheck) || vendaCheck <= 0) continue;
+        // ─────────────────────────────────────────────────────────────────────
+
         const codigoSis   = row[0] != null ? String(row[0]).trim() : null;
-        const nomeSis     = (row[1] as string).trim();
+        const nomeSis     = nomeTrimmed;
         const referencia  = row[2] != null && String(row[2]).trim() !== "" ? String(row[2]).trim() : null;
         const qtd         = row[3] != null && !isNaN(Number(row[3])) ? Number(row[3]) : null;
         const custoRaw    = row[4] != null ? parseFloat(String(row[4]).replace(",", ".")) : null;
         const custo       = custoRaw !== null && !isNaN(custoRaw) ? custoRaw : null;
-        const vendaRaw    = row[6] != null ? parseFloat(String(row[6]).replace(",", ".")) : null;
-        const venda       = vendaRaw !== null && !isNaN(vendaRaw) && vendaRaw > 0 ? vendaRaw : null;
+        const venda       = vendaCheck;
         if (!nomeSis || nomeSis.toLowerCase() === "produto") continue;
-        if (venda === null) continue;
         const nomeSisLow  = nomeSis.toLowerCase();
         const palavrasSis = nomeSisLow.split(/[\s,./\-+()]+/).filter(w => w.length > 2 && !IGNORAR_SIS.has(w));
         const buscarIdx = (): number => {
@@ -698,8 +714,10 @@ export default function CatalogoAdmin() {
     };
 
     for (const p of produtos) {
-      // 1. Deletar produtos genéricos junk ("Produto" / vazio)
-      if (!p.nome || p.nome.trim().toLowerCase() === "produto" || p.nome.trim() === "") {
+      // 1. Deletar documentos onde nome é "Produto"/vazio E preço é 0/null
+      const nomeJunk = !p.nome || p.nome.trim() === "" || p.nome.trim().toLowerCase() === "produto";
+      const precoJunk = p.preco == null || Number(p.preco) === 0;
+      if (nomeJunk && precoJunk) {
         setProdutos(prev => prev.filter(x => x.id !== p.id));
         deletarProdutoFirebase(p.id).catch(() => {});
         continue;
