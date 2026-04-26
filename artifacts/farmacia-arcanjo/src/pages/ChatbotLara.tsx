@@ -212,11 +212,19 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [adicionadosIds, setAdicionadosIds] = useState<Set<number>>(() => {
+    try {
+      const carrinho: number[] = JSON.parse(localStorage.getItem("lara_carrinho") || "[]");
+      return new Set(carrinho);
+    } catch { return new Set(); }
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMsgRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sessaoId = useRef<string>(crypto.randomUUID());
   const primeiraMensagemRegistrada = useRef(false);
+
+  const carrinhoCount = adicionadosIds.size;
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -302,7 +310,16 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
 
   function adicionarAoCatalogo(produto: Produto) {
     trackProdutoAdicionado(produto.nome);
-    localStorage.setItem("lara_produto_pendente", String(produto.id));
+    try {
+      const carrinho: number[] = JSON.parse(localStorage.getItem("lara_carrinho") || "[]");
+      if (!carrinho.includes(produto.id)) carrinho.push(produto.id);
+      localStorage.setItem("lara_carrinho", JSON.stringify(carrinho));
+      localStorage.setItem("lara_produto_pendente", String(produto.id));
+    } catch {}
+    setAdicionadosIds((prev) => new Set([...prev, produto.id]));
+  }
+
+  function verCarrinho() {
     onNavigateTab?.("catalogo");
   }
 
@@ -457,9 +474,13 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                         <div className="flex gap-2">
                           <button
                             onClick={() => adicionarAoCatalogo(produto)}
-                            className="flex-1 text-xs font-bold py-1.5 rounded-lg border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all active:scale-95"
+                            className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition-all active:scale-95 ${
+                              adicionadosIds.has(produto.id)
+                                ? "bg-green-100 text-green-700 border border-green-400"
+                                : "border border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                            }`}
                           >
-                            🛒 Adicionar ao Pedido
+                            {adicionadosIds.has(produto.id) ? "✅ Adicionado" : "🛒 Adicionar"}
                           </button>
                           <button
                             onClick={() => pedirWhatsApp(produto)}
@@ -532,6 +553,24 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
 
       {/* Footer */}
       <div className="bg-card border-t border-border rounded-b-xl">
+
+        {/* Barra do carrinho — aparece quando há itens adicionados */}
+        {carrinhoCount > 0 && (
+          <div className="px-3 pt-2">
+            <button
+              onClick={verCarrinho}
+              className="w-full flex items-center justify-between text-xs font-bold py-2.5 px-4 rounded-xl text-white transition-all active:scale-95"
+              style={{ background: "linear-gradient(135deg, #1565c0, #0d47a1)" }}
+            >
+              <span>🛒 Ver Pedido no Catálogo</span>
+              <span className="bg-white text-primary rounded-full px-2 py-0.5 font-extrabold">
+                {carrinhoCount} {carrinhoCount === 1 ? "item" : "itens"}
+              </span>
+            </button>
+          </div>
+        )}
+
+        {/* Input de mensagem */}
         <div className="px-3 pt-3 pb-1">
           <div className="flex gap-2 items-end bg-muted rounded-xl px-3 py-2">
             <textarea
@@ -539,7 +578,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
               value={input}
               onChange={handleInput}
               onKeyDown={handleKeyDown}
-              placeholder="Digite sua mensagem..."
+              placeholder="Digite sua mensagem para a Lara..."
               rows={1}
               className="flex-1 bg-transparent resize-none outline-none text-sm text-foreground placeholder:text-muted-foreground max-h-[120px] py-1"
             />
@@ -547,7 +586,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
               onClick={() => sendMessage()}
               disabled={!input.trim() || loading}
               className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary/90 transition-all active:scale-95"
-              aria-label="Enviar"
+              aria-label="Enviar mensagem para a Lara"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
                 <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
@@ -556,20 +595,23 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
           </div>
         </div>
 
-        {/* Botão fixo Falar com Atendente */}
-        <div className="px-3 pb-2 pt-1">
+        {/* Link WhatsApp com Atendente — estilo sutil, não confunde com enviar */}
+        <div className="px-3 pb-2 pt-1 flex items-center justify-center gap-1.5">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-green-600 shrink-0">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+            <path d="M11.996 0C5.373 0 0 5.373 0 12c0 2.09.543 4.052 1.491 5.762L.018 23.895a.5.5 0 00.608.625l6.318-1.656A11.945 11.945 0 0011.996 24C18.619 24 24 18.627 24 12S18.619 0 11.996 0zm0 21.818a9.818 9.818 0 01-5.007-1.374l-.36-.214-3.726.977.997-3.634-.235-.374A9.818 9.818 0 012.182 12c0-5.413 4.401-9.818 9.814-9.818S21.818 6.587 21.818 12c0 5.415-4.403 9.818-9.822 9.818z"/>
+          </svg>
           <a
             href="https://wa.me/5588993375650?text=Ol%C3%A1!%20Gostaria%20de%20falar%20com%20um%20atendente."
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-bold text-white transition-all active:scale-95"
-            style={{ background: "linear-gradient(135deg, #25d366, #128c7e)" }}
+            className="text-[11px] font-semibold text-green-700 underline underline-offset-2"
           >
-            📲 Falar com Atendente
+            Falar com atendente pelo WhatsApp
           </a>
         </div>
 
-        <p className="text-[10px] text-muted-foreground text-center pb-2">
+        <p className="text-[10px] text-muted-foreground text-center pb-2 px-3">
           Lara pode cometer erros. Consulte um farmacêutico para orientações.
         </p>
       </div>
