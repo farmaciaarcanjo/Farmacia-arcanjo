@@ -681,25 +681,43 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                 {/* Produtos Associados — "Clientes também levam junto" */}
                 {(() => {
                   const idsDetectados = new Set(msg.produtosDetectados.map(p => p.id));
+
+                  // 1) Associações cadastradas pelo admin
                   const assocIds = new Set<number>();
                   msg.produtosDetectados.forEach(p => {
                     (p.produtosAssociados ?? []).forEach(id => {
                       if (!idsDetectados.has(id)) assocIds.add(id);
                     });
                   });
-                  const assocProdutos = [...assocIds].map(id => todosProdutos.find(p => p.id === id)).filter(Boolean) as Produto[];
-                  const disponiveis = assocProdutos.filter(p => p.estoque !== 0);
+                  let sugeridos = [...assocIds]
+                    .map(id => todosProdutos.find(p => p.id === id))
+                    .filter(Boolean) as Produto[];
+
+                  // 2) Fallback automático: produtos da mesma categoria que NÃO estão na lista
+                  if (sugeridos.length === 0 && msg.produtosDetectados.length > 0) {
+                    const categorias = new Set(msg.produtosDetectados.map(p => p.categoria));
+                    sugeridos = todosProdutos
+                      .filter(p =>
+                        categorias.has(p.categoria) &&
+                        !idsDetectados.has(p.id) &&
+                        p.estoque !== 0 &&
+                        !p.usoControlado
+                      )
+                      .slice(0, 3);
+                  }
+
+                  const disponiveis = sugeridos.filter(p => p.estoque !== 0).slice(0, 3);
                   if (disponiveis.length === 0) return null;
                   return (
                     <div className="mt-2 rounded-xl border-2 border-blue-100 bg-blue-50 overflow-hidden">
-                      <div className="px-3 py-2 text-xs font-bold text-blue-800 bg-blue-100">💊 Clientes também levam junto:</div>
+                      <div className="px-3 py-2 text-xs font-bold text-blue-800 bg-blue-100">💊 Leve também:</div>
                       {disponiveis.map(p => (
                         <div key={p.id} className="flex items-center justify-between gap-2 px-3 py-2 border-t border-blue-100">
                           <div className="flex items-center gap-2 min-w-0">
                             <span className="text-lg shrink-0">{p.emoji}</span>
                             <div className="min-w-0">
                               <p className="text-xs font-semibold text-foreground truncate">{p.nome}</p>
-                              <p className="text-xs font-bold" style={{ color: "#1565c0" }}>R${p.preco.toFixed(2)}</p>
+                              <p className="text-xs font-bold" style={{ color: "#1565c0" }}>R$ {p.preco.toFixed(2)}</p>
                             </div>
                           </div>
                           <button
