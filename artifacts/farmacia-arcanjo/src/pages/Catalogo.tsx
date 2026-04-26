@@ -429,14 +429,20 @@ export default function CatalogoAdmin() {
   const correcaoFeita = useRef(false);
   const [scanProduto, setScanProduto] = useState<Produto | null>(null);
   const [scanCodigo, setScanCodigo] = useState("");
+  const [scanEstoque, setScanEstoque] = useState("");
   const [salvandoScan, setSalvandoScan] = useState(false);
 
-  const abrirScan = (p: Produto) => { setScanProduto(p); setScanCodigo(p.codigoBarras ?? ""); };
-  const fecharScan = () => { setScanProduto(null); setScanCodigo(""); };
+  const abrirScan = (p: Produto) => {
+    setScanProduto(p);
+    setScanCodigo(p.codigoBarras ?? "");
+    setScanEstoque(p.estoque != null ? String(p.estoque) : "");
+  };
+  const fecharScan = () => { setScanProduto(null); setScanCodigo(""); setScanEstoque(""); };
   const salvarCodigoBarras = async () => {
     if (!scanProduto) return;
     setSalvandoScan(true);
-    const atualizado = { ...scanProduto, codigoBarras: scanCodigo.trim() || undefined };
+    const estoqueNum = scanEstoque.trim() !== "" && !isNaN(Number(scanEstoque)) ? Number(scanEstoque) : scanProduto.estoque;
+    const atualizado = { ...scanProduto, codigoBarras: scanCodigo.trim() || undefined, estoque: estoqueNum };
     setProdutos(prev => prev.map(p => p.id === atualizado.id ? atualizado : p));
     await salvarProdutoFirebase(atualizado).catch(() => {});
     setSalvandoScan(false);
@@ -1255,9 +1261,25 @@ export default function CatalogoAdmin() {
                 onFocus={e => { e.currentTarget.style.borderColor = "#6a1b9a"; }}
                 onBlur={e => { e.currentTarget.style.borderColor = "#e0e0e0"; }}
               />
-              <div style={{ fontSize: 10, color: "#aaa", marginTop: 5, marginBottom: 18 }}>
+              <div style={{ fontSize: 10, color: "#aaa", marginTop: 5, marginBottom: 16 }}>
                 Com leitor USB/Bluetooth: aponte o scanner para o código — ele preenche e confirma automaticamente.
               </div>
+
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#555", marginBottom: 6 }}>
+                📦 Quantidade em estoque:
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                value={scanEstoque}
+                onChange={e => setScanEstoque(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && scanCodigo.trim()) salvarCodigoBarras(); }}
+                placeholder={scanProduto?.estoque != null ? `Atual: ${scanProduto.estoque} un.` : "Ex: 10"}
+                style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: "2px solid #e0e0e0", fontSize: 15, fontWeight: 700, color: "#1a1a1a", outline: "none", fontFamily: "'Nunito', sans-serif", boxSizing: "border-box", marginBottom: 18 }}
+                onFocus={e => { e.currentTarget.style.borderColor = "#1565c0"; }}
+                onBlur={e => { e.currentTarget.style.borderColor = "#e0e0e0"; }}
+              />
 
               <div style={{ display: "flex", gap: 10 }}>
                 <button
@@ -1270,7 +1292,7 @@ export default function CatalogoAdmin() {
                   onClick={salvarCodigoBarras}
                   disabled={salvandoScan || !scanCodigo.trim()}
                   style={{ flex: 2, padding: 13, borderRadius: 12, border: "none", background: scanCodigo.trim() ? "linear-gradient(135deg, #4a148c, #6a1b9a)" : "#e0e0e0", color: scanCodigo.trim() ? "#fff" : "#aaa", fontSize: 14, fontWeight: 800, cursor: scanCodigo.trim() ? "pointer" : "default", fontFamily: "'Nunito', sans-serif", transition: "all 0.2s" }}>
-                  {salvandoScan ? "⏳ Salvando..." : "💾 Salvar Código"}
+                  {salvandoScan ? "⏳ Salvando..." : "💾 Salvar"}
                 </button>
               </div>
             </div>
