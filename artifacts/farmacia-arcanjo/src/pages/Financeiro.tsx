@@ -66,6 +66,7 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
 
   const [recorrentes, setRecorrentes] = useState<ContaRecorrente[]>([]);
   const [formRec, setFormRec] = useState<Omit<ContaRecorrente, "id">>({ nome: "", valor: 0, diaVencimento: 5, categoria: "Outro" });
+  const [formRecDiaStr, setFormRecDiaStr] = useState("5");
   const [mostrarFormRec, setMostrarFormRec] = useState(false);
   const [salvandoRec, setSalvandoRec] = useState(false);
   const [msgRec, setMsgRec] = useState("");
@@ -146,10 +147,15 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
       setMostrarFormConta(false);
       setMsgConta("✅ Conta salva com sucesso!");
       setTimeout(() => setMsgConta(""), 3000);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Erro ao salvar conta:", err);
-      setMsgConta("❌ Erro ao salvar. Verifique sua conexão.");
-      setTimeout(() => setMsgConta(""), 4000);
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("permission") || msg.includes("PERMISSION")) {
+        setMsgConta("❌ Sem permissão no Firebase. Atualize as regras do Firestore.");
+      } else {
+        setMsgConta("❌ Erro ao salvar: " + msg);
+      }
+      setTimeout(() => setMsgConta(""), 6000);
     }
     setSalvandoConta(false);
   }
@@ -218,13 +224,19 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
       });
       setContas(prev => [...prev, { id: contaRef.id, nome: formRec.nome, valor: formRec.valor, vencimento: `${ano}-${mes}-${dia}`, categoria: formRec.categoria, status: "Pendente", recorrenteKey: chave }]);
       setFormRec({ nome: "", valor: 0, diaVencimento: 5, categoria: "Outro" });
+      setFormRecDiaStr("5");
       setMostrarFormRec(false);
       setMsgRec("✅ Conta fixa salva e lançada no mês atual!");
       setTimeout(() => setMsgRec(""), 3500);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Erro ao salvar recorrente:", err);
-      setMsgRec("❌ Erro ao salvar. Verifique conexão.");
-      setTimeout(() => setMsgRec(""), 4000);
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("permission") || msg.includes("PERMISSION")) {
+        setMsgRec("❌ Sem permissão no Firebase. Atualize as regras do Firestore.");
+      } else {
+        setMsgRec("❌ Erro ao salvar: " + msg);
+      }
+      setTimeout(() => setMsgRec(""), 6000);
     }
     setSalvandoRec(false);
   }
@@ -521,8 +533,12 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
                     </div>
                     <div>
                       <label style={labelStyle}>Dia do vencimento *</label>
-                      <input type="number" min="1" max="28" value={formRec.diaVencimento || ""}
-                        onChange={e => setFormRec(p => ({ ...p, diaVencimento: parseInt(e.target.value) || 1 }))}
+                      <input type="number" min="1" max="28" value={formRecDiaStr}
+                        onChange={e => {
+                          setFormRecDiaStr(e.target.value);
+                          const n = parseInt(e.target.value);
+                          if (!isNaN(n) && n >= 1 && n <= 28) setFormRec(p => ({ ...p, diaVencimento: n }));
+                        }}
                         placeholder="Ex: 5" style={inputStyle} />
                     </div>
                   </div>
