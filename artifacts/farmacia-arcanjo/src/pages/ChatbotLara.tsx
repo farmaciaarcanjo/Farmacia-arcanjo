@@ -225,6 +225,63 @@ function extrairTermoMedicamento(texto: string): string {
   return texto.replace(/[^\w\sáàãâéêíóôõúüçÁÀÃÂÉÊÍÓÔÕÚÜÇ]/g, " ").trim().slice(0, 50);
 }
 
+function renderTextoFormatado(texto: string, isUser: boolean) {
+  const paragrafos = texto.split(/\n\n+/);
+  return (
+    <div className="space-y-1.5">
+      {paragrafos.map((paragrafo, pi) => {
+        const linhas = paragrafo.split("\n");
+        const isBulletBlock = linhas.every(l => /^[•\-\*]\s/.test(l.trim()) || l.trim() === "");
+        if (isBulletBlock && linhas.some(l => /^[•\-\*]\s/.test(l.trim()))) {
+          return (
+            <ul key={pi} className="space-y-0.5 pl-1">
+              {linhas.filter(l => /^[•\-\*]\s/.test(l.trim())).map((l, li) => {
+                const txt = l.trim().replace(/^[•\-\*]\s*/, "");
+                return (
+                  <li key={li} className="flex items-start gap-1.5">
+                    <span className={`mt-0.5 shrink-0 text-[10px] ${isUser ? "text-primary-foreground/80" : "text-primary"}`}>●</span>
+                    <span>{renderInline(txt, isUser)}</span>
+                  </li>
+                );
+              })}
+            </ul>
+          );
+        }
+        return (
+          <div key={pi}>
+            {linhas.map((l, li) => {
+              if (/^[•\-\*]\s/.test(l.trim())) {
+                const txt = l.trim().replace(/^[•\-\*]\s*/, "");
+                return (
+                  <div key={li} className="flex items-start gap-1.5">
+                    <span className={`mt-0.5 shrink-0 text-[10px] ${isUser ? "text-primary-foreground/80" : "text-primary"}`}>●</span>
+                    <span>{renderInline(txt, isUser)}</span>
+                  </div>
+                );
+              }
+              return <p key={li}>{renderInline(l, isUser)}</p>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function renderInline(texto: string, isUser: boolean) {
+  const partes = texto.split(/(\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {partes.map((parte, i) => {
+        if (parte.startsWith("**") && parte.endsWith("**")) {
+          return <strong key={i} className={isUser ? "font-extrabold" : "font-bold text-blue-900"}>{parte.slice(2, -2)}</strong>;
+        }
+        return <span key={i}>{parte}</span>;
+      })}
+    </>
+  );
+}
+
 export default function ChatbotLara({ onNavigateTab }: Props) {
   const [messages, setMessages] = useState<Message[]>(() => {
     const salvas = carregarConversa();
@@ -510,9 +567,9 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                     style={{ display: "block" }}
                   />
                 )}
-                <div className="px-3 py-2">
-                  <p className="whitespace-pre-wrap">{msg.content}</p>
-                  <p className={`text-[10px] mt-1 ${msg.role === "user" ? "text-primary-foreground/60 text-right" : "text-muted-foreground"}`}>
+                <div className="px-3 py-2 text-sm leading-relaxed">
+                  {renderTextoFormatado(msg.content, msg.role === "user")}
+                  <p className={`text-[10px] mt-1.5 ${msg.role === "user" ? "text-primary-foreground/60 text-right" : "text-muted-foreground"}`}>
                     {formatTime(msg.timestamp)}
                   </p>
                 </div>
