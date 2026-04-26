@@ -75,12 +75,13 @@ REGRAS PARA PERGUNTAS SOBRE MEDICAMENTOS (bula, princípio ativo, posologia, ind
    💊 MEDICAMENTO: [nome comercial / princípio ativo]
    ✅ Indicação: [para que serve]
    📋 Posologia: [dose e frequência comum]
-   ⚠️ Contraindicações: [principais contraindicações]
    🔴 Controlado: [Sim/Não — se sim, exige receita médica]
+   (NÃO inclua contraindicações automaticamente — só inclua ⚠️ Contraindicações se o usuário perguntar diretamente)
 10. Se o medicamento estiver no CATÁLOGO LOCAL, informe o preço e disponibilidade na farmácia.
 11. Se NÃO encontrar o medicamento no catálogo local, informe que pode ser solicitado pelo WhatsApp e responda com o conhecimento farmacêutico geral.
 12. OBRIGATÓRIO: TODA resposta sobre medicamentos (indicação, bula, posologia, interações) DEVE TERMINAR EXATAMENTE COM: "Consulte um farmacêutico para orientações completas."
-13. Para interações medicamentosas, alerte claramente e sempre indique consulta ao farmacêutico ou médico.`;
+13. Para interações medicamentosas, alerte claramente e sempre indique consulta ao farmacêutico ou médico.
+14. Quando receber DADOS ANVISA no contexto, mencione: "✔️ Registro ANVISA confirmado" e use esses dados como referência oficial para nome e princípio ativo.`;
 
 const RESPOSTAS_RAPIDAS: Array<{ padroes: RegExp; resposta: string }> = [
   {
@@ -150,14 +151,44 @@ interface AnvisaDados {
   fonte?: string;
 }
 
+interface AnvisaItem {
+  idProduto?: number;
+  nomeProduto?: string;
+  nomeGenerico?: string;
+  principioAtivo?: string;
+  laboratorio?: string;
+  tipo?: string;
+  situacao?: string;
+  vencimento?: string;
+}
+
 async function buscarAnvisa(termo: string): Promise<AnvisaDados | null> {
   try {
-    const res = await fetch(`/api/anvisa/buscar?q=${encodeURIComponent(termo)}`, {
-      signal: AbortSignal.timeout(4000),
+    const url =
+      `https://consultas.anvisa.gov.br/api/medicamento/?count=5` +
+      `&filter%5BnomeProduto%5D=${encodeURIComponent(termo.toUpperCase())}`;
+
+    const res = await fetch(url, {
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Accept-Language": "pt-BR,pt;q=0.9",
+      },
+      signal: AbortSignal.timeout(5000),
     });
+
     if (!res.ok) return null;
-    const dados = (await res.json()) as AnvisaDados;
-    return dados;
+
+    const data = (await res.json()) as { content?: AnvisaItem[]; totalElements?: number };
+    const items = data?.content;
+    if (!items || items.length === 0) return { encontrado: false };
+
+    const item = items[0];
+    return {
+      encontrado: true,
+      nomeProduto: item.nomeProduto,
+      principioAtivo: item.nomeGenerico || item.principioAtivo,
+      fonte: "ANVISA",
+    };
   } catch {
     return null;
   }
