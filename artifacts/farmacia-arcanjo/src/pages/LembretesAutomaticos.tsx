@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import type { Produto } from "../data/produtos";
-import { salvarLembreteFirebase, buscarLembretesFirebase, deletarLembreteFirebase } from "../lib/firebase";
+import {
+  salvarLembreteFirebase, buscarLembretesFirebase, deletarLembreteFirebase,
+  salvarThresholdFirebase, deletarThresholdFirebase, escutarThresholdsFirebase,
+} from "../lib/firebase";
 
 interface Props { produtos?: Produto[] }
 
@@ -84,9 +87,10 @@ export default function LembretesAutomaticos({ produtos = [] }: Props) {
 
   useEffect(() => {
     const nt = load<Notificacao>(CHAVE_NT);
-    const th = loadObj<Record<string, number>>(CHAVE_MIN);
     setNotifs(nt);
-    setThresholds(th);
+
+    const thLocal = loadObj<Record<string, number>>(CHAVE_MIN);
+    setThresholds(thLocal);
 
     let lc = load<LembreteCliente>(CHAVE_LC);
     if (lc.length === 0) { setLcs(demoClientes()); setUsandoDemo(true); }
@@ -100,6 +104,19 @@ export default function LembretesAutomaticos({ produtos = [] }: Props) {
         setUsandoDemo(false);
       }
     });
+
+    let migrated = false;
+    const unsub = escutarThresholdsFirebase((th) => {
+      if (!migrated && Object.keys(th).length === 0 && Object.keys(thLocal).length > 0) {
+        migrated = true;
+        Object.entries(thLocal).forEach(([id, val]) => salvarThresholdFirebase(id, val));
+        return;
+      }
+      migrated = true;
+      setThresholds(th);
+      saveObj(CHAVE_MIN, th);
+    });
+    return () => unsub();
   }, []);
 
   useEffect(() => {
@@ -184,6 +201,7 @@ export default function LembretesAutomaticos({ produtos = [] }: Props) {
     const n = parseInt(valor) || 0;
     const novo = { ...thresholds, [produtoId]: n };
     setThresholds(novo); saveObj(CHAVE_MIN, novo);
+    salvarThresholdFirebase(produtoId, n);
     const novoEdit = { ...editando };
     delete novoEdit[produtoId];
     setEditando(novoEdit);
@@ -194,6 +212,7 @@ export default function LembretesAutomaticos({ produtos = [] }: Props) {
     const novo = { ...thresholds };
     delete novo[produtoId];
     setThresholds(novo); saveObj(CHAVE_MIN, novo);
+    deletarThresholdFirebase(produtoId);
   };
 
   const monitorados = produtos.filter(p => (thresholds[p.id] ?? 0) > 0);

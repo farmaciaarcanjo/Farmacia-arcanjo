@@ -299,4 +299,50 @@ export async function buscarPedidosCaixaFirebase(): Promise<PedidoFirebase[]> {
   } catch { return []; }
 }
 
+// ── Estoque Mínimos (thresholds) ──────────────────────────────────────────────
+export async function salvarThresholdFirebase(produtoId: string, valor: number): Promise<void> {
+  try {
+    await setDoc(doc(db, "estoque_minimos", String(produtoId)), {
+      produtoId: String(produtoId),
+      valor,
+      updatedAt: serverTimestamp(),
+    });
+  } catch {}
+}
+
+export async function buscarThresholdsFirebase(): Promise<Record<string, number>> {
+  try {
+    const snap = await getDocs(collection(db, "estoque_minimos"));
+    const result: Record<string, number> = {};
+    snap.docs.forEach(d => {
+      const data = d.data() as Record<string, unknown>;
+      result[String(data.produtoId)] = Number(data.valor);
+    });
+    return result;
+  } catch { return {}; }
+}
+
+export async function deletarThresholdFirebase(produtoId: string): Promise<void> {
+  try {
+    await deleteDoc(doc(db, "estoque_minimos", String(produtoId)));
+  } catch {}
+}
+
+export function escutarThresholdsFirebase(
+  onData: (thresholds: Record<string, number>) => void
+): Unsubscribe {
+  return onSnapshot(
+    collection(db, "estoque_minimos"),
+    snap => {
+      const result: Record<string, number> = {};
+      snap.docs.forEach(d => {
+        const data = d.data() as Record<string, unknown>;
+        result[String(data.produtoId)] = Number(data.valor);
+      });
+      onData(result);
+    },
+    () => {}
+  );
+}
+
 export { addDoc, collection, serverTimestamp, query, orderBy, getDocs, doc, setDoc, deleteDoc, where };
