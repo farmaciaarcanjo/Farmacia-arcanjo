@@ -106,10 +106,12 @@ router.get("/anvisa/buscar", async (req, res) => {
 
 router.post("/lara", async (req, res) => {
   try {
-    const { messages, systemPrompt, dadosAnvisa } = req.body as {
+    const { messages, systemPrompt, dadosAnvisa, imagemBase64, textoComImagem } = req.body as {
       messages: ChatMessage[];
       systemPrompt: string;
       dadosAnvisa?: AnvisaResultado | null;
+      imagemBase64?: string;
+      textoComImagem?: string;
     };
 
     if (!Array.isArray(messages) || typeof systemPrompt !== "string") {
@@ -139,10 +141,24 @@ Fonte: ANVISA
 ---`;
     }
 
-    const fullMessages: ChatMessage[] = [
+    type MultimodalContent = Array<{ type: "text"; text: string } | { type: "image_url"; image_url: { url: string; detail: "auto" } }>;
+    type ApiMessage = { role: "system" | "user" | "assistant"; content: string | MultimodalContent };
+
+    const apiMessages: ApiMessage[] = [
       { role: "system", content: systemFinal },
-      ...messages,
+      ...messages.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
     ];
+
+    const lastMsg = messages[messages.length - 1];
+    if (imagemBase64 && lastMsg) {
+      const multiContent: MultimodalContent = [
+        { type: "text", text: textoComImagem || lastMsg.content || "Leia esta receita médica." },
+        { type: "image_url", image_url: { url: imagemBase64, detail: "auto" } },
+      ];
+      apiMessages.push({ role: "user", content: multiContent });
+    } else if (lastMsg) {
+      apiMessages.push({ role: lastMsg.role, content: lastMsg.content });
+    }
 
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
@@ -152,7 +168,7 @@ Fonte: ANVISA
       },
       body: JSON.stringify({
         model: "gpt-5.4",
-        messages: fullMessages,
+        messages: apiMessages,
         max_completion_tokens: 1024,
       }),
     });

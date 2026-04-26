@@ -47,6 +47,7 @@ interface Message {
   timestamp: Date;
   produtosDetectados?: Produto[];
   mostrarBotaoCatalogo?: boolean;
+  imagemUrl?: string;
 }
 
 interface Props {
@@ -237,9 +238,11 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
       return JSON.parse(localStorage.getItem("lara_carrinho_qtd") || "{}") as Record<number, number>;
     } catch { return {}; }
   });
+  const [imagemPendente, setImagemPendente] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const lastMsgRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const sessaoId = useRef<string>(crypto.randomUUID());
   const primeiraMensagemRegistrada = useRef(false);
 
@@ -273,11 +276,15 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
 
   const sendMessage = async (textoOverride?: string) => {
     const trimmed = (textoOverride ?? input).trim();
-    if (!trimmed || loading) return;
+    const imagemAtual = imagemPendente;
+    if (!trimmed && !imagemAtual) return;
+    if (loading) return;
 
-    const userMessage: Message = { id: crypto.randomUUID(), role: "user", content: trimmed, timestamp: new Date() };
+    const textoFinal = trimmed || (imagemAtual ? "📷 Foto da receita enviada" : "");
+    const userMessage: Message = { id: crypto.randomUUID(), role: "user", content: textoFinal, timestamp: new Date(), imagemUrl: imagemAtual ?? undefined };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
+    setImagemPendente(null);
     if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     trackLaraMensagem();
@@ -286,14 +293,16 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
       primeiraMensagemRegistrada.current = true;
       const ts = Date.now();
       const sessao = sessaoId.current;
-      salvarInteracaoLocal(sessao, trimmed, ts);
-      registrarInteracaoLara({ sessao, primeiraMensagem: trimmed, ts });
+      salvarInteracaoLocal(sessao, textoFinal, ts);
+      registrarInteracaoLara({ sessao, primeiraMensagem: textoFinal, ts });
     }
 
-    const respostaRapida = detectarResposta(trimmed);
-    if (respostaRapida) {
-      setTimeout(() => appendAssistantMessage(respostaRapida), 400);
-      return;
+    if (!imagemAtual) {
+      const respostaRapida = detectarResposta(trimmed);
+      if (respostaRapida) {
+        setTimeout(() => appendAssistantMessage(respostaRapida), 400);
+        return;
+      }
     }
 
     setLoading(true);
@@ -303,7 +312,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
         .map((m) => ({ role: m.role, content: m.content }));
 
       let dadosAnvisa: AnvisaDados | null = null;
-      if (REGEX_INTENCAO_MEDICAMENTO.test(trimmed)) {
+      if (!imagemAtual && REGEX_INTENCAO_MEDICAMENTO.test(trimmed)) {
         const termo = extrairTermoMedicamento(trimmed);
         if (termo.length >= 3) {
           dadosAnvisa = await buscarAnvisa(termo);
@@ -317,6 +326,8 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
           systemPrompt: SYSTEM_PROMPT,
           messages: conversationHistory,
           dadosAnvisa: dadosAnvisa?.encontrado ? dadosAnvisa : null,
+          imagemBase64: imagemAtual ?? undefined,
+          textoComImagem: imagemAtual ? (trimmed || "Por favor, leia esta receita médica e me diga os medicamentos, dosagens e orientações.") : undefined,
         }),
       });
 
@@ -330,6 +341,18 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
       setLoading(false);
     }
   };
+
+  function handleFotoSelecionada(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      setImagemPendente(result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
 
   function atualizarQuantidade(produto: Produto, delta: number) {
     if (delta > 0) trackProdutoAdicionado(produto.nome);
@@ -456,17 +479,27 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                 <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold mr-2 mt-1 shrink-0">L</div>
               )}
               <div
-                className={`max-w-[78%] px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-xs ${
+                className={`max-w-[78%] rounded-2xl text-sm leading-relaxed shadow-xs overflow-hidden ${
                   msg.role === "user"
                     ? "bg-primary text-primary-foreground rounded-br-sm"
                     : "text-foreground rounded-bl-sm"
                 }`}
                 style={msg.role === "assistant" ? { background: "#e3f2fd", borderLeft: "3px solid #1565c0" } : {}}
               >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
-                <p className={`text-[10px] mt-1 ${msg.role === "user" ? "text-primary-foreground/60 text-right" : "text-muted-foreground"}`}>
-                  {formatTime(msg.timestamp)}
-                </p>
+                {msg.imagemUrl && (
+                  <img
+                    src={msg.imagemUrl}
+                    alt="Receita enviada"
+                    className="w-full max-h-52 object-cover rounded-t-2xl"
+                    style={{ display: "block" }}
+                  />
+                )}
+                <div className="px-3 py-2">
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <p className={`text-[10px] mt-1 ${msg.role === "user" ? "text-primary-foreground/60 text-right" : "text-muted-foreground"}`}>
+                    {formatTime(msg.timestamp)}
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -633,19 +666,50 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
 
         {/* Input de mensagem */}
         <div className="px-3 pt-3 pb-1">
+          {/* Preview da imagem selecionada */}
+          {imagemPendente && (
+            <div className="relative mb-2 inline-block">
+              <img src={imagemPendente} alt="Foto selecionada" className="h-20 w-auto rounded-xl border-2 border-primary object-cover shadow-sm" />
+              <button
+                onClick={() => setImagemPendente(null)}
+                className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center shadow font-bold"
+              >✕</button>
+            </div>
+          )}
           <div className="flex gap-2 items-end bg-muted rounded-xl px-3 py-2">
+            {/* Botão câmera */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFotoSelecionada}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={loading}
+              className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all active:scale-95 disabled:opacity-40"
+              aria-label="Enviar foto de receita"
+              title="Enviar foto de receita"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+              </svg>
+            </button>
             <textarea
               ref={textareaRef}
               value={input}
               onChange={handleInput}
               onKeyDown={handleKeyDown}
-              placeholder="Digite sua mensagem para a Lara..."
+              placeholder={imagemPendente ? "Adicione uma mensagem (opcional)..." : "Digite sua mensagem para a Lara..."}
               rows={1}
               className="flex-1 bg-transparent resize-none outline-none text-sm text-foreground placeholder:text-muted-foreground max-h-[120px] py-1"
             />
             <button
               onClick={() => sendMessage()}
-              disabled={!input.trim() || loading}
+              disabled={(!input.trim() && !imagemPendente) || loading}
               className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0 disabled:opacity-40 hover:bg-primary/90 transition-all active:scale-95"
               aria-label="Enviar mensagem para a Lara"
             >
