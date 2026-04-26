@@ -5,6 +5,24 @@ import { registrarInteracaoLara, registrarCliqueWhatsAppFirebase } from "../lib/
 
 const LS_INTERACOES_KEY = "farmacia_interacoes_lara";
 const LS_CLIQUES_KEY = "farmacia_cliques_whatsapp";
+const LS_CONVERSA_KEY = "farmacia_lara_conversa";
+
+function salvarConversa(msgs: Array<{ id: string; role: string; content: string; timestamp: Date; produtosDetectados?: Produto[]; mostrarBotaoCatalogo?: boolean }>) {
+  try {
+    const serialized = msgs.map((m) => ({ ...m, timestamp: m.timestamp.toISOString() }));
+    localStorage.setItem(LS_CONVERSA_KEY, JSON.stringify(serialized));
+  } catch {}
+}
+
+function carregarConversa(): Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: Date; produtosDetectados?: Produto[]; mostrarBotaoCatalogo?: boolean }> | null {
+  try {
+    const raw = localStorage.getItem(LS_CONVERSA_KEY);
+    if (!raw) return null;
+    const parsed: Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: string; produtosDetectados?: Produto[]; mostrarBotaoCatalogo?: boolean }> = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    return parsed.map((m) => ({ ...m, timestamp: new Date(m.timestamp) }));
+  } catch { return null; }
+}
 
 function salvarInteracaoLocal(sessao: string, primeiraMensagem: string, ts: number) {
   try {
@@ -207,9 +225,11 @@ function extrairTermoMedicamento(texto: string): string {
 }
 
 export default function ChatbotLara({ onNavigateTab }: Props) {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: "welcome", role: "assistant", content: MENSAGEM_BOAS_VINDAS, timestamp: new Date() },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const salvas = carregarConversa();
+    if (salvas && salvas.length > 0) return salvas;
+    return [{ id: "welcome", role: "assistant", content: MENSAGEM_BOAS_VINDAS, timestamp: new Date() }];
+  });
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [adicionadosIds, setAdicionadosIds] = useState<Set<number>>(() => {
@@ -225,6 +245,10 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
   const primeiraMensagemRegistrada = useRef(false);
 
   const carrinhoCount = adicionadosIds.size;
+
+  useEffect(() => {
+    salvarConversa(messages);
+  }, [messages]);
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -385,6 +409,24 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
           <p className="font-semibold text-sm">Lara</p>
           <p className="text-xs text-primary-foreground/70">Assistente Virtual · Online</p>
         </div>
+        <button
+          onClick={() => {
+            if (confirm("Apagar toda a conversa com a Lara?")) {
+              localStorage.removeItem(LS_CONVERSA_KEY);
+              setMessages([{ id: "welcome", role: "assistant", content: MENSAGEM_BOAS_VINDAS, timestamp: new Date() }]);
+            }
+          }}
+          className="p-1.5 rounded-full text-primary-foreground/60 hover:text-primary-foreground hover:bg-white/10 transition-all active:scale-95"
+          aria-label="Limpar conversa"
+          title="Limpar conversa"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+            <path d="M10 11v6M14 11v6" />
+            <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+          </svg>
+        </button>
         <a
           href={`https://wa.me/5588993375650?text=${encodeURIComponent("Olá! Estou no app da Farmácia Arcanjo e gostaria de falar com o farmacêutico 😊")}`}
           target="_blank"
