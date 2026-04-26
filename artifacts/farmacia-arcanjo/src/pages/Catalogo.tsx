@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { QRCodeCanvas } from "qrcode.react";
 import * as XLSX from "xlsx";
 import { PRODUTOS_INICIAIS, VERSAO_CATALOGO, calcularPreco, Produto } from "../data/produtos";
 import BarcodeScanner from "./BarcodeScanner";
@@ -387,6 +388,80 @@ function imprimirEtiqueta(p: Produto) {
   </body></html>`;
   const win = window.open('', '_blank', 'width=420,height=340');
   if (win) { win.document.write(html); win.document.close(); win.focus(); }
+}
+
+function QRCodeAdmin() {
+  const [copiado, setCopiado] = useState(false);
+  const url = window.location.origin;
+
+  function copiarLink() {
+    navigator.clipboard.writeText(url);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  }
+
+  function imprimir() {
+    const canvas = document.getElementById("qr-canvas") as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const img = canvas.toDataURL("image/png");
+    const html = `<!DOCTYPE html><html><head><title>QR Code — Farmácia Arcanjo</title>
+    <style>body{font-family:sans-serif;text-align:center;padding:40px}img{width:260px;height:260px}h2{color:#1565c0;margin-bottom:8px}p{color:#555;font-size:14px;margin:4px 0}</style></head>
+    <body><h2>⚕️ Farmácia Arcanjo</h2><p>Escaneie para acessar o app</p><br/><img src="${img}"/><br/><br/>
+    <p>📍 Rua Dom José, 135 — Centro, Meruoca-CE</p><p>📲 WhatsApp (88) 99337-5650</p>
+    <script>window.onload=()=>{window.print()}<\/script></body></html>`;
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); }
+  }
+
+  async function compartilhar() {
+    const texto = "💊 Farmácia Arcanjo — Meruoca-CE\nAtendimento virtual, catálogo de medicamentos e pedidos pelo WhatsApp!";
+    if (navigator.share) {
+      try { await navigator.share({ title: "Farmácia Arcanjo", text: texto, url }); } catch { /* cancelado */ }
+    } else { copiarLink(); }
+  }
+
+  return (
+    <div style={{ padding: 20, fontFamily: "'Nunito', sans-serif" }}>
+      <div style={{ background: "#fff", borderRadius: 20, padding: 24, textAlign: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", maxWidth: 360, margin: "0 auto" }}>
+        <div style={{ fontSize: 28, marginBottom: 6 }}>🔳</div>
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0d47a1", margin: "0 0 4px" }}>QR Code do App</h2>
+        <p style={{ fontSize: 12, color: "#666", margin: "0 0 20px" }}>Imprima e coloque no balcão para os clientes escanearem</p>
+
+        <div style={{ display: "inline-block", background: "#fff", padding: 12, borderRadius: 16, border: "3px solid #1565c0", marginBottom: 16 }}>
+          <QRCodeCanvas
+            id="qr-canvas"
+            value={url}
+            size={200}
+            bgColor="#ffffff"
+            fgColor="#0d47a1"
+            level="H"
+            includeMargin={false}
+          />
+        </div>
+
+        <div style={{ background: "#f0f4ff", borderRadius: 12, padding: "10px 14px", marginBottom: 16, wordBreak: "break-all" }}>
+          <p style={{ fontSize: 11, color: "#555", margin: "0 0 2px" }}>Link do app:</p>
+          <p style={{ fontSize: 12, fontWeight: 700, color: "#1565c0", margin: 0 }}>{url}</p>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, flexDirection: "column" }}>
+          <button onClick={imprimir} style={{ width: "100%", padding: "12px", borderRadius: 14, border: "none", background: "linear-gradient(135deg, #0d47a1, #1565c0)", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            🖨️ Imprimir QR Code
+          </button>
+          <button onClick={compartilhar} style={{ width: "100%", padding: "12px", borderRadius: 14, border: "2px solid #1565c0", background: "#fff", color: "#1565c0", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            📤 Compartilhar link
+          </button>
+          <button onClick={copiarLink} style={{ width: "100%", padding: "10px", borderRadius: 14, border: "1px solid #ddd", background: "#f5f5f5", color: "#555", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
+            {copiado ? "✅ Link copiado!" : "📋 Copiar link"}
+          </button>
+        </div>
+
+        <p style={{ fontSize: 11, color: "#aaa", marginTop: 16, lineHeight: 1.4 }}>
+          💡 Dica: cole o QR Code em sacolas, cartões de visita, balcão ou redes sociais!
+        </p>
+      </div>
+    </div>
+  );
 }
 
 export default function CatalogoAdmin() {
@@ -1011,6 +1086,7 @@ export default function CatalogoAdmin() {
     { id: 'cupom', emoji: '🧾', titulo: 'Cupom', desc: 'Imprimir cupom', cor: '#6d4c41', fundo: '#efebe9', externo: '/cupom.html' },
     { id: 'financeiro', emoji: '💰', titulo: 'Financeiro', desc: 'Caixa, contas e DRE', cor: '#2e7d32', fundo: '#e8f5e9' },
     { id: 'etiquetas', emoji: '🏷️', titulo: 'Etiquetas', desc: 'Imprimir etiquetas', cor: '#37474f', fundo: '#eceff1' },
+    { id: 'qrcode', emoji: '🔳', titulo: 'QR Code', desc: 'Divulgar o app', cor: '#1565c0', fundo: '#e3f2fd' },
   ];
 
   if (modo === "admin") return (
@@ -1101,6 +1177,9 @@ export default function CatalogoAdmin() {
           {secaoAdmin === "logatividades" && <LogAtividades />}
           {secaoAdmin === "usuarios" && usuarioLogado?.nivel === "master" && (
             <GerenciarUsuarios usuarios={usuariosAdmin} setUsuarios={setUsuariosAdmin} />
+          )}
+          {secaoAdmin === "qrcode" && (
+            <QRCodeAdmin />
           )}
         </div>
       )}

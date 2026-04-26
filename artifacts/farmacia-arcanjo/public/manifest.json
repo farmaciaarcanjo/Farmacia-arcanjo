@@ -1,0 +1,35 @@
+{
+  "name": "Farmácia Arcanjo",
+  "short_name": "Arcanjo",
+  "description": "Atendimento virtual, catálogo de medicamentos e pedidos — Meruoca-CE",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d47a1",
+  "theme_color": "#1565c0",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["health", "medical", "shopping"],
+  "shortcuts": [
+    {
+      "name": "Falar com a Lara",
+      "short_name": "Lara",
+      "description": "Abrir a assistente virtual",
+      "url": "/",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ]
+}
