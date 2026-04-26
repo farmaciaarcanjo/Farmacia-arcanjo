@@ -759,16 +759,38 @@ export default function CatalogoAdmin() {
   }, [produtos, firebaseAtivo]);
 
   useEffect(() => {
+    const itensParaAdicionar: Produto[] = [];
+
     const pendente = localStorage.getItem("lara_produto_pendente");
-    if (!pendente) return;
-    localStorage.removeItem("lara_produto_pendente");
-    const id = Number(pendente);
-    const produto = produtos.find(p => p.id === id);
-    if (produto) {
+    if (pendente) {
+      localStorage.removeItem("lara_produto_pendente");
+      const id = Number(pendente);
+      const produto = produtos.find(p => p.id === id);
+      if (produto) itensParaAdicionar.push(produto);
+    }
+
+    try {
+      const carrinho: number[] = JSON.parse(localStorage.getItem("lara_carrinho") || "[]");
+      for (const id of carrinho) {
+        const produto = produtos.find(p => p.id === id);
+        if (produto && !itensParaAdicionar.find(x => x.id === id)) {
+          itensParaAdicionar.push(produto);
+        }
+      }
+    } catch {}
+
+    if (itensParaAdicionar.length > 0) {
       setPedido(prev => {
-        const existe = prev.find(i => i.produto.id === id);
-        if (existe) return prev.map(i => i.produto.id === id ? { ...i, quantidade: i.quantidade + 1 } : i);
-        return [...prev, { produto, quantidade: 1 }];
+        let novo = [...prev];
+        for (const produto of itensParaAdicionar) {
+          const existe = novo.find(i => i.produto.id === produto.id);
+          if (existe) {
+            novo = novo.map(i => i.produto.id === produto.id ? { ...i, quantidade: i.quantidade + 1 } : i);
+          } else {
+            novo = [...novo, { produto, quantidade: 1 }];
+          }
+        }
+        return novo;
       });
     }
   }, []);
