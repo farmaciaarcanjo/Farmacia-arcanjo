@@ -1122,17 +1122,29 @@ export default function CatalogoAdmin() {
         </div>
 
         {/* ── Filtro código de barras ── */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-          {([["todos", "📋 Todos", "#555", "#f0f0f0"], ["sem", "❌ Sem código", "#6a1b9a", "#f3e5f5"], ["com", "✅ Com código", "#2e7d32", "#e8f5e9"]] as [typeof filtroBarras, string, string, string][]).map(([val, label, cor, bg]) => (
-            <button key={val} onClick={() => setFiltroBarras(val)}
-              style={{ padding: "6px 12px", borderRadius: 20, border: filtroBarras === val ? `2px solid ${cor}` : "2px solid transparent", background: filtroBarras === val ? bg : "#f8f8f8", color: filtroBarras === val ? cor : "#999", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", whiteSpace: "nowrap" }}>
-              {label}
-            </button>
-          ))}
-          <span style={{ fontSize: 11, color: "#aaa", alignSelf: "center", marginLeft: "auto" }}>
-            {filtroBarras === "sem" ? `${produtos.filter(p => !p.codigoBarras).length} sem código` : filtroBarras === "com" ? `${produtos.filter(p => !!p.codigoBarras).length} com código` : ""}
-          </span>
-        </div>
+        {(() => {
+          const qtdSem = produtos.filter(p => !p.codigoBarras).length;
+          const qtdCom = produtos.filter(p => !!p.codigoBarras).length;
+          return (
+            <div style={{ background: "#f9f0ff", borderRadius: 14, padding: "10px 12px", marginBottom: 14, border: "2px solid #e1bee7" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "#6a1b9a", marginBottom: 8 }}>
+                📷 Filtro de Código de Barras — <span style={{ color: "#c62828" }}>{qtdSem} sem código</span> · <span style={{ color: "#2e7d32" }}>{qtdCom} com código</span>
+              </div>
+              <div style={{ display: "flex", gap: 6 }}>
+                {([
+                  ["todos", `📋 Todos (${produtos.length})`, "#555", "#f0f0f0"],
+                  ["sem", `❌ Sem código (${qtdSem})`, "#6a1b9a", "#f3e5f5"],
+                  ["com", `✅ Com código (${qtdCom})`, "#2e7d32", "#e8f5e9"],
+                ] as [typeof filtroBarras, string, string, string][]).map(([val, label, cor, bg]) => (
+                  <button key={val} onClick={() => setFiltroBarras(val)}
+                    style={{ padding: "7px 12px", borderRadius: 20, border: filtroBarras === val ? `2px solid ${cor}` : "2px solid #e0e0e0", background: filtroBarras === val ? bg : "#fff", color: filtroBarras === val ? cor : "#999", fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "'Nunito', sans-serif", whiteSpace: "nowrap" }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── LISTA ── */}
         {viewProdutos === "lista" && (filtroBarras === "todos" ? produtos : filtroBarras === "com" ? produtos.filter(p => !!p.codigoBarras) : produtos.filter(p => !p.codigoBarras)).map(p => {
@@ -1149,6 +1161,9 @@ export default function CatalogoAdmin() {
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 13, color: "#1565c0", fontWeight: 700 }}>R$ {p.preco.toFixed(2).replace(".", ",")}</span>
                   <span style={{ background: badge.bg, color: badge.cor, borderRadius: 20, padding: "2px 9px", fontSize: 11, fontWeight: 700 }}>📦 {badge.txt}</span>
+                  {!p.codigoBarras
+                    ? <span style={{ background: "#f3e5f5", color: "#6a1b9a", borderRadius: 20, padding: "2px 8px", fontSize: 10, fontWeight: 800 }}>📷 SEM CÓDIGO</span>
+                    : <span style={{ background: "#e8f5e9", color: "#2e7d32", borderRadius: 20, padding: "2px 8px", fontSize: 10, fontWeight: 700 }}>✅ {p.codigoBarras}</span>}
                 </div>
                 {p.prescricao && <div style={{ fontSize: 10, color: "#e53935", marginTop: 2 }}>⚠️ Receita médica</div>}
                 {p.usoControlado && <div style={{ fontSize: 10, color: "#c62828", fontWeight: 800, marginTop: 2 }}>🚫 Uso controlado</div>}
@@ -1183,7 +1198,9 @@ export default function CatalogoAdmin() {
                   <div style={{ fontSize: 28, marginBottom: 6 }}>{p.emoji}</div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", textAlign: "center", marginBottom: 5, lineHeight: 1.3, padding: "0 4px" }}>{p.nome}</div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "#1565c0", marginBottom: 6 }}>R$ {p.preco.toFixed(2).replace(".", ",")}</div>
-                  <span style={{ background: badge.bg, color: badge.cor, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 700, marginBottom: 8 }}>📦 {badge.txt}</span>
+                  <span style={{ background: badge.bg, color: badge.cor, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 700, marginBottom: 4 }}>📦 {badge.txt}</span>
+                  {!p.codigoBarras && <span style={{ background: "#f3e5f5", color: "#6a1b9a", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 800, marginBottom: 4 }}>📷 SEM CÓDIGO</span>}
+                  {p.codigoBarras && <span style={{ background: "#e8f5e9", color: "#2e7d32", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 700, marginBottom: 4 }}>✅ {p.codigoBarras}</span>}
                   {p.prescricao && <div style={{ fontSize: 9, color: "#e53935", marginBottom: 4 }}>⚠️ Receita</div>}
                   {p.usoControlado && <div style={{ fontSize: 9, color: "#c62828", fontWeight: 800, marginBottom: 6 }}>🚫 Controlado</div>}
                   <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
