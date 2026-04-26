@@ -258,7 +258,11 @@ export default function RelatorioPedidos() {
             <div key={p.id} style={s.itemPedido} onClick={() => setPedidoAberto(pedidoAberto === p.id ? null : p.id)}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>#{p.id} {p.cliente ? `— ${p.cliente}` : ""}</p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>
+                    {p.cliente
+                      ? <><span style={{ color: "#93c5fd" }}>👤 {p.cliente}</span></>
+                      : <span style={{ color: cor.muted }}>Venda avulsa</span>}
+                  </p>
                   <p style={{ margin: "3px 0 0", fontSize: 11, color: cor.muted }}>{fmtData(p.data)}</p>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -268,6 +272,11 @@ export default function RelatorioPedidos() {
               </div>
               {pedidoAberto === p.id && (
                 <div style={{ marginTop: 12, borderTop: `1px solid ${cor.borda}`, paddingTop: 10 }}>
+                  {p.cliente && (
+                    <div style={{ marginBottom: 8, padding: "6px 10px", background: "#1e3a5f", borderRadius: 6, fontSize: 12, color: "#93c5fd" }}>
+                      👤 Cliente: <strong>{p.cliente}</strong>
+                    </div>
+                  )}
                   {p.itens.map((it, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: cor.muted, marginBottom: 4 }}>
                       <span>{it.nome} × {it.quantidade}</span>

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { salvarPedidoCaixaFirebase, type PedidoFirebase } from "../lib/firebase";
+import { registrarCompraCliente } from "./CadastroClientes";
 
 const CHAVE_PEDIDOS = "farmacia_arcanjo_pedidos";
 function salvarPedidoLocal(pedido: PedidoFirebase) {
@@ -14,6 +15,12 @@ interface Produto {
   nome: string;
   preco: number;
   estoque?: number;
+}
+
+interface ClienteSimples {
+  id: string;
+  nome: string;
+  telefone: string;
 }
 
 interface Props {
@@ -37,12 +44,37 @@ const s = {
 
 const fmtMoeda = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`;
 
+function carregarClientes(): ClienteSimples[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem("farmacia_arcanjo_clientes") || "[]");
+    return (raw as ClienteSimples[]).map(c => ({ id: c.id, nome: c.nome, telefone: c.telefone }));
+  } catch { return []; }
+}
+
 export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props) {
   const [itens, setItens] = useState<{ produto: Produto; qtd: number }[]>([]);
   const [busca, setBusca] = useState("");
   const [formaPagamento, setFormaPagamento] = useState("dinheiro");
   const [valorRecebido, setValorRecebido] = useState("");
   const [fechado, setFechado] = useState(false);
+
+  // Cliente
+  const [clientes, setClientes] = useState<ClienteSimples[]>([]);
+  const [buscaCliente, setBuscaCliente] = useState("");
+  const [clienteSelecionado, setClienteSelecionado] = useState<ClienteSimples | null>(null);
+  const [mostrarDropdown, setMostrarDropdown] = useState(false);
+  const clienteInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setClientes(carregarClientes());
+  }, []);
+
+  const clientesFiltrados = buscaCliente.trim().length >= 1
+    ? clientes.filter(c =>
+        c.nome.toLowerCase().includes(buscaCliente.toLowerCase()) ||
+        c.telefone.includes(buscaCliente)
+      ).slice(0, 6)
+    : [];
 
   const produtosFiltrados = produtos.filter(
     (p) => p.nome.toLowerCase().includes(busca.toLowerCase()) && (p.estoque ?? 1) > 0
@@ -67,6 +99,17 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
     setItens((prev) => prev.filter((i) => i.produto.id !== id));
   }
 
+  function selecionarCliente(c: ClienteSimples) {
+    setClienteSelecionado(c);
+    setBuscaCliente(c.nome);
+    setMostrarDropdown(false);
+  }
+
+  function limparCliente() {
+    setClienteSelecionado(null);
+    setBuscaCliente("");
+  }
+
   function finalizarVenda() {
     const novos = produtos.map((p) => {
       const item = itens.find((i) => i.produto.id === p.id);
@@ -75,9 +118,12 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
     });
     onAtualizarEstoque(novos);
 
+    const nomeCliente = clienteSelecionado?.nome || (buscaCliente.trim() || undefined);
+
     const pedido: PedidoFirebase = {
       id: Date.now().toString(),
       data: new Date().toISOString(),
+      cliente: nomeCliente,
       itens: itens.map(i => ({
         produtoId: i.produto.id,
         nome: i.produto.nome,
@@ -91,6 +137,15 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
     salvarPedidoLocal(pedido);
     salvarPedidoCaixaFirebase(pedido);
 
+    // Registrar compra no histórico do cliente (se vinculado via cadastro)
+    if (clienteSelecionado?.telefone) {
+      registrarCompraCliente(clienteSelecionado.telefone, {
+        data: pedido.data,
+        itens: itens.map(i => `${i.produto.nome} (${i.qtd}x)`),
+        total,
+      });
+    }
+
     setFechado(true);
   }
 
@@ -100,6 +155,8 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
     setFormaPagamento("dinheiro");
     setValorRecebido("");
     setFechado(false);
+    setClienteSelecionado(null);
+    setBuscaCliente("");
   }
 
   if (fechado) {
@@ -110,6 +167,11 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
           <div style={{ fontSize: 22, fontWeight: "bold", color: "#4ade80", marginBottom: 8 }}>
             Venda Finalizada!
           </div>
+          {clienteSelecionado && (
+            <div style={{ color: "#93c5fd", marginBottom: 8, fontSize: 15 }}>
+              👤 {clienteSelecionado.nome}
+            </div>
+          )}
           <div style={{ color: "#94a3b8", marginBottom: 8 }}>Total: {fmtMoeda(total)}</div>
           {formaPagamento === "dinheiro" && parseFloat(valorRecebido) > 0 && (
             <div style={{ color: "#4ade80", marginBottom: 24 }}>
@@ -127,6 +189,67 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
   return (
     <div style={s.container}>
       <div style={s.header}>🧾 Fechamento de Caixa</div>
+
+      {/* Campo Cliente */}
+      <div style={s.card}>
+        <div style={s.label}>👤 Cliente (opcional)</div>
+        <div style={{ position: "relative" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              ref={clienteInputRef}
+              style={{ ...s.input, flex: 1, borderColor: clienteSelecionado ? "#4ade80" : "#334155" }}
+              placeholder="Buscar cliente cadastrado ou digitar nome..."
+              value={buscaCliente}
+              onChange={(e) => {
+                setBuscaCliente(e.target.value);
+                setClienteSelecionado(null);
+                setMostrarDropdown(true);
+              }}
+              onFocus={() => setMostrarDropdown(true)}
+              onBlur={() => setTimeout(() => setMostrarDropdown(false), 150)}
+            />
+            {buscaCliente && (
+              <button
+                onClick={limparCliente}
+                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 18, padding: "0 4px", flexShrink: 0 }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Dropdown de clientes */}
+          {mostrarDropdown && clientesFiltrados.length > 0 && (
+            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, background: "#1e293b", border: "1px solid #334155", borderRadius: 8, zIndex: 50, marginTop: 4, boxShadow: "0 8px 24px rgba(0,0,0,0.4)" }}>
+              {clientesFiltrados.map(c => (
+                <div
+                  key={c.id}
+                  onMouseDown={() => selecionarCliente(c)}
+                  style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid #0f172a", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#334155")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600 }}>{c.nome}</div>
+                    <div style={{ fontSize: 11, color: "#94a3b8" }}>{c.telefone}</div>
+                  </div>
+                  <span style={{ fontSize: 18 }}>👤</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {clienteSelecionado && (
+          <div style={{ marginTop: 8, padding: "8px 12px", background: "#14532d", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 16 }}>✅</span>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#86efac" }}>{clienteSelecionado.nome}</div>
+              <div style={{ fontSize: 11, color: "#4ade80" }}>{clienteSelecionado.telefone} — histórico será atualizado</div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Busca produto */}
       <div style={s.card}>
@@ -236,7 +359,7 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
             onClick={finalizarVenda}
             disabled={itens.length === 0}
           >
-            ✅ Finalizar Venda
+            ✅ Finalizar Venda {clienteSelecionado ? `— ${clienteSelecionado.nome}` : ""}
           </button>
         </div>
       )}
