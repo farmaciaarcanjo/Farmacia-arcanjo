@@ -167,6 +167,21 @@ export async function registrarCliqueWhatsAppFirebase(dados: CliqueWhatsApp): Pr
   } catch {}
 }
 
+export async function buscarVisitasSite(maxRegistros = 500): Promise<{ ts: number; data: string }[]> {
+  try {
+    const q = query(
+      collection(db, "analytics"),
+      orderBy("createdAt", "desc"),
+      limit(maxRegistros)
+    );
+    const snap = await getDocs(q);
+    return snap.docs
+      .map(d => d.data() as Record<string, unknown>)
+      .filter(d => d.tipo === "visita")
+      .map(d => ({ ts: Number(d.ts ?? 0), data: String(d.data ?? "") }));
+  } catch { return []; }
+}
+
 export async function buscarInteracoesLara(maxRegistros = 100): Promise<InteracaoLara[]> {
   try {
     const q = query(collection(db, "interacoes_lara"), orderBy("createdAt", "desc"), limit(maxRegistros));

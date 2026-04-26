@@ -22,6 +22,7 @@ import {
   registrarCliqueWhatsAppFirebase,
   buscarInteracoesLara,
   buscarCliquesWhatsApp,
+  buscarVisitasSite,
   type InteracaoLara,
   type CliqueWhatsApp,
 } from "../lib/firebase";
@@ -66,6 +67,7 @@ function registrarLog(entry: LogEntry) {
 function VisitantesLara() {
   const [interacoes, setInteracoes] = useState<InteracaoLara[]>([]);
   const [cliques, setCliques] = useState<CliqueWhatsApp[]>([]);
+  const [visitas, setVisitas] = useState<{ ts: number; data: string }[]>([]);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -73,41 +75,47 @@ function VisitantesLara() {
     const lsCliq: CliqueWhatsApp[] = (() => { try { return JSON.parse(localStorage.getItem("farmacia_cliques_whatsapp") || "[]"); } catch { return []; } })();
     setInteracoes(lsInter);
     setCliques(lsCliq);
-    Promise.all([buscarInteracoesLara(200), buscarCliquesWhatsApp(200)]).then(([fi, fc]) => {
+    Promise.all([buscarInteracoesLara(300), buscarCliquesWhatsApp(300), buscarVisitasSite(500)]).then(([fi, fc, fv]) => {
       if (fi.length > 0) setInteracoes(fi);
       if (fc.length > 0) setCliques(fc);
+      setVisitas(fv);
     }).finally(() => setCarregando(false));
   }, []);
 
   const hoje = new Date().toDateString();
   const hojeInter = interacoes.filter(i => new Date(i.ts).toDateString() === hoje).length;
   const hojeCliq = cliques.filter(c => new Date(c.ts).toDateString() === hoje).length;
+  const hojeVisitas = visitas.filter(v => new Date(v.ts).toDateString() === hoje).length;
   const ultimas10 = [...interacoes].sort((a, b) => b.ts - a.ts).slice(0, 10);
 
-  const dias7: { label: string; conversas: number; cliques: number }[] = [];
+  const dias7: { label: string; visitas: number; conversas: number; cliques: number }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
     const str = d.toDateString();
     dias7.push({
       label: d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
+      visitas: visitas.filter(x => new Date(x.ts).toDateString() === str).length,
       conversas: interacoes.filter(x => new Date(x.ts).toDateString() === str).length,
       cliques: cliques.filter(x => new Date(x.ts).toDateString() === str).length,
     });
   }
-  const maxVal = Math.max(...dias7.map(d => d.conversas + d.cliques), 1);
+  const maxVal = Math.max(...dias7.map(d => d.visitas + d.conversas + d.cliques), 1);
 
   return (
     <div style={{ padding: 16, fontFamily: "'Nunito', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
-      <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1565c0", margin: "0 0 14px" }}>📊 Visitantes</h3>
+      <h3 style={{ fontSize: 16, fontWeight: 800, color: "#1565c0", margin: "0 0 4px" }}>📊 Visitantes</h3>
+      <p style={{ fontSize: 11, color: "#43a047", margin: "0 0 14px", display: "flex", alignItems: "center", gap: 4 }}>
+        ☁️ Dados salvos na nuvem — não se perdem
+      </p>
 
       {carregando && <div style={{ textAlign: "center", color: "#888", fontSize: 13, padding: 16 }}>⏳ Carregando dados...</div>}
 
       {/* Cards de hoje */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
         {[
+          { label: "Visitas ao app hoje", valor: hojeVisitas, icon: "👁️", cor: "#6a1b9a", fundo: "#f3e5f5" },
           { label: "Conversas com Lara hoje", valor: hojeInter, icon: "💬", cor: "#1565c0", fundo: "#e3f2fd" },
-          { label: "Cliques no WhatsApp hoje", valor: hojeCliq, icon: "📲", cor: "#1565c0", fundo: "#e3f2fd" },
         ].map(c => (
           <div key={c.label} style={{ background: c.fundo, borderRadius: 14, padding: "14px 12px", textAlign: "center" }}>
             <div style={{ fontSize: 24 }}>{c.icon}</div>
@@ -116,28 +124,42 @@ function VisitantesLara() {
           </div>
         ))}
       </div>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ background: "#e8f5e9", borderRadius: 14, padding: "14px 12px", textAlign: "center" }}>
+          <div style={{ fontSize: 24 }}>📲</div>
+          <div style={{ fontSize: 28, fontWeight: 800, color: "#2e7d32", lineHeight: 1.1 }}>{hojeCliq}</div>
+          <div style={{ fontSize: 11, color: "#555", marginTop: 4 }}>Cliques no WhatsApp hoje</div>
+        </div>
+      </div>
 
       {/* Gráfico 7 dias */}
       <div style={{ background: "#fff", borderRadius: 14, padding: 14, marginBottom: 18, boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }}>
         <p style={{ fontSize: 13, fontWeight: 800, color: "#333", margin: "0 0 12px" }}>📅 Últimos 7 dias</p>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 80 }}>
           {dias7.map((d, i) => {
-            const total = d.conversas + d.cliques;
+            const total = d.visitas + d.conversas + d.cliques;
             const altura = total === 0 ? 4 : Math.max(8, Math.round((total / maxVal) * 72));
             return (
               <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
                 <div style={{ fontSize: 9, fontWeight: 700, color: "#555" }}>{total > 0 ? total : ""}</div>
                 <div style={{ width: "100%", borderRadius: 6, overflow: "hidden", height: altura }}>
-                  <div style={{ height: `${d.conversas > 0 ? Math.round((d.conversas / Math.max(total, 1)) * 100) : 0}%`, background: "#1976d2", minHeight: d.conversas > 0 ? 4 : 0 }} />
-                  <div style={{ height: `${d.cliques > 0 ? Math.round((d.cliques / Math.max(total, 1)) * 100) : 0}%`, background: "#43a047", minHeight: d.cliques > 0 ? 4 : 0 }} />
-                  {total === 0 && <div style={{ height: "100%", background: "#e0e0e0", borderRadius: 6 }} />}
+                  {total === 0 ? (
+                    <div style={{ height: "100%", background: "#e0e0e0", borderRadius: 6 }} />
+                  ) : (
+                    <>
+                      <div style={{ height: `${d.visitas > 0 ? Math.round((d.visitas / Math.max(total, 1)) * 100) : 0}%`, background: "#8e24aa", minHeight: d.visitas > 0 ? 4 : 0 }} />
+                      <div style={{ height: `${d.conversas > 0 ? Math.round((d.conversas / Math.max(total, 1)) * 100) : 0}%`, background: "#1976d2", minHeight: d.conversas > 0 ? 4 : 0 }} />
+                      <div style={{ height: `${d.cliques > 0 ? Math.round((d.cliques / Math.max(total, 1)) * 100) : 0}%`, background: "#43a047", minHeight: d.cliques > 0 ? 4 : 0 }} />
+                    </>
+                  )}
                 </div>
                 <div style={{ fontSize: 9, color: "#999", textTransform: "capitalize" }}>{d.label}</div>
               </div>
             );
           })}
         </div>
-        <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 12px", marginTop: 8 }}>
+          <span style={{ fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, background: "#8e24aa", borderRadius: 2, display: "inline-block" }} />Visitas</span>
           <span style={{ fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, background: "#1976d2", borderRadius: 2, display: "inline-block" }} />Conversas</span>
           <span style={{ fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, background: "#43a047", borderRadius: 2, display: "inline-block" }} />WhatsApp</span>
         </div>
