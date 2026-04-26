@@ -410,6 +410,8 @@ export default function CatalogoAdmin() {
   const [pedido, setPedido] = useState<ItemPedido[]>([]);
   const [categoriaFiltro, setCategoriaFiltro] = useState("Todos");
   const [busca, setBusca] = useState("");
+  const [filtroBarras, setFiltroBarras] = useState<"todos" | "com" | "sem">("todos");
+  const scrollAntesScan = useRef(0);
   const [editando, setEditando] = useState<number | null>(null);
   const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, usoControlado: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
   const [msgSucesso, setMsgSucesso] = useState("");
@@ -433,11 +435,17 @@ export default function CatalogoAdmin() {
   const [salvandoScan, setSalvandoScan] = useState(false);
 
   const abrirScan = (p: Produto) => {
+    scrollAntesScan.current = window.scrollY;
     setScanProduto(p);
     setScanCodigo(p.codigoBarras ?? "");
     setScanEstoque(p.estoque != null ? String(p.estoque) : "");
   };
-  const fecharScan = () => { setScanProduto(null); setScanCodigo(""); setScanEstoque(""); };
+  const fecharScan = () => {
+    setScanProduto(null);
+    setScanCodigo("");
+    setScanEstoque("");
+    requestAnimationFrame(() => window.scrollTo(0, scrollAntesScan.current));
+  };
   const salvarCodigoBarras = async () => {
     if (!scanProduto) return;
     setSalvandoScan(true);
@@ -1098,8 +1106,8 @@ export default function CatalogoAdmin() {
           {importandoEstoque ? "⏳ Importando..." : "📦 Importar Estoque (SIS Moura)"}
         </button>
 
-        {/* ── Cabeçalho com toggle ── */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, marginTop: 0 }}>
+        {/* ── Cabeçalho com toggle + filtro barras ── */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, marginTop: 0 }}>
           <span style={{ fontSize: 13, color: "#888", fontFamily: "'Nunito', sans-serif" }}>{produtos.length} produto(s)</span>
           <div style={{ display: "flex", gap: 3, background: "#eeeeee", borderRadius: 22, padding: 3 }}>
             <button onClick={() => setView("lista")}
@@ -1113,8 +1121,21 @@ export default function CatalogoAdmin() {
           </div>
         </div>
 
+        {/* ── Filtro código de barras ── */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+          {([["todos", "📋 Todos", "#555", "#f0f0f0"], ["sem", "❌ Sem código", "#6a1b9a", "#f3e5f5"], ["com", "✅ Com código", "#2e7d32", "#e8f5e9"]] as [typeof filtroBarras, string, string, string][]).map(([val, label, cor, bg]) => (
+            <button key={val} onClick={() => setFiltroBarras(val)}
+              style={{ padding: "6px 12px", borderRadius: 20, border: filtroBarras === val ? `2px solid ${cor}` : "2px solid transparent", background: filtroBarras === val ? bg : "#f8f8f8", color: filtroBarras === val ? cor : "#999", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif", whiteSpace: "nowrap" }}>
+              {label}
+            </button>
+          ))}
+          <span style={{ fontSize: 11, color: "#aaa", alignSelf: "center", marginLeft: "auto" }}>
+            {filtroBarras === "sem" ? `${produtos.filter(p => !p.codigoBarras).length} sem código` : filtroBarras === "com" ? `${produtos.filter(p => !!p.codigoBarras).length} com código` : ""}
+          </span>
+        </div>
+
         {/* ── LISTA ── */}
-        {viewProdutos === "lista" && produtos.map(p => {
+        {viewProdutos === "lista" && (filtroBarras === "todos" ? produtos : filtroBarras === "com" ? produtos.filter(p => !!p.codigoBarras) : produtos.filter(p => !p.codigoBarras)).map(p => {
           const est = p.estoque;
           const badge = est === undefined || est === null ? { bg: "#ffebee", cor: "#c62828", txt: "Sem info" }
             : est === 0 ? { bg: "#ffebee", cor: "#c62828", txt: "Esgotado" }
@@ -1151,7 +1172,7 @@ export default function CatalogoAdmin() {
         {/* ── GRADE ── */}
         {viewProdutos === "grade" && (
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {produtos.map(p => {
+            {(filtroBarras === "todos" ? produtos : filtroBarras === "com" ? produtos.filter(p => !!p.codigoBarras) : produtos.filter(p => !p.codigoBarras)).map(p => {
               const est = p.estoque;
               const badge = est === undefined || est === null ? { bg: "#ffebee", cor: "#c62828", txt: "Sem info" }
                 : est === 0 ? { bg: "#ffebee", cor: "#c62828", txt: "Esgotado" }
