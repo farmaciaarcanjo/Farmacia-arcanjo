@@ -18,6 +18,9 @@ export interface ContaPagar {
   status: StatusContas;
   criadoEm?: number;
   recorrenteKey?: string;
+  parcelaKey?: string;
+  parcelaNum?: number;
+  parcelasTotal?: number;
 }
 
 export interface ContaRecorrente {
@@ -63,6 +66,11 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
   const [editandoConta, setEditandoConta] = useState<string | null>(null);
   const [salvandoConta, setSalvandoConta] = useState(false);
   const [msgConta, setMsgConta] = useState("");
+
+  const [formParcelado, setFormParcelado] = useState(false);
+  const [formNumParcelas, setFormNumParcelas] = useState(3);
+  const [formNumParcelasStr, setFormNumParcelasStr] = useState("3");
+  const [formIntervalo, setFormIntervalo] = useState(30);
 
   const [recorrentes, setRecorrentes] = useState<ContaRecorrente[]>([]);
   const [formRec, setFormRec] = useState<Omit<ContaRecorrente, "id">>({ nome: "", valor: 0, diaVencimento: 5, categoria: "Outro" });
@@ -160,10 +168,77 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
     setSalvandoConta(false);
   }
 
+  async function salvarContaParcelada() {
+    if (!formConta.nome.trim() || !formConta.valor || !formConta.vencimento) {
+      setMsgConta("❌ Preencha Descrição, Valor e 1º Vencimento.");
+      setTimeout(() => setMsgConta(""), 3000);
+      return;
+    }
+    const n = Math.max(2, Math.min(formNumParcelas, 60));
+    const valorParcela = parseFloat((formConta.valor / n).toFixed(2));
+    const chave = `parc_${Date.now()}`;
+    setSalvandoConta(true);
+    setMsgConta("");
+    try {
+      const novas: ContaPagar[] = [];
+      const baseDate = new Date(formConta.vencimento + "T12:00:00");
+      for (let i = 0; i < n; i++) {
+        const d = new Date(baseDate);
+        d.setDate(d.getDate() + i * formIntervalo);
+        const venc = d.toISOString().slice(0, 10);
+        const ref = await addDoc(collection(db, "contas_pagar"), {
+          nome: `${formConta.nome} (${i + 1}/${n})`,
+          valor: valorParcela,
+          vencimento: venc,
+          categoria: formConta.categoria,
+          status: "Pendente",
+          parcelaKey: chave,
+          parcelaNum: i + 1,
+          parcelasTotal: n,
+          criadoEm: Date.now(),
+          createdAt: serverTimestamp(),
+        });
+        novas.push({
+          id: ref.id,
+          nome: `${formConta.nome} (${i + 1}/${n})`,
+          valor: valorParcela,
+          vencimento: venc,
+          categoria: formConta.categoria,
+          status: "Pendente",
+          parcelaKey: chave,
+          parcelaNum: i + 1,
+          parcelasTotal: n,
+        });
+      }
+      setContas(prev => [...prev, ...novas]);
+      setFormConta({ nome: "", valor: 0, vencimento: "", categoria: "Outro", status: "Pendente" });
+      setFormParcelado(false);
+      setFormNumParcelas(3);
+      setFormNumParcelasStr("3");
+      setMostrarFormConta(false);
+      setMsgConta(`✅ ${n} parcelas criadas com sucesso!`);
+      setTimeout(() => setMsgConta(""), 4000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setMsgConta("❌ Erro ao salvar: " + msg);
+      setTimeout(() => setMsgConta(""), 6000);
+    }
+    setSalvandoConta(false);
+  }
+
   async function deletarConta(id: string) {
     if (!window.confirm("Remover esta conta?")) return;
     await deleteDoc(doc(db, "contas_pagar", id));
     setContas(prev => prev.filter(c => c.id !== id));
+  }
+
+  async function deletarTodasParcelas(parcelaKey: string) {
+    if (!window.confirm("Remover TODAS as parcelas desta compra?")) return;
+    const paraRemover = contas.filter(c => c.parcelaKey === parcelaKey);
+    for (const c of paraRemover) {
+      await deleteDoc(doc(db, "contas_pagar", c.id));
+    }
+    setContas(prev => prev.filter(c => c.parcelaKey !== parcelaKey));
   }
 
   function editarConta(c: ContaPagar) {
@@ -426,37 +501,88 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
                 <div style={{ marginBottom: 10 }}>
                   <label style={labelStyle}>Descrição *</label>
                   <input value={formConta.nome} onChange={e => setFormConta(p => ({ ...p, nome: e.target.value }))}
-                    placeholder="Ex: Conta de luz junho" style={inputStyle} />
+                    placeholder="Ex: Mercadoria Distribuidora X" style={inputStyle} />
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
-                    <label style={labelStyle}>Valor (R$) *</label>
+                    <label style={labelStyle}>{formParcelado ? "Valor total (R$) *" : "Valor (R$) *"}</label>
                     <input type="number" step="0.01" min="0" value={formConta.valor || ""}
                       onChange={e => setFormConta(p => ({ ...p, valor: parseFloat(e.target.value) || 0 }))}
                       placeholder="0,00" style={inputStyle} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Vencimento *</label>
+                    <label style={labelStyle}>{formParcelado ? "1º Vencimento *" : "Vencimento *"}</label>
                     <input type="date" value={formConta.vencimento}
                       onChange={e => setFormConta(p => ({ ...p, vencimento: e.target.value }))} style={inputStyle} />
                   </div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div>
                     <label style={labelStyle}>Categoria</label>
                     <select value={formConta.categoria} onChange={e => setFormConta(p => ({ ...p, categoria: e.target.value as CategoriaContas }))} style={inputStyle}>
                       {["Luz", "Água", "Aluguel", "Funcionário", "Fornecedor", "Outro"].map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
-                  <div>
-                    <label style={labelStyle}>Status</label>
-                    <select value={formConta.status} onChange={e => setFormConta(p => ({ ...p, status: e.target.value as StatusContas }))} style={inputStyle}>
-                      {["Pendente", "Pago", "Atrasado"].map(s => <option key={s}>{s}</option>)}
-                    </select>
-                  </div>
+                  {!formParcelado && (
+                    <div>
+                      <label style={labelStyle}>Status</label>
+                      <select value={formConta.status} onChange={e => setFormConta(p => ({ ...p, status: e.target.value as StatusContas }))} style={inputStyle}>
+                        {["Pendente", "Pago", "Atrasado"].map(s => <option key={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  )}
                 </div>
-                <button onClick={salvarConta} disabled={salvandoConta} style={{ ...btnPrimary, opacity: salvandoConta ? 0.7 : 1 }}>
-                  {salvandoConta ? "⏳ Salvando..." : editandoConta ? "💾 Salvar alterações" : "✅ Adicionar conta"}
+
+                {/* ── Toggle parcelado ── */}
+                {!editandoConta && (
+                  <div style={{ background: formParcelado ? "#fff8e1" : "#f5f5f5", borderRadius: 12, padding: "10px 14px", marginBottom: 12, border: formParcelado ? "2px solid #f9a825" : "2px solid transparent" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", userSelect: "none" }}>
+                      <input type="checkbox" checked={formParcelado} onChange={e => setFormParcelado(e.target.checked)}
+                        style={{ width: 18, height: 18, cursor: "pointer", accentColor: "#f9a825" }} />
+                      <span style={{ fontWeight: 700, fontSize: 13, color: formParcelado ? "#e65100" : "#555", fontFamily: f }}>
+                        💳 Compra parcelada (prazo)
+                      </span>
+                    </label>
+                    {formParcelado && (
+                      <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div>
+                          <label style={labelStyle}>Nº de parcelas *</label>
+                          <input
+                            type="number" min="2" max="60"
+                            value={formNumParcelasStr}
+                            onChange={e => {
+                              setFormNumParcelasStr(e.target.value);
+                              const n = parseInt(e.target.value);
+                              if (!isNaN(n) && n >= 2) setFormNumParcelas(n);
+                            }}
+                            placeholder="Ex: 3"
+                            style={{ ...inputStyle, fontWeight: 800, fontSize: 15, textAlign: "center" }} />
+                        </div>
+                        <div>
+                          <label style={labelStyle}>Intervalo (dias)</label>
+                          <select value={formIntervalo} onChange={e => setFormIntervalo(Number(e.target.value))} style={inputStyle}>
+                            <option value={30}>30 dias (mensal)</option>
+                            <option value={15}>15 dias (quinzenal)</option>
+                            <option value={7}>7 dias (semanal)</option>
+                            <option value={60}>60 dias (bimestral)</option>
+                            <option value={45}>45 dias</option>
+                          </select>
+                        </div>
+                        {formConta.valor > 0 && formNumParcelas >= 2 && (
+                          <div style={{ gridColumn: "1 / -1", background: "#fff3e0", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#e65100", fontWeight: 700 }}>
+                            💡 {formNumParcelas}x de R$ {(formConta.valor / formNumParcelas).toFixed(2).replace(".", ",")} · Vencimentos a cada {formIntervalo} dias a partir de {formConta.vencimento || "..."}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  onClick={formParcelado ? salvarContaParcelada : salvarConta}
+                  disabled={salvandoConta}
+                  style={{ ...btnPrimary, opacity: salvandoConta ? 0.7 : 1, background: formParcelado ? "#f9a825" : undefined }}>
+                  {salvandoConta ? "⏳ Salvando..." : editandoConta ? "💾 Salvar alterações" : formParcelado ? `💳 Criar ${formNumParcelas}x parcelas` : "✅ Adicionar conta"}
                 </button>
                 {msgConta && (
                   <div style={{ marginTop: 10, textAlign: "center", fontWeight: 700, fontSize: 13, color: msgConta.startsWith("✅") ? "#2e7d32" : "#c62828" }}>
@@ -477,12 +603,13 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
             ) : contas.length === 0 ? (
               <div style={{ textAlign: "center", color: "#aaa", padding: 24 }}>Nenhuma conta cadastrada</div>
             ) : contas.map(c => (
-              <div key={c.id} style={{ background: "#fff", borderRadius: 14, padding: "12px 14px", marginBottom: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+              <div key={c.id} style={{ background: "#fff", borderRadius: 14, padding: "12px 14px", marginBottom: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderLeft: c.parcelaKey ? "4px solid #f9a825" : "4px solid transparent" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div style={{ flex: 1, marginRight: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>{c.nome}</span>
                       {c.recorrenteKey && <span style={{ fontSize: 9, background: "#e8eaf6", color: "#3949ab", borderRadius: 8, padding: "2px 6px", fontWeight: 700 }}>🔄 FIXA</span>}
+                      {c.parcelaKey && <span style={{ fontSize: 9, background: "#fff8e1", color: "#e65100", borderRadius: 8, padding: "2px 6px", fontWeight: 800 }}>💳 {c.parcelaNum}/{c.parcelasTotal}</span>}
                     </div>
                     <div style={{ fontSize: 14, color: "#1565c0", fontWeight: 700, marginTop: 2 }}>{fmt(c.valor)}</div>
                     <div style={{ fontSize: 11, color: "#888", marginTop: 3 }}>📅 {c.vencimento} · {c.categoria}</div>
@@ -494,10 +621,16 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
                         <button onClick={() => alterarStatus(c, "Pago")}
                           style={{ padding: "4px 8px", borderRadius: 8, border: "none", background: "#e8f5e9", color: "#2e7d32", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>✓ Pago</button>
                       )}
-                      <button onClick={() => editarConta(c)}
-                        style={{ padding: "4px 8px", borderRadius: 8, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>✏️</button>
+                      {!c.parcelaKey && (
+                        <button onClick={() => editarConta(c)}
+                          style={{ padding: "4px 8px", borderRadius: 8, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>✏️</button>
+                      )}
                       <button onClick={() => deletarConta(c.id)}
                         style={{ padding: "4px 8px", borderRadius: 8, border: "none", background: "#ffebee", color: "#c62828", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🗑️</button>
+                      {c.parcelaKey && c.parcelaNum === 1 && (
+                        <button onClick={() => deletarTodasParcelas(c.parcelaKey!)}
+                          style={{ padding: "4px 8px", borderRadius: 8, border: "none", background: "#ff8f00", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>🗑️ Todas</button>
+                      )}
                     </div>
                   </div>
                 </div>
