@@ -52,6 +52,8 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
   });
   const [mostrarFormConta, setMostrarFormConta] = useState(false);
   const [editandoConta, setEditandoConta] = useState<string | null>(null);
+  const [salvandoConta, setSalvandoConta] = useState(false);
+  const [msgConta, setMsgConta] = useState("");
 
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [carregandoFornecedores, setCarregandoFornecedores] = useState(true);
@@ -105,7 +107,13 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
   }
 
   async function salvarConta() {
-    if (!formConta.nome.trim() || !formConta.valor || !formConta.vencimento) return;
+    if (!formConta.nome.trim() || !formConta.valor || !formConta.vencimento) {
+      setMsgConta("❌ Preencha Descrição, Valor e Vencimento.");
+      setTimeout(() => setMsgConta(""), 3000);
+      return;
+    }
+    setSalvandoConta(true);
+    setMsgConta("");
     try {
       if (editandoConta) {
         await setDoc(doc(db, "contas_pagar", editandoConta), { ...formConta, atualizadoEm: serverTimestamp() });
@@ -119,7 +127,14 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
       setFormConta({ nome: "", valor: 0, vencimento: "", categoria: "Outro", status: "Pendente" });
       setEditandoConta(null);
       setMostrarFormConta(false);
-    } catch {}
+      setMsgConta("✅ Conta salva com sucesso!");
+      setTimeout(() => setMsgConta(""), 3000);
+    } catch (err) {
+      console.error("Erro ao salvar conta:", err);
+      setMsgConta("❌ Erro ao salvar. Verifique sua conexão.");
+      setTimeout(() => setMsgConta(""), 4000);
+    }
+    setSalvandoConta(false);
   }
 
   async function deletarConta(id: string) {
@@ -318,9 +333,14 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
                     </select>
                   </div>
                 </div>
-                <button onClick={salvarConta} style={btnPrimary}>
-                  {editandoConta ? "💾 Salvar alterações" : "✅ Adicionar conta"}
+                <button onClick={salvarConta} disabled={salvandoConta} style={{ ...btnPrimary, opacity: salvandoConta ? 0.7 : 1 }}>
+                  {salvandoConta ? "⏳ Salvando..." : editandoConta ? "💾 Salvar alterações" : "✅ Adicionar conta"}
                 </button>
+                {msgConta && (
+                  <div style={{ marginTop: 10, textAlign: "center", fontWeight: 700, fontSize: 13, color: msgConta.startsWith("✅") ? "#2e7d32" : "#c62828" }}>
+                    {msgConta}
+                  </div>
+                )}
                 {editandoConta && (
                   <button onClick={() => { setMostrarFormConta(false); setEditandoConta(null); setFormConta({ nome: "", valor: 0, vencimento: "", categoria: "Outro", status: "Pendente" }); }}
                     style={{ ...btnPrimary, background: "#e0e0e0", color: "#333", marginTop: 8 }}>
