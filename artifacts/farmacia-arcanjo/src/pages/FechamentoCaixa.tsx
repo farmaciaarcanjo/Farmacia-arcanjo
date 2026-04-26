@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { salvarPedidoCaixaFirebase, type PedidoFirebase } from "../lib/firebase";
 import { registrarCompraCliente } from "./CadastroClientes";
 
@@ -63,8 +63,6 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
   const [buscaCliente, setBuscaCliente] = useState("");
   const [clienteSelecionado, setClienteSelecionado] = useState<ClienteSimples | null>(null);
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
-  const clienteInputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
     setClientes(carregarClientes());
   }, []);
@@ -196,7 +194,6 @@ export default function FechamentoCaixa({ produtos, onAtualizarEstoque }: Props)
         <div style={{ position: "relative" }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <input
-              ref={clienteInputRef}
               style={{ ...s.input, flex: 1, borderColor: clienteSelecionado ? "#4ade80" : "#334155" }}
               placeholder="Buscar cliente cadastrado ou digitar nome..."
               value={buscaCliente}

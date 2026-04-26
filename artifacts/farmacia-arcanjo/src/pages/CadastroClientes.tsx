@@ -66,6 +66,7 @@ export const registrarCompraCliente = (telefone: string, compra: Compra) => {
   if (idx >= 0) {
     clientes[idx].historico = [compra, ...clientes[idx].historico];
     persistir(clientes);
+    salvarClienteDividaFirebase(clientes[idx] as unknown as Record<string, unknown>).catch(() => {});
   }
 };
 
