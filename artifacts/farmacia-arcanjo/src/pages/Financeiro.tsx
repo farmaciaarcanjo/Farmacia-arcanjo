@@ -17,6 +17,15 @@ export interface ContaPagar {
   categoria: CategoriaContas;
   status: StatusContas;
   criadoEm?: number;
+  recorrenteKey?: string;
+}
+
+export interface ContaRecorrente {
+  id: string;
+  nome: string;
+  valor: number;
+  diaVencimento: number;
+  categoria: CategoriaContas;
 }
 
 export interface Fornecedor {
@@ -55,6 +64,13 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
   const [salvandoConta, setSalvandoConta] = useState(false);
   const [msgConta, setMsgConta] = useState("");
 
+  const [recorrentes, setRecorrentes] = useState<ContaRecorrente[]>([]);
+  const [formRec, setFormRec] = useState<Omit<ContaRecorrente, "id">>({ nome: "", valor: 0, diaVencimento: 5, categoria: "Outro" });
+  const [mostrarFormRec, setMostrarFormRec] = useState(false);
+  const [salvandoRec, setSalvandoRec] = useState(false);
+  const [msgRec, setMsgRec] = useState("");
+  const [lancarRecMes, setLancarRecMes] = useState<Record<string, boolean>>({});
+
   const [fornecedores, setFornecedores] = useState<Fornecedor[]>([]);
   const [carregandoFornecedores, setCarregandoFornecedores] = useState(true);
   const [formForn, setFormForn] = useState({ nome: "", telefone: "", produto: "" });
@@ -66,6 +82,7 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
   useEffect(() => {
     carregarCaixa();
     carregarContas();
+    carregarRecorrentes();
     carregarFornecedores();
     carregarPedidosMes();
   }, []);
@@ -148,6 +165,99 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
     setEditandoConta(c.id);
     setMostrarFormConta(true);
     window.scrollTo(0, 0);
+  }
+
+  async function carregarRecorrentes() {
+    try {
+      const snap = await getDocs(collection(db, "contas_recorrentes"));
+      const lista = snap.docs.map(d => ({ id: d.id, ...d.data() } as ContaRecorrente));
+      setRecorrentes(lista);
+      // auto-lançar para o mês atual
+      const agora = new Date();
+      const ano = agora.getFullYear();
+      const mes = String(agora.getMonth() + 1).padStart(2, "0");
+      const contasSnap = await getDocs(collection(db, "contas_pagar"));
+      const contasExistentes = contasSnap.docs.map(d => d.data() as ContaPagar);
+      for (const r of lista) {
+        const chave = `rec_${r.id}_${ano}_${mes}`;
+        const jaExiste = contasExistentes.some(c => c.recorrenteKey === chave);
+        if (!jaExiste) {
+          const dia = String(Math.min(r.diaVencimento, 28)).padStart(2, "0");
+          const venc = `${ano}-${mes}-${dia}`;
+          await addDoc(collection(db, "contas_pagar"), {
+            nome: r.nome, valor: r.valor, vencimento: venc,
+            categoria: r.categoria, status: "Pendente",
+            recorrenteKey: chave, criadoEm: Date.now(), createdAt: serverTimestamp(),
+          });
+        }
+      }
+    } catch (err) { console.error("Erro ao carregar recorrentes:", err); }
+  }
+
+  async function salvarRecorrente() {
+    if (!formRec.nome.trim() || !formRec.valor || !formRec.diaVencimento) {
+      setMsgRec("❌ Preencha todos os campos.");
+      setTimeout(() => setMsgRec(""), 3000);
+      return;
+    }
+    setSalvandoRec(true);
+    try {
+      const ref = await addDoc(collection(db, "contas_recorrentes"), { ...formRec, criadoEm: serverTimestamp() });
+      const nova: ContaRecorrente = { id: ref.id, ...formRec };
+      setRecorrentes(prev => [...prev, nova]);
+      // lançar para o mês atual imediatamente
+      const agora = new Date();
+      const ano = agora.getFullYear();
+      const mes = String(agora.getMonth() + 1).padStart(2, "0");
+      const dia = String(Math.min(formRec.diaVencimento, 28)).padStart(2, "0");
+      const chave = `rec_${ref.id}_${ano}_${mes}`;
+      const contaRef = await addDoc(collection(db, "contas_pagar"), {
+        nome: formRec.nome, valor: formRec.valor, vencimento: `${ano}-${mes}-${dia}`,
+        categoria: formRec.categoria, status: "Pendente",
+        recorrenteKey: chave, criadoEm: Date.now(), createdAt: serverTimestamp(),
+      });
+      setContas(prev => [...prev, { id: contaRef.id, nome: formRec.nome, valor: formRec.valor, vencimento: `${ano}-${mes}-${dia}`, categoria: formRec.categoria, status: "Pendente", recorrenteKey: chave }]);
+      setFormRec({ nome: "", valor: 0, diaVencimento: 5, categoria: "Outro" });
+      setMostrarFormRec(false);
+      setMsgRec("✅ Conta fixa salva e lançada no mês atual!");
+      setTimeout(() => setMsgRec(""), 3500);
+    } catch (err) {
+      console.error("Erro ao salvar recorrente:", err);
+      setMsgRec("❌ Erro ao salvar. Verifique conexão.");
+      setTimeout(() => setMsgRec(""), 4000);
+    }
+    setSalvandoRec(false);
+  }
+
+  async function deletarRecorrente(id: string) {
+    if (!window.confirm("Remover esta conta fixa? Ela não será mais lançada automaticamente.")) return;
+    try {
+      await deleteDoc(doc(db, "contas_recorrentes", id));
+      setRecorrentes(prev => prev.filter(r => r.id !== id));
+    } catch {}
+  }
+
+  async function lancarRecorrenteMesAtual(r: ContaRecorrente) {
+    setLancarRecMes(prev => ({ ...prev, [r.id]: true }));
+    try {
+      const agora = new Date();
+      const ano = agora.getFullYear();
+      const mes = String(agora.getMonth() + 1).padStart(2, "0");
+      const dia = String(Math.min(r.diaVencimento, 28)).padStart(2, "0");
+      const chave = `rec_${r.id}_${ano}_${mes}`;
+      const jaExiste = contas.some(c => c.recorrenteKey === chave);
+      if (jaExiste) {
+        alert("Esta conta já foi lançada neste mês!");
+      } else {
+        const ref = await addDoc(collection(db, "contas_pagar"), {
+          nome: r.nome, valor: r.valor, vencimento: `${ano}-${mes}-${dia}`,
+          categoria: r.categoria, status: "Pendente",
+          recorrenteKey: chave, criadoEm: Date.now(), createdAt: serverTimestamp(),
+        });
+        setContas(prev => [...prev, { id: ref.id, nome: r.nome, valor: r.valor, vencimento: `${ano}-${mes}-${dia}`, categoria: r.categoria, status: "Pendente", recorrenteKey: chave }]);
+      }
+    } catch {}
+    setLancarRecMes(prev => ({ ...prev, [r.id]: false }));
   }
 
   async function alterarStatus(c: ContaPagar, novoStatus: StatusContas) {
@@ -358,7 +468,10 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
               <div key={c.id} style={{ background: "#fff", borderRadius: 14, padding: "12px 14px", marginBottom: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                   <div style={{ flex: 1, marginRight: 8 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>{c.nome}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>{c.nome}</span>
+                      {c.recorrenteKey && <span style={{ fontSize: 9, background: "#e8eaf6", color: "#3949ab", borderRadius: 8, padding: "2px 6px", fontWeight: 700 }}>🔄 FIXA</span>}
+                    </div>
                     <div style={{ fontSize: 14, color: "#1565c0", fontWeight: 700, marginTop: 2 }}>{fmt(c.valor)}</div>
                     <div style={{ fontSize: 11, color: "#888", marginTop: 3 }}>📅 {c.vencimento} · {c.categoria}</div>
                   </div>
@@ -378,6 +491,90 @@ export default function Financeiro({ produtos }: { produtos: Produto[] }) {
                 </div>
               </div>
             ))}
+
+            {/* ── Seção Contas Fixas ── */}
+            <div style={{ marginTop: 24, borderTop: "2px dashed #e8eaf6", paddingTop: 18 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div>
+                  <h4 style={{ margin: 0, color: "#3949ab", fontSize: 15 }}>🔄 Contas Fixas Mensais</h4>
+                  <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>Lançadas automaticamente todo mês</div>
+                </div>
+                <button onClick={() => setMostrarFormRec(!mostrarFormRec)}
+                  style={{ padding: "7px 13px", borderRadius: 20, border: "none", background: mostrarFormRec ? "#e0e0e0" : "#3949ab", color: mostrarFormRec ? "#333" : "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", fontFamily: f }}>
+                  {mostrarFormRec ? "✕ Fechar" : "+ Nova fixa"}
+                </button>
+              </div>
+
+              {mostrarFormRec && (
+                <div style={{ background: "#f3f4fd", borderRadius: 14, padding: 16, marginBottom: 14, border: "2px solid #c5cae9" }}>
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={labelStyle}>Descrição *</label>
+                    <input value={formRec.nome} onChange={e => setFormRec(p => ({ ...p, nome: e.target.value }))}
+                      placeholder="Ex: Aluguel do ponto" style={inputStyle} />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                    <div>
+                      <label style={labelStyle}>Valor (R$) *</label>
+                      <input type="number" step="0.01" min="0" value={formRec.valor || ""}
+                        onChange={e => setFormRec(p => ({ ...p, valor: parseFloat(e.target.value) || 0 }))}
+                        placeholder="0,00" style={inputStyle} />
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Dia do vencimento *</label>
+                      <input type="number" min="1" max="28" value={formRec.diaVencimento || ""}
+                        onChange={e => setFormRec(p => ({ ...p, diaVencimento: parseInt(e.target.value) || 1 }))}
+                        placeholder="Ex: 5" style={inputStyle} />
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={labelStyle}>Categoria</label>
+                    <select value={formRec.categoria} onChange={e => setFormRec(p => ({ ...p, categoria: e.target.value as CategoriaContas }))} style={inputStyle}>
+                      {["Luz", "Água", "Aluguel", "Funcionário", "Fornecedor", "Outro"].map(c => <option key={c}>{c}</option>)}
+                    </select>
+                  </div>
+                  <button onClick={salvarRecorrente} disabled={salvandoRec} style={{ ...btnPrimary, background: salvandoRec ? "#9fa8da" : "linear-gradient(135deg, #283593, #3949ab)", opacity: salvandoRec ? 0.8 : 1 }}>
+                    {salvandoRec ? "⏳ Salvando..." : "✅ Salvar conta fixa"}
+                  </button>
+                  {msgRec && <div style={{ marginTop: 10, textAlign: "center", fontWeight: 700, fontSize: 13, color: msgRec.startsWith("✅") ? "#2e7d32" : "#c62828" }}>{msgRec}</div>}
+                </div>
+              )}
+
+              {recorrentes.length === 0 ? (
+                <div style={{ textAlign: "center", color: "#aaa", padding: 16, fontSize: 13 }}>Nenhuma conta fixa cadastrada</div>
+              ) : recorrentes.map(r => {
+                const agora = new Date();
+                const ano = agora.getFullYear();
+                const mes = String(agora.getMonth() + 1).padStart(2, "0");
+                const chave = `rec_${r.id}_${ano}_${mes}`;
+                const jaLancada = contas.some(c => c.recorrenteKey === chave);
+                return (
+                  <div key={r.id} style={{ background: "#fff", borderRadius: 14, padding: "12px 14px", marginBottom: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", borderLeft: "4px solid #3949ab" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1a1a" }}>🔄 {r.nome}</div>
+                        <div style={{ fontSize: 13, color: "#3949ab", fontWeight: 700, marginTop: 1 }}>{fmt(r.valor)}</div>
+                        <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>Todo dia {r.diaVencimento} · {r.categoria}</div>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                        <span style={{ fontSize: 10, background: jaLancada ? "#e8f5e9" : "#fff9c4", color: jaLancada ? "#2e7d32" : "#f57f17", borderRadius: 8, padding: "2px 8px", fontWeight: 700 }}>
+                          {jaLancada ? "✓ Lançada" : "Pendente"}
+                        </span>
+                        <div style={{ display: "flex", gap: 4 }}>
+                          {!jaLancada && (
+                            <button onClick={() => lancarRecorrenteMesAtual(r)} disabled={lancarRecMes[r.id]}
+                              style={{ padding: "4px 8px", borderRadius: 8, border: "none", background: "#e8eaf6", color: "#3949ab", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                              {lancarRecMes[r.id] ? "⏳" : "📅 Lançar"}
+                            </button>
+                          )}
+                          <button onClick={() => deletarRecorrente(r.id)}
+                            style={{ padding: "4px 8px", borderRadius: 8, border: "none", background: "#ffebee", color: "#c62828", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>🗑️</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
