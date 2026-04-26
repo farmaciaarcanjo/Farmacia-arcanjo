@@ -156,20 +156,17 @@ Fonte: ANVISA
           type: "text",
           text: textoComImagem && textoComImagem !== "Por favor, leia esta receita médica e me diga os medicamentos, dosagens e orientações."
             ? textoComImagem
-            : `Você é uma assistente de farmácia especializada em leitura de receitas médicas.
-Analise esta receita com atenção máxima e responda em português brasileiro, de forma clara e organizada.
+            : `Você é a Lara, assistente virtual da Farmácia Arcanjo.
+O cliente enviou uma foto de um medicamento. Identifique o produto na imagem e responda em português brasileiro.
 
-Para cada medicamento encontrado, informe:
-• Nome do medicamento (e genérico se identificável)
-• Dosagem (mg, ml, etc.)
-• Forma farmacêutica (comprimido, cápsula, gotas, etc.)
-• Posologia: quantas vezes ao dia, por quantos dias
-• Via de administração (oral, tópico, etc.)
-• Observações especiais do médico (se houver)
+Informe:
+• Nome do medicamento e fabricante (se visível)
+• Princípio ativo principal
+• Para que serve (indicação geral)
+• Se está disponível no catálogo da farmácia, sugira verificar com o atendente
 
-Se a receita tiver médico ou CRM visível, mencione brevemente.
-Se alguma parte estiver ilegível, diga claramente qual trecho não foi possível ler.
-Finalize sempre com: "Consulte o farmacêutico para confirmar as orientações." 🏥`,
+Não leia nem interprete receituários médicos — para isso, o cliente deve procurar diretamente o farmacêutico.
+Finalize sempre com: "Consulte um farmacêutico para orientações completas." 💊`,
         },
         { type: "image_url", image_url: { url: imagemBase64, detail: "high" } },
       ];

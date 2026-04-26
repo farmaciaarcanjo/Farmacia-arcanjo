@@ -327,7 +327,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
           messages: conversationHistory,
           dadosAnvisa: dadosAnvisa?.encontrado ? dadosAnvisa : null,
           imagemBase64: imagemAtual ?? undefined,
-          textoComImagem: imagemAtual ? (trimmed || "Por favor, leia esta receita médica e me diga os medicamentos, dosagens e orientações.") : undefined,
+          textoComImagem: imagemAtual ? (trimmed || "") : undefined,
         }),
       });
 
@@ -705,8 +705,8 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
               onClick={() => fileInputRef.current?.click()}
               disabled={loading}
               className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all active:scale-95 disabled:opacity-40"
-              aria-label="Enviar foto de receita"
-              title="Enviar foto de receita"
+              aria-label="Enviar foto de medicamento"
+              title="Identificar medicamento por foto"
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                 <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
