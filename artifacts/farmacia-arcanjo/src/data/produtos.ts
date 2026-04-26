@@ -12,6 +12,7 @@ export interface Produto {
   estoque?: number;
   codigoBarras?: string;
   codigoSisMoura?: string;
+  produtosAssociados?: number[];
   promocao?: {
     quantidade: number;
     precoTotal: number;

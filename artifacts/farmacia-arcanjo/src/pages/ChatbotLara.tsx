@@ -62,6 +62,16 @@ const todosProdutos: Produto[] = [...PRODUTOS_INICIAIS, ...produtosSalvos];
 const CATALOGO_TEXTO = resumoCatalogo(todosProdutos);
 const PROMOCOES = todosProdutos.filter((p) => p.desc?.includes("PROMOÇÃO") || p.promocao);
 
+const ASSOCIACOES_TEXTO = (() => {
+  const comAssoc = todosProdutos.filter(p => p.produtosAssociados && p.produtosAssociados.length > 0);
+  if (comAssoc.length === 0) return "";
+  const linhas = comAssoc.map(p => {
+    const nomes = (p.produtosAssociados ?? []).map(id => todosProdutos.find(x => x.id === id)?.nome).filter(Boolean);
+    return `- ${p.nome} → sugira junto: ${nomes.join(", ")}`;
+  }).join("\n");
+  return `\nASSOCIAÇÕES TERAPÊUTICAS (sugira automaticamente quando o cliente mencionar ou pedir o produto principal):\n${linhas}\nAo sugerir, use a frase: "💊 Clientes também levam junto:" e liste os associados com o preço.\n`;
+})();
+
 const MENSAGEM_BOAS_VINDAS =
   "Olá! 👋 Sou a Lara, assistente virtual da Farmácia Arcanjo!\n" +
   "Posso te ajudar a encontrar medicamentos, tirar dúvidas e fazer pedidos.\n" +
@@ -100,7 +110,8 @@ REGRAS PARA PERGUNTAS SOBRE MEDICAMENTOS (bula, princípio ativo, posologia, ind
 11. Se NÃO encontrar o medicamento no catálogo local, informe que pode ser solicitado pelo WhatsApp e responda com o conhecimento farmacêutico geral.
 12. OBRIGATÓRIO: TODA resposta sobre medicamentos (indicação, bula, posologia, interações) DEVE TERMINAR EXATAMENTE COM: "Consulte um farmacêutico para orientações completas."
 13. Para interações medicamentosas, alerte claramente e sempre indique consulta ao farmacêutico ou médico.
-14. Quando receber DADOS ANVISA no contexto, mencione: "✔️ Registro ANVISA confirmado" e use esses dados como referência oficial para nome e princípio ativo.`;
+14. Quando receber DADOS ANVISA no contexto, mencione: "✔️ Registro ANVISA confirmado" e use esses dados como referência oficial para nome e princípio ativo.
+${ASSOCIACOES_TEXTO}`;
 
 const RESPOSTAS_RAPIDAS: Array<{ padroes: RegExp; resposta: string }> = [
   {
@@ -666,6 +677,46 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                     </div>
                   );
                 })}
+
+                {/* Produtos Associados — "Clientes também levam junto" */}
+                {(() => {
+                  const idsDetectados = new Set(msg.produtosDetectados.map(p => p.id));
+                  const assocIds = new Set<number>();
+                  msg.produtosDetectados.forEach(p => {
+                    (p.produtosAssociados ?? []).forEach(id => {
+                      if (!idsDetectados.has(id)) assocIds.add(id);
+                    });
+                  });
+                  const assocProdutos = [...assocIds].map(id => todosProdutos.find(p => p.id === id)).filter(Boolean) as Produto[];
+                  const disponiveis = assocProdutos.filter(p => p.estoque !== 0);
+                  if (disponiveis.length === 0) return null;
+                  return (
+                    <div className="mt-2 rounded-xl border-2 border-blue-100 bg-blue-50 overflow-hidden">
+                      <div className="px-3 py-2 text-xs font-bold text-blue-800 bg-blue-100">💊 Clientes também levam junto:</div>
+                      {disponiveis.map(p => (
+                        <div key={p.id} className="flex items-center justify-between gap-2 px-3 py-2 border-t border-blue-100">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-lg shrink-0">{p.emoji}</span>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-foreground truncate">{p.nome}</p>
+                              <p className="text-xs font-bold" style={{ color: "#1565c0" }}>R${p.preco.toFixed(2)}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => atualizarQuantidade(p, 1)}
+                            className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95 ${
+                              (quantidades[p.id] || 0) > 0
+                                ? "bg-green-100 text-green-700 border border-green-400"
+                                : "border border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                            }`}
+                          >
+                            {(quantidades[p.id] || 0) > 0 ? `✅ ${quantidades[p.id]}x` : "➕ Adicionar"}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 {/* Botão "Pedir Todos" quando há 2+ produtos disponíveis */}
                 {msg.produtosDetectados.filter((p) => p.estoque !== 0).length >= 2 && (

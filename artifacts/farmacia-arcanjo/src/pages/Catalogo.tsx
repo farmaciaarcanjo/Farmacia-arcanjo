@@ -414,6 +414,8 @@ export default function CatalogoAdmin() {
   const scrollAntesScan = useRef(0);
   const [editando, setEditando] = useState<number | null>(null);
   const [form, setForm] = useState({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, usoControlado: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
+  const [formAssocIds, setFormAssocIds] = useState<number[]>([]);
+  const [assocBusca, setAssocBusca] = useState("");
   const [msgSucesso, setMsgSucesso] = useState("");
   const [secaoAdmin, setSecaoAdmin] = useState<string|null>(null);
   const [firebaseAtivo, setFirebaseAtivo] = useState<boolean | null>(null);
@@ -902,6 +904,7 @@ export default function CatalogoAdmin() {
       usoControlado: form.usoControlado || undefined,
       estoque: form.estoque ? parseInt(form.estoque) : undefined,
       codigoBarras: form.codigoBarras || undefined,
+      produtosAssociados: formAssocIds.length > 0 ? formAssocIds : undefined,
       promocao: form.promoQtd && form.promoPreco ? {
         quantidade: parseInt(form.promoQtd),
         precoTotal: parseFloat(form.promoPreco),
@@ -942,10 +945,13 @@ export default function CatalogoAdmin() {
         promoPreco: String(produto.promocao?.precoTotal || ""),
         promoDesc: produto.promocao?.descricao || ""
       });
+      setFormAssocIds(produto.produtosAssociados || []);
     } else {
       setEditando(null);
       setForm({ nome: "", preco: "", precoOriginal: "", precoCusto: "", categoria: "", emoji: "💊", desc: "", prescricao: false, usoControlado: false, estoque: "", promoQtd: "", promoPreco: "", promoDesc: "", codigoBarras: "" });
+      setFormAssocIds([]);
     }
+    setAssocBusca("");
     setModo("form");
   }
 
@@ -1448,6 +1454,56 @@ export default function CatalogoAdmin() {
             <input type="checkbox" checked={form.usoControlado} onChange={e => setForm(f => ({ ...f, usoControlado: e.target.checked }))} style={{ width: 18, height: 18, accentColor: "#c62828" }} />
             🚫 Uso controlado (ocultar do catálogo público)
           </label>
+
+          {/* Produtos Associados */}
+          <div style={{ marginBottom: 16, background: "#f0f4ff", borderRadius: 14, padding: 14, border: "2px solid #bbdefb" }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: "#0d47a1", marginBottom: 8 }}>💊 Produtos Associados <span style={{ fontWeight: 400, color: "#888" }}>(até 3)</span></div>
+            <div style={{ fontSize: 12, color: "#555", marginBottom: 10 }}>Ex: Buscopan associado a Luftal. A Lara sugerirá esses produtos junto.</div>
+            {formAssocIds.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                {formAssocIds.map(id => {
+                  const p = produtos.find(x => x.id === id);
+                  return p ? (
+                    <div key={id} style={{ display: "flex", alignItems: "center", gap: 6, background: "#1565c0", color: "#fff", borderRadius: 20, padding: "4px 10px", fontSize: 12, fontWeight: 700 }}>
+                      <span>{p.emoji} {p.nome.split(" ").slice(0, 3).join(" ")}</span>
+                      <button onClick={() => setFormAssocIds(prev => prev.filter(x => x !== id))} style={{ background: "none", border: "none", color: "#fff", fontSize: 14, cursor: "pointer", padding: 0, lineHeight: 1 }}>✕</button>
+                    </div>
+                  ) : null;
+                })}
+              </div>
+            )}
+            {formAssocIds.length < 3 && (
+              <>
+                <input
+                  value={assocBusca}
+                  onChange={e => setAssocBusca(e.target.value)}
+                  placeholder="🔍 Buscar produto para associar..."
+                  style={{ width: "100%", padding: "9px 12px", borderRadius: 10, border: "2px solid #bbdefb", fontSize: 13, fontFamily: "'Nunito', sans-serif", outline: "none", boxSizing: "border-box" as const, marginBottom: 6 }}
+                />
+                {assocBusca.trim().length >= 2 && (
+                  <div style={{ maxHeight: 160, overflowY: "auto", borderRadius: 10, border: "1px solid #e0e0e0", background: "#fff" }}>
+                    {produtos
+                      .filter(p => p.id !== editando && !formAssocIds.includes(p.id) && p.nome.toLowerCase().includes(assocBusca.toLowerCase()))
+                      .slice(0, 8)
+                      .map(p => (
+                        <div key={p.id} onClick={() => { setFormAssocIds(prev => [...prev, p.id]); setAssocBusca(""); }}
+                          style={{ padding: "9px 12px", cursor: "pointer", fontSize: 13, borderBottom: "1px solid #f0f0f0", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                          onMouseOver={e => (e.currentTarget.style.background = "#f0f4ff")}
+                          onMouseOut={e => (e.currentTarget.style.background = "")}
+                        >
+                          <span>{p.emoji} {p.nome}</span>
+                          <span style={{ color: "#1565c0", fontWeight: 700, fontSize: 12 }}>+ Vincular</span>
+                        </div>
+                      ))}
+                    {produtos.filter(p => p.id !== editando && !formAssocIds.includes(p.id) && p.nome.toLowerCase().includes(assocBusca.toLowerCase())).length === 0 && (
+                      <div style={{ padding: "10px 12px", color: "#888", fontSize: 13 }}>Nenhum produto encontrado</div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
           {msgSucesso && (
             <div style={{ marginBottom: 14, padding: "12px 16px", borderRadius: 12, background: msgSucesso.startsWith("❌") ? "#ffebee" : msgSucesso.startsWith("⏳") ? "#fff9c4" : "#e8f5e9", color: msgSucesso.startsWith("❌") ? "#c62828" : msgSucesso.startsWith("⏳") ? "#f57f17" : "#2e7d32", fontWeight: 700, fontSize: 14, textAlign: "center" }}>
               {msgSucesso}
