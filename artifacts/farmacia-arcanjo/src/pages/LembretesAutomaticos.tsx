@@ -177,12 +177,10 @@ export default function LembretesAutomaticos({ produtos = [] }: Props) {
   const monitorados = produtos.filter(p => (thresholds[p.id] ?? 0) > 0);
   const qtdCritico  = monitorados.filter(p => (p.estoque ?? 0) <= thresholds[p.id]).length;
 
-  const produtosBusca = buscaEstoque.trim().length >= 2
-    ? produtos.filter(p =>
-        p.nome.toLowerCase().includes(buscaEstoque.toLowerCase()) &&
-        !(thresholds[p.id] > 0)
-      )
-    : [];
+  const naoMonitorados = produtos.filter(p => !(thresholds[p.id] > 0));
+  const produtosBusca = buscaEstoque.trim().length >= 1
+    ? naoMonitorados.filter(p => p.nome.toLowerCase().includes(buscaEstoque.toLowerCase()))
+    : [...naoMonitorados].sort((a, b) => (a.estoque ?? 999) - (b.estoque ?? 999));
 
   const cor = {
     verde: "#16a34a", verdeClaro: "#22c55e", fundo: "#0f172a",
@@ -397,26 +395,36 @@ export default function LembretesAutomaticos({ produtos = [] }: Props) {
               );
             })}
 
-          {/* Busca para adicionar novos */}
+          {/* Busca/lista para adicionar novos */}
           <div style={{ marginTop: 16, borderTop: `1px solid ${cor.borda}`, paddingTop: 14 }}>
             <p style={{ margin: "0 0 8px", fontSize: 12, color: cor.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>
               ➕ Monitorar produto do catálogo
             </p>
             <input
               style={{ ...s.input, marginBottom: 4 }}
-              placeholder="🔍 Digite o nome do produto..."
+              placeholder="🔍 Filtrar por nome... (ou veja abaixo)"
               value={buscaEstoque}
               onChange={e => setBuscaEstoque(e.target.value)}
             />
-            {buscaEstoque.trim().length >= 2 && produtosBusca.length === 0 && (
-              <p style={{ color: cor.muted, fontSize: 12, textAlign: "center" }}>Nenhum produto encontrado ou todos já monitorados.</p>
+            {buscaEstoque.trim().length === 0 && naoMonitorados.length > 0 && (
+              <p style={{ color: cor.muted, fontSize: 11, margin: "0 0 8px", textAlign: "center" }}>
+                Mostrando os {Math.min(15, naoMonitorados.length)} com menor estoque · {naoMonitorados.length} disponíveis
+              </p>
             )}
-            {produtosBusca.slice(0, 6).map(p => (
-              <div key={p.id} style={{ ...s.card, marginTop: 6, marginBottom: 6, padding: "10px 14px" }}>
+            {buscaEstoque.trim().length >= 1 && produtosBusca.length === 0 && (
+              <p style={{ color: cor.muted, fontSize: 12, textAlign: "center" }}>Nenhum produto encontrado.</p>
+            )}
+            {naoMonitorados.length === 0 && (
+              <p style={{ color: cor.verdeClaro, fontSize: 12, textAlign: "center" }}>✅ Todos os produtos já estão monitorados!</p>
+            )}
+            {produtosBusca.slice(0, 15).map(p => (
+              <div key={p.id} style={{ ...s.card, marginTop: 6, marginBottom: 6, padding: "10px 14px", borderLeft: `3px solid ${(p.estoque ?? 0) <= 5 ? cor.vermelho : (p.estoque ?? 0) <= 15 ? cor.amarelo : cor.borda}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div style={{ flex: 1, marginRight: 8 }}>
                     <p style={{ margin: 0, fontSize: 12, fontWeight: 700, lineHeight: 1.3 }}>{p.nome}</p>
-                    <p style={{ margin: "2px 0 0", fontSize: 11, color: cor.muted }}>Estoque atual: {p.estoque ?? "—"} un.</p>
+                    <p style={{ margin: "2px 0 0", fontSize: 11, color: (p.estoque ?? 0) <= 5 ? cor.vermelho : cor.muted, fontWeight: (p.estoque ?? 0) <= 5 ? 700 : 400 }}>
+                      {(p.estoque ?? 0) <= 5 ? "⚠️" : "📦"} {p.estoque ?? 0} un. em estoque
+                    </p>
                   </div>
                   <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
                     <span style={{ fontSize: 10, color: cor.muted }}>Mín:</span>
