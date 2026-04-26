@@ -7,18 +7,18 @@ const LS_INTERACOES_KEY = "farmacia_interacoes_lara";
 const LS_CLIQUES_KEY = "farmacia_cliques_whatsapp";
 const LS_CONVERSA_KEY = "farmacia_lara_conversa";
 
-function salvarConversa(msgs: Array<{ id: string; role: string; content: string; timestamp: Date; produtosDetectados?: Produto[]; mostrarBotaoCatalogo?: boolean }>) {
+function salvarConversa(msgs: Array<{ id: string; role: string; content: string; timestamp: Date; produtosDetectados?: Produto[]; mostrarBotaoCatalogo?: boolean; mostrarMapa?: boolean }>) {
   try {
     const serialized = msgs.map((m) => ({ ...m, timestamp: m.timestamp.toISOString() }));
     localStorage.setItem(LS_CONVERSA_KEY, JSON.stringify(serialized));
   } catch {}
 }
 
-function carregarConversa(): Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: Date; produtosDetectados?: Produto[]; mostrarBotaoCatalogo?: boolean }> | null {
+function carregarConversa(): Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: Date; produtosDetectados?: Produto[]; mostrarBotaoCatalogo?: boolean; mostrarMapa?: boolean }> | null {
   try {
     const raw = localStorage.getItem(LS_CONVERSA_KEY);
     if (!raw) return null;
-    const parsed: Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: string; produtosDetectados?: Produto[]; mostrarBotaoCatalogo?: boolean }> = JSON.parse(raw);
+    const parsed: Array<{ id: string; role: "user" | "assistant"; content: string; timestamp: string; produtosDetectados?: Produto[]; mostrarBotaoCatalogo?: boolean; mostrarMapa?: boolean }> = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) return null;
     return parsed.map((m) => ({ ...m, timestamp: new Date(m.timestamp) }));
   } catch { return null; }
@@ -47,6 +47,7 @@ interface Message {
   timestamp: Date;
   produtosDetectados?: Produto[];
   mostrarBotaoCatalogo?: boolean;
+  mostrarMapa?: boolean;
   imagemUrl?: string;
 }
 
@@ -81,10 +82,11 @@ const SYSTEM_PROMPT = `Você é Lara, a assistente virtual da Farmácia Arcanjo,
 Você é simpática, prestativa, profissional e fala português brasileiro.
 
 INFORMAÇÕES DA FARMÁCIA:
-- Horário: Segunda a Sábado das 7h às 19h. Aos domingos das 8h às 13h.
-- Localização: Meruoca, Ceará
-- Telefone/WhatsApp: (88) 99337-5650
-- Entrega: Sim! Fazemos entrega. Ligue ou chame no WhatsApp.
+- Horário: Segunda a Sábado das 8h às 20h. Aos domingos das 8h às 12h.
+- Endereço: Rua Dom José, 135 — Centro, Meruoca-CE, CEP 62.130-000
+- Telefone fixo: (88) 3571-1773
+- WhatsApp: (88) 99337-5650
+- Entrega: Sim! Fazemos entrega gratuita. Ligue ou chame no WhatsApp.
 - Pagamento: Aceitamos dinheiro, Pix, débito e crédito.
 
 ${CATALOGO_TEXTO}
@@ -116,15 +118,15 @@ ${ASSOCIACOES_TEXTO}`;
 const RESPOSTAS_RAPIDAS: Array<{ padroes: RegExp; resposta: string }> = [
   {
     padroes: /hor[aá]rio|que horas|quando abre|quando fecha|funciona/i,
-    resposta: "Funcionamos de segunda a sábado das 7h às 19h e domingos das 8h às 13h 🕐",
+    resposta: "Funcionamos de segunda a sábado das 8h às 20h e domingos das 8h às 12h 🕐",
   },
   {
-    padroes: /onde fica|endere[çc]o|localiza[çc]|como chegar/i,
-    resposta: "Estamos em Meruoca, Ceará 📍 Tel: (88) 99337-5650",
+    padroes: /onde fica|endere[çc]o|localiza[çc]|como chegar|mapa|gps/i,
+    resposta: "📍 Rua Dom José, 135 — Centro, Meruoca-CE\n🕐 Seg–Sáb: 8h às 20h · Dom: 8h às 12h\n📞 (88) 3571-1773 · WhatsApp: (88) 99337-5650\n\n🗺️ Abra no mapa para me encontrar!",
   },
   {
     padroes: /delivery|entrega|entreg|motoboy/i,
-    resposta: "Sim! Fazemos entrega. Chame no WhatsApp: (88) 99337-5650 🛵",
+    resposta: "Sim! Fazemos entrega gratuita. Chame no WhatsApp: (88) 99337-5650 🛵",
   },
   {
     padroes: /pagamento|pagar|pix|cart[aã]o|cr[eé]dito|d[eé]bito|dinheiro/i,
@@ -165,6 +167,10 @@ function detectarProdutos(texto: string): Produto[] {
 
 function detectarBotaoCatalogo(texto: string): boolean {
   return /cat[aá]logo|aba cat[aá]logo|ver cat[aá]logo|conferir cat[aá]logo/i.test(texto);
+}
+
+function detectarMapa(texto: string): boolean {
+  return /rua dom jos[eé]|centro.{0,20}meruoca|meruoca.{0,20}centro|abra no mapa|encontrar no mapa|gps|google maps|waze/i.test(texto);
 }
 
 const REGEX_INTENCAO_MEDICAMENTO =
@@ -336,9 +342,10 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
   function appendAssistantMessage(content: string) {
     const produtosDetectados = detectarProdutos(content);
     const mostrarBotaoCatalogo = detectarBotaoCatalogo(content);
+    const mostrarMapa = detectarMapa(content);
     setMessages((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), role: "assistant", content, timestamp: new Date(), produtosDetectados, mostrarBotaoCatalogo },
+      { id: crypto.randomUUID(), role: "assistant", content, timestamp: new Date(), produtosDetectados, mostrarBotaoCatalogo, mostrarMapa },
     ]);
   }
 
@@ -596,6 +603,37 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
                 >
                   🏪 Ir para o Catálogo
                 </button>
+              </div>
+            )}
+
+            {/* Card de Localização com botões de mapa */}
+            {msg.role === "assistant" && msg.mostrarMapa && (
+              <div className="ml-9 mt-2 rounded-2xl overflow-hidden shadow-sm border border-blue-100" style={{ background: "#f0f4ff" }}>
+                <div className="px-4 py-3">
+                  <p className="text-xs font-bold text-blue-900 mb-1">📍 Farmácia Arcanjo</p>
+                  <p className="text-xs text-blue-800">Rua Dom José, 135 — Centro</p>
+                  <p className="text-xs text-blue-800 mb-3">Meruoca-CE · CEP 62.130-000</p>
+                  <div className="flex gap-2">
+                    <a
+                      href="https://www.google.com/maps/search/?api=1&query=Farmácia+Arcanjo+Rua+Dom+José+135+Centro+Meruoca+CE"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1 text-xs font-bold py-2 rounded-xl text-white active:scale-95 transition-all"
+                      style={{ background: "#4285f4" }}
+                    >
+                      <span>🗺️</span> Google Maps
+                    </a>
+                    <a
+                      href="https://waze.com/ul?q=Farmácia+Arcanjo+Meruoca+CE&navigate=yes"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 flex items-center justify-center gap-1 text-xs font-bold py-2 rounded-xl text-white active:scale-95 transition-all"
+                      style={{ background: "#33ccff" }}
+                    >
+                      <span>🚗</span> Waze
+                    </a>
+                  </div>
+                </div>
               </div>
             )}
 
