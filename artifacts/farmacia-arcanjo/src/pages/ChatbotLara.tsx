@@ -60,14 +60,27 @@ INFORMAÇÕES DA FARMÁCIA:
 
 ${CATALOGO_TEXTO}
 
-REGRAS IMPORTANTES:
+REGRAS GERAIS:
 1. Quando o cliente descrever um SINTOMA, recomende 2 ou 3 produtos do CATÁLOGO acima pelo nome EXATO, sempre incluindo nome e preço.
 2. Sempre destaque promoções quando aplicáveis.
-3. Após recomendar, oriente: "Pra fazer o pedido, vai na aba Catálogo ou chama no WhatsApp (88) 99337-5650 😊"
+3. Após recomendar produto do catálogo, oriente: "Pra fazer o pedido, vai na aba Catálogo ou chama no WhatsApp (88) 99337-5650 😊"
 4. Se o cliente perguntar sobre um produto que NÃO está no catálogo, oriente o WhatsApp.
 5. NUNCA dê diagnósticos médicos. Para sintomas graves, recomende consultar médico ou farmacêutico.
-6. Seja CONCISA (máximo 4-5 linhas), direta e simpática. Use 1 ou 2 emojis no máximo.
-7. NÃO recomende antibióticos sem mencionar que precisam de prescrição médica.`;
+6. Seja CONCISA (máximo 5-6 linhas), direta e simpática. Use 1 ou 2 emojis no máximo.
+7. NÃO recomende antibióticos sem mencionar que precisam de prescrição médica.
+
+REGRAS PARA PERGUNTAS SOBRE MEDICAMENTOS (bula, princípio ativo, posologia, indicação):
+8. Você pode buscar o medicamento TANTO pelo nome comercial (ex: "Tylenol", "Buscopan") QUANTO pelo princípio ativo (ex: "paracetamol", "escopolamina").
+9. Ao responder sobre um medicamento, estruture assim:
+   💊 MEDICAMENTO: [nome comercial / princípio ativo]
+   ✅ Indicação: [para que serve]
+   📋 Posologia: [dose e frequência comum]
+   ⚠️ Contraindicações: [principais contraindicações]
+   🔴 Controlado: [Sim/Não — se sim, exige receita médica]
+10. Se o medicamento estiver no CATÁLOGO LOCAL, informe o preço e disponibilidade na farmácia.
+11. Se NÃO encontrar o medicamento no catálogo local, informe que pode ser solicitado pelo WhatsApp e responda com o conhecimento farmacêutico geral.
+12. OBRIGATÓRIO: TODA resposta sobre medicamentos (indicação, bula, posologia, interações) DEVE TERMINAR EXATAMENTE COM: "Consulte um farmacêutico para orientações completas."
+13. Para interações medicamentosas, alerte claramente e sempre indique consulta ao farmacêutico ou médico.`;
 
 const RESPOSTAS_RAPIDAS: Array<{ padroes: RegExp; resposta: string }> = [
   {
@@ -121,6 +134,45 @@ function detectarProdutos(texto: string): Produto[] {
 
 function detectarBotaoCatalogo(texto: string): boolean {
   return /cat[aá]logo|aba cat[aá]logo|ver cat[aá]logo|conferir cat[aá]logo/i.test(texto);
+}
+
+const REGEX_INTENCAO_MEDICAMENTO =
+  /\b(bula|posologia|indica[çc][aã]o|contraindicac|contra.indica|para que serve|o que [eé]|princ[ií]pio ativo|dom[ií]nio|controlad[oa]|rec[eé]ita|efeito|dose|dosagem|tomar|mg|comprimido|medicamento|rem[eé]dio|f[aá]rmaco|gen[eé]rico|antibi[oó]tico|analgésico|anti-inflamatorio|anti inflamatorio)\b/i;
+
+interface AnvisaDados {
+  encontrado: boolean;
+  nomeProduto?: string;
+  principioAtivo?: string;
+  indicacao?: string;
+  posologia?: string;
+  contraindicacoes?: string;
+  ehControlado?: boolean;
+  fonte?: string;
+}
+
+async function buscarAnvisa(termo: string): Promise<AnvisaDados | null> {
+  try {
+    const res = await fetch(`/api/anvisa/buscar?q=${encodeURIComponent(termo)}`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return null;
+    const dados = (await res.json()) as AnvisaDados;
+    return dados;
+  } catch {
+    return null;
+  }
+}
+
+function extrairTermoMedicamento(texto: string): string {
+  const padroes = [
+    /(?:sobre|bula|posologia|dose|indica[çc][aã]o|para que serve|o que [eé])\s+(?:o\s+|a\s+|do\s+|da\s+)?([A-Za-záàãâéêíóôõúüçÁÀÃÂÉÊÍÓÔÕÚÜÇ0-9\s-]{2,30}?)(?:\?|$|\s+(?:é|serve|funciona|trata))/i,
+    /([A-Za-záàãâéêíóôõúüçÁÀÃÂÉÊÍÓÔÕÚÜÇ0-9\s-]{3,25}?)\s+(?:\d+\s*mg|\d+\s*ml|comprimido|xarope|cápsula|pomada|injetável|gotas)/i,
+  ];
+  for (const p of padroes) {
+    const m = texto.match(p);
+    if (m?.[1]) return m[1].trim();
+  }
+  return texto.replace(/[^\w\sáàãâéêíóôõúüçÁÀÃÂÉÊÍÓÔÕÚÜÇ]/g, " ").trim().slice(0, 50);
 }
 
 export default function ChatbotLara({ onNavigateTab }: Props) {
@@ -178,10 +230,22 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
         .filter((m) => m.id !== "welcome")
         .map((m) => ({ role: m.role, content: m.content }));
 
+      let dadosAnvisa: AnvisaDados | null = null;
+      if (REGEX_INTENCAO_MEDICAMENTO.test(trimmed)) {
+        const termo = extrairTermoMedicamento(trimmed);
+        if (termo.length >= 3) {
+          dadosAnvisa = await buscarAnvisa(termo);
+        }
+      }
+
       const response = await fetch("/api/lara", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ systemPrompt: SYSTEM_PROMPT, messages: conversationHistory }),
+        body: JSON.stringify({
+          systemPrompt: SYSTEM_PROMPT,
+          messages: conversationHistory,
+          dadosAnvisa: dadosAnvisa?.encontrado ? dadosAnvisa : null,
+        }),
       });
 
       if (!response.ok) throw new Error("Erro na API");
