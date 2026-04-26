@@ -682,7 +682,6 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               className="hidden"
               onChange={handleFotoSelecionada}
             />
