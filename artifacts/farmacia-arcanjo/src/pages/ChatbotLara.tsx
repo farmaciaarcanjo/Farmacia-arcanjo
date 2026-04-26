@@ -347,8 +347,24 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const result = ev.target?.result as string;
-      setImagemPendente(result);
+      const dataUrl = ev.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1600;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          if (width > height) { height = Math.round((height * MAX) / width); width = MAX; }
+          else { width = Math.round((width * MAX) / height); height = MAX; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL("image/jpeg", 0.88);
+        setImagemPendente(compressed);
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
     e.target.value = "";

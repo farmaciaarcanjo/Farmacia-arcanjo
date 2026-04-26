@@ -152,8 +152,26 @@ Fonte: ANVISA
     const lastMsg = messages[messages.length - 1];
     if (imagemBase64 && lastMsg) {
       const multiContent: MultimodalContent = [
-        { type: "text", text: textoComImagem || lastMsg.content || "Leia esta receita médica." },
-        { type: "image_url", image_url: { url: imagemBase64, detail: "auto" } },
+        {
+          type: "text",
+          text: textoComImagem && textoComImagem !== "Por favor, leia esta receita médica e me diga os medicamentos, dosagens e orientações."
+            ? textoComImagem
+            : `Você é uma assistente de farmácia especializada em leitura de receitas médicas.
+Analise esta receita com atenção máxima e responda em português brasileiro, de forma clara e organizada.
+
+Para cada medicamento encontrado, informe:
+• Nome do medicamento (e genérico se identificável)
+• Dosagem (mg, ml, etc.)
+• Forma farmacêutica (comprimido, cápsula, gotas, etc.)
+• Posologia: quantas vezes ao dia, por quantos dias
+• Via de administração (oral, tópico, etc.)
+• Observações especiais do médico (se houver)
+
+Se a receita tiver médico ou CRM visível, mencione brevemente.
+Se alguma parte estiver ilegível, diga claramente qual trecho não foi possível ler.
+Finalize sempre com: "Consulte o farmacêutico para confirmar as orientações." 🏥`,
+        },
+        { type: "image_url", image_url: { url: imagemBase64, detail: "high" } },
       ];
       apiMessages.push({ role: "user", content: multiContent });
     } else if (lastMsg) {
@@ -169,7 +187,7 @@ Fonte: ANVISA
       body: JSON.stringify({
         model: "gpt-5.4",
         messages: apiMessages,
-        max_completion_tokens: 1024,
+        max_completion_tokens: imagemBase64 ? 2048 : 1024,
       }),
     });
 
