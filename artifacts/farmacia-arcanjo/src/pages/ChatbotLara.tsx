@@ -209,7 +209,7 @@ interface AnvisaItem {
 
 async function buscarAnvisa(termo: string): Promise<AnvisaDados | null> {
   try {
-    const res = await fetch(`/api/anvisa/buscar?q=${encodeURIComponent(termo)}`, {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/api/anvisa/buscar?q=${encodeURIComponent(termo)}`, { {
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
@@ -428,7 +428,7 @@ export default function ChatbotLara({ onNavigateTab }: Props) {
         }
       }
 
-      const response = await fetch("/api/lara", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/lara`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
