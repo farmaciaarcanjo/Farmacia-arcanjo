@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ['nodejs_18', 'nodePackages.pnpm']
+
+[phases.install]
+cmds = ['pnpm install --no-frozen-lockfile']
+
+[phases.build]
+cmds = ['pnpm --filter @workspace/farmacia-arcanjo run build']
+
+[start]
+cmd = 'npx serve -s dist -l 8080'
