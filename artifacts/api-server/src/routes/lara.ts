@@ -248,7 +248,7 @@ Finalize sempre com: "Consulte um farmacêutico para orientações completas." �
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-5.4",
+        model: "gemini-2.5-flash",
         messages: apiMessages,
         max_completion_tokens: imagemBase64 ? 2048 : 1024,
       }),
