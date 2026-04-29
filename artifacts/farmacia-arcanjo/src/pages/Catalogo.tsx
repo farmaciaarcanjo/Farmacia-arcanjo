@@ -1736,7 +1736,7 @@ export default function CatalogoAdmin() {
               <div style={{ fontSize: 12, color: "#e53935" }}>Aproveite enquanto dura o estoque!</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10, paddingBottom: 4 }}>
             {promocoes.map(p => {
               const qty = getQuantidade(p.id);
               return (
@@ -1749,7 +1749,7 @@ export default function CatalogoAdmin() {
                   {qty === 0 ? (
                     <button onClick={() => setQuantidade(p, p.promocao!.quantidade)} style={{ width: "100%", padding: "8px", borderRadius: 10, border: "none", background: "#c62828", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Adicionar</button>
                   ) : (
-                    <div style={{ display: "block" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                       <button onClick={() => setQuantidade(p, qty - 1)} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "#f5f5f5", fontSize: 18, cursor: "pointer", fontWeight: 700 }}>−</button>
                       <span style={{ fontWeight: 800, fontSize: 16 }}>{qty}</span>
                       <button onClick={() => setQuantidade(p, qty + 1)} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", background: "#1565c0", color: "#fff", fontSize: 18, cursor: "pointer", fontWeight: 700 }}>+</button>
@@ -1789,7 +1789,7 @@ export default function CatalogoAdmin() {
                           <button onClick={() => setQuantidade(p, 1)}
                             style={{ width: "100%", padding: "8px", borderRadius: 10, border: "none", background: p.promocao ? "#c62828" : "#1565c0", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>+ Adicionar</button>
                         ) : (
-                          <div style={{ display: "block" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                             <button onClick={() => setQuantidade(p, qty - 1)} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", background: "#f5f5f5", fontSize: 16, cursor: "pointer", fontWeight: 700 }}>−</button>
                             <span style={{ fontWeight: 800, fontSize: 15 }}>{qty}</span>
                             <button onClick={() => setQuantidade(p, qty + 1)} style={{ width: 30, height: 30, borderRadius: "50%", border: "none", background: "#1565c0", color: "#fff", fontSize: 16, cursor: "pointer", fontWeight: 700 }}>+</button>
