@@ -411,15 +411,15 @@ Crie um post envolvente para Instagram.`;
                 {/* Produto do catálogo */}
                 <label style={lbl}>Produto do Catálogo</label>
                 <select value={form.produtoId || ""} onChange={e => {
-                  const id = parseInt(e.target.value);
-                  const p = produtos.find(p => p.id === id);
-                  setForm({ ...form, produtoId: id || undefined, produto: p ? p.nome : form.produto });
-                }} style={{ ...inp, marginBottom: 12 }}>
-                  <option value="">— Digitar nome manualmente —</option>
-                  {produtos.map((p: Produto) => (
-                    <option key={p.id} value={p.id}>{p.emoji} {p.nome} — R${p.preco.toFixed(2)}</option>
-                  ))}
-                </select>
+  const id = parseInt(e.target.value);
+  const p = produtos.find(p => p.id === id);
+  setForm({ ...form, produtoId: isNaN(id) ? undefined : id, produto: p ? p.nome : "" });
+}} style={{ ...inp, marginBottom: 12 }}>
+  <option value="">— Digitar nome manualmente —</option>
+  {produtos.map((p: Produto) => (
+    <option key={p.id} value={p.id}>{p.emoji} {p.nome} — R${p.preco.toFixed(2)}</option>
+  ))}
+</select>
 
                 {!form.produtoId && (
                   <>
