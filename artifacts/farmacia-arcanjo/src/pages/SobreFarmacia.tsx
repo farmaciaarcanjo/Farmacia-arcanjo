@@ -77,7 +77,7 @@ export default function SobreFarmacia() {
         <div style={{ marginTop: 12, padding: "10px 14px", background: "#e8f5e9", borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 18 }}>🚨</span>
           <span style={{ fontSize: 12, color: "#2e7d32", fontWeight: 600 }}>
-            Urgência? Chame no WhatsApp mesmo fora do horário!
+            Urgência? Chame no WhatsApp!
           </span>
         </div>
       </div>
