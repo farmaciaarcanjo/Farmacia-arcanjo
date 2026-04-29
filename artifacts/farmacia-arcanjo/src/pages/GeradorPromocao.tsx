@@ -5,6 +5,7 @@ import { PRODUTOS_INICIAIS, Produto } from "../data/produtos";
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 type TipoPromo = "desconto" | "leveXpagueY" | "doDia";
 type Aba = "whatsapp" | "instagram" | "ativas";
+type ModoEntrada = "catalogo" | "manual";
 
 interface PromoForm {
   tipo: TipoPromo;
@@ -32,7 +33,6 @@ interface PostGerado {
   sugestao: string;
 }
 
-// ── Constantes ────────────────────────────────────────────────────────────────
 const emojis = ["💊", "🏥", "❤️", "✨", "🔥", "⭐", "💙", "🌿", "💚", "🎯"];
 
 const TIPOS_POST = [
@@ -51,14 +51,13 @@ const TONS = [
 const LS_HISTORICO = "farmacia_instagram_historico";
 const API_URL = import.meta.env.VITE_API_URL || "";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const fmtMoeda = (v: string) => {
   const n = parseFloat(v);
   if (isNaN(n)) return v;
   return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 };
 
-const desconto = (original: string, promo: string) => {
+const calcDesconto = (original: string, promo: string) => {
   const o = parseFloat(original);
   const p = parseFloat(promo);
   if (!o || !p) return 0;
@@ -71,7 +70,7 @@ const gerarTextoWhatsApp = (form: PromoForm): string => {
   const tel = "📞 (88) 99337-5650";
   const valid = validade ? `\n⏰ Válido até: ${validade}` : "";
   if (tipo === "desconto") {
-    const pct = desconto(precoOriginal, precoPromocao);
+    const pct = calcDesconto(precoOriginal, precoPromocao);
     return `${emoji} *OFERTA ESPECIAL!* ${emoji}\n\n💊 *${produto}*\n\nDe: ~~${fmtMoeda(precoOriginal)}~~\nPor apenas: *${fmtMoeda(precoPromocao)}*\n\n🎯 *${pct}% de desconto!*${valid}\n\n${farm}\n${tel}`;
   }
   if (tipo === "leveXpagueY") {
@@ -93,7 +92,6 @@ const formVazio = (): PromoForm => ({
   validade: "", emoji: "🔥", adicionarCatalogo: false, quantidadeCatalogo: "1",
 });
 
-// ── Estilos ───────────────────────────────────────────────────────────────────
 const C = {
   verde: "#16a34a", verdeEsc: "#15803d", verdeCl: "#dcfce7",
   verdeText: "#14532d", vermelho: "#c62828", fundo: "#f0fdf4",
@@ -120,12 +118,10 @@ const btnVerde: React.CSSProperties = {
   fontFamily: "'Nunito', sans-serif", marginBottom: 10,
 };
 
-// ── Componente Principal ──────────────────────────────────────────────────────
 export default function GeradorPromocao() {
   const [aba, setAba] = useState<Aba>("whatsapp");
-
-  // WhatsApp state
   const [form, setForm] = useState<PromoForm>(formVazio());
+  const [modoEntrada, setModoEntrada] = useState<ModoEntrada>("catalogo");
   const [etapa, setEtapa] = useState<"form" | "resultado">("form");
   const [textoGerado, setTextoGerado] = useState("");
   const [imagemGerada, setImagemGerada] = useState("");
@@ -134,7 +130,6 @@ export default function GeradorPromocao() {
   const [msgCatalogo, setMsgCatalogo] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Instagram state
   const [tipoPost, setTipoPost] = useState("promocao");
   const [tom, setTom] = useState("descontraido");
   const [produtoSelecionado, setProdutoSelecionado] = useState("");
@@ -146,7 +141,6 @@ export default function GeradorPromocao() {
   const [historico, setHistorico] = useState<PostGerado[]>([]);
   const [abaIG, setAbaIG] = useState<"gerar" | "historico">("gerar");
 
-  // Promoções ativas
   const [promocoesAtivas, setPromocoesAtivas] = useState<Produto[]>([]);
   const [carregandoPromos, setCarregandoPromos] = useState(false);
   const [removendo, setRemovendo] = useState<number | null>(null);
@@ -159,30 +153,23 @@ export default function GeradorPromocao() {
   })();
 
   useEffect(() => { setHistorico(carregarHistorico()); }, []);
+  useEffect(() => { if (aba === "ativas") carregarPromocoesAtivas(); }, [aba]);
 
-  useEffect(() => {
-    if (aba === "ativas") carregarPromocoesAtivas();
-  }, [aba]);
-
-  // ── Carregar promoções ativas ───────────────────────────────────────────────
   const carregarPromocoesAtivas = async () => {
     setCarregandoPromos(true);
     try {
       const todos = await buscarProdutosFirebase();
       setPromocoesAtivas(todos.filter((p: Produto) => p.promocao));
     } catch {
-      const local = produtos.filter(p => p.promocao);
-      setPromocoesAtivas(local);
+      setPromocoesAtivas(produtos.filter(p => p.promocao));
     } finally {
       setCarregandoPromos(false);
     }
   };
 
-  // ── Remover promoção do catálogo ───────────────────────────────────────────
   const removerPromocao = async (produto: Produto) => {
     setRemovendo(produto.id);
     try {
-      const atualizado = { ...produto, promocao: undefined, precoOriginal: undefined };
       await salvarProdutoFirebase({
         id: produto.id, nome: produto.nome, preco: produto.preco,
         categoria: produto.categoria, emoji: produto.emoji || "💊",
@@ -190,13 +177,12 @@ export default function GeradorPromocao() {
       });
       setPromocoesAtivas(prev => prev.filter(p => p.id !== produto.id));
     } catch {
-      alert("Erro ao remover promoção. Tente novamente.");
+      alert("Erro ao remover promoção.");
     } finally {
       setRemovendo(null);
     }
   };
 
-  // ── Gerar imagem WhatsApp ──────────────────────────────────────────────────
   const gerarImagem = (f: PromoForm) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -233,7 +219,7 @@ export default function GeradorPromocao() {
     nomeLinhas.forEach((linha, i) => ctx.fillText(linha, 400, 370 + i * 50));
     const yPreco = 370 + nomeLinhas.length * 50 + 30;
     if (f.tipo === "desconto") {
-      const pct = desconto(f.precoOriginal, f.precoPromocao);
+      const pct = calcDesconto(f.precoOriginal, f.precoPromocao);
       ctx.fillStyle = "#ef9a9a"; ctx.font = "28px Arial";
       ctx.fillText(`De: ${fmtMoeda(f.precoOriginal)}`, 400, yPreco);
       ctx.fillStyle = "#69f0ae"; ctx.font = "bold 56px Arial";
@@ -265,22 +251,24 @@ export default function GeradorPromocao() {
     setImagemGerada(canvas.toDataURL("image/png"));
   };
 
-  // ── Gerar promoção WhatsApp ────────────────────────────────────────────────
   const gerarPromocao = () => {
-    if (!form.produto.trim()) return;
-    setTextoGerado(gerarTextoWhatsApp(form));
-    gerarImagem(form);
+    const nomeProduto = modoEntrada === "catalogo"
+      ? (produtos.find(p => p.id === form.produtoId)?.nome || "")
+      : form.produto;
+    if (!nomeProduto.trim()) return;
+    const formFinal = { ...form, produto: nomeProduto };
+    setTextoGerado(gerarTextoWhatsApp(formFinal));
+    gerarImagem(formFinal);
+    setForm(formFinal);
     setEtapa("resultado");
   };
 
-  // ── Adicionar ao catálogo Firebase ────────────────────────────────────────
   const adicionarAoCatalogo = async () => {
-    if (!form.produtoId) { setMsgCatalogo("⚠️ Selecione um produto do catálogo para adicionar a promoção."); return; }
-    setSalvandoCatalogo(true);
-    setMsgCatalogo("");
+    if (!form.produtoId) { setMsgCatalogo("⚠️ Selecione um produto do catálogo."); return; }
+    setSalvandoCatalogo(true); setMsgCatalogo("");
     try {
       const produtoBase = produtos.find(p => p.id === form.produtoId);
-      if (!produtoBase) throw new Error("Produto não encontrado");
+      if (!produtoBase) throw new Error();
       const qtd = parseInt(form.quantidadeCatalogo) || 1;
       const precoTotal = parseFloat(form.precoPromocao) || produtoBase.preco;
       const ok = await salvarProdutoFirebase({
@@ -293,11 +281,11 @@ export default function GeradorPromocao() {
           descricao: form.tipo === "leveXpagueY"
             ? `Leve ${form.leveQtd} por R$${precoTotal.toFixed(2)}`
             : form.tipo === "desconto"
-            ? `${desconto(form.precoOriginal, form.precoPromocao)}% de desconto`
+            ? `${calcDesconto(form.precoOriginal, form.precoPromocao)}% de desconto`
             : `Promoção do dia: R$${precoTotal.toFixed(2)}`,
         },
       });
-      setMsgCatalogo(ok ? "✅ Promoção adicionada ao catálogo com sucesso!" : "⚠️ Erro ao salvar. Tente novamente.");
+      setMsgCatalogo(ok ? "✅ Adicionado ao catálogo com sucesso!" : "⚠️ Erro ao salvar.");
     } catch {
       setMsgCatalogo("⚠️ Erro ao salvar no Firebase.");
     } finally {
@@ -305,39 +293,33 @@ export default function GeradorPromocao() {
     }
   };
 
-  // ── Gerar POST Instagram com IA ───────────────────────────────────────────
   const gerarPostIG = async () => {
     setLoadingIG(true); setErroIG(""); setResultadoIG(null);
     try {
-      const systemPrompt = `Você é um especialista em marketing digital para farmácias. 
+      const systemPrompt = `Você é especialista em marketing digital para farmácias.
 Gere posts para Instagram da Farmácia Arcanjo (Meruoca-CE, tel: (88) 99337-5650).
-Responda APENAS em JSON válido, sem texto extra, no formato:
-{"texto": "...", "hashtags": "...", "horario": "...", "sugestao": "..."}
-- texto: post completo para Instagram (máx 2200 chars)
-- hashtags: hashtags relevantes separadas por espaço
-- horario: melhor horário para postar (ex: "18h-20h, período de maior engajamento")
-- sugestao: dica rápida de engajamento`;
+Responda APENAS com JSON válido, sem markdown, sem backticks, sem texto extra.
+Formato: {"texto":"...","hashtags":"...","horario":"...","sugestao":"..."}`;
 
       const userMsg = `Tipo: ${TIPOS_POST.find(t => t.value === tipoPost)?.label}
 Tom: ${TONS.find(t => t.value === tom)?.label}
 ${produtoSelecionado ? `Produto: ${produtoSelecionado}` : ""}
-${topico ? `Contexto: ${topico}` : ""}
-Crie um post envolvente para Instagram.`;
+${topico ? `Contexto: ${topico}` : ""}`;
 
       const resp = await fetch(`${API_URL}/api/lara`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: [{ role: "user", content: userMsg }],
-          systemPrompt,
-        }),
+        body: JSON.stringify({ messages: [{ role: "user", content: userMsg }], systemPrompt }),
       });
-      if (!resp.ok) throw new Error("Erro na geração");
+      if (!resp.ok) throw new Error();
       const data = await resp.json();
       let parsed: { texto: string; hashtags: string; horario: string; sugestao: string };
       try {
-        const clean = (data.content || "").replace(/```json|```/g, "").trim();
-        parsed = JSON.parse(clean);
+        let raw = (data.content || "").trim()
+          .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
+        const i = raw.indexOf("{"); const f = raw.lastIndexOf("}");
+        if (i !== -1 && f !== -1) raw = raw.slice(i, f + 1);
+        parsed = JSON.parse(raw);
       } catch {
         parsed = { texto: data.content || "", hashtags: "#FarmáciaArcanjo #Saúde #Meruoca", horario: "18h-20h", sugestao: "" };
       }
@@ -346,7 +328,7 @@ Crie um post envolvente para Instagram.`;
       const novoH = [novo, ...historico].slice(0, 5);
       setHistorico(novoH); salvarHistoricoLS(novoH);
     } catch {
-      setErroIG("Não foi possível gerar o post. Verifique a conexão e tente novamente.");
+      setErroIG("Não foi possível gerar o post. Tente novamente.");
     } finally {
       setLoadingIG(false);
     }
@@ -357,13 +339,13 @@ Crie um post envolvente para Instagram.`;
     catch { setErroIG("Não foi possível copiar."); }
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const podeProsseguir = modoEntrada === "catalogo" ? !!form.produtoId : !!form.produto.trim();
+
   return (
     <div style={{ background: C.fundo, minHeight: "100vh", fontFamily: "'Nunito', sans-serif", paddingBottom: 40 }}>
       <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
       <canvas ref={canvasRef} style={{ display: "none" }} />
 
-      {/* Header */}
       <div style={{ background: `linear-gradient(135deg, ${C.verdeEsc}, ${C.verde})`, padding: "20px 16px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 28 }}>📣</span>
@@ -374,13 +356,11 @@ Crie um post envolvente para Instagram.`;
         </div>
       </div>
 
-      {/* Abas principais */}
-      <div style={{ display: "flex", background: "#fff", borderBottom: `2px solid ${C.borda}`, overflowX: "auto" }}>
+      <div style={{ display: "flex", background: "#fff", borderBottom: `2px solid ${C.borda}` }}>
         {([["whatsapp", "📣 WhatsApp"], ["instagram", "📱 Instagram"], ["ativas", "🔥 Ativas"]] as [Aba, string][]).map(([a, l]) => (
           <button key={a} onClick={() => setAba(a)} style={{
             flex: 1, padding: "12px 8px", border: "none", background: "none", cursor: "pointer",
-            fontSize: 12, fontWeight: 700, whiteSpace: "nowrap",
-            color: aba === a ? C.verde : C.muted,
+            fontSize: 12, fontWeight: 700, color: aba === a ? C.verde : C.muted,
             borderBottom: aba === a ? `3px solid ${C.verde}` : "3px solid transparent",
             fontFamily: "'Nunito', sans-serif",
           }}>{l}</button>
@@ -389,14 +369,13 @@ Crie um post envolvente para Instagram.`;
 
       <div style={{ padding: 16 }}>
 
-        {/* ══ ABA WHATSAPP ══ */}
+        {/* ══ WHATSAPP ══ */}
         {aba === "whatsapp" && (
           <>
             {etapa === "form" && (
               <div>
-                {/* Tipo */}
                 <label style={lbl}>Tipo de Promoção</label>
-                <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
                   {([["desconto", "💰 Desconto"], ["leveXpagueY", "🛒 Leve/Pague"], ["doDia", "⭐ Do Dia"]] as [TipoPromo, string][]).map(([t, l]) => (
                     <button key={t} onClick={() => setForm({ ...form, tipo: t })} style={{
                       flex: 1, padding: "10px 6px", borderRadius: 10, cursor: "pointer", fontSize: 11, fontWeight: 700,
@@ -408,28 +387,44 @@ Crie um post envolvente para Instagram.`;
                   ))}
                 </div>
 
-                {/* Produto do catálogo */}
-                <label style={lbl}>Produto do Catálogo</label>
-                <select value={form.produtoId || ""} onChange={e => {
-  const id = parseInt(e.target.value);
-  const p = produtos.find(p => p.id === id);
-  setForm({ ...form, produtoId: isNaN(id) ? undefined : id, produto: p ? p.nome : "" });
-}} style={{ ...inp, marginBottom: 12 }}>
-  <option value="">— Digitar nome manualmente —</option>
-  {produtos.map((p: Produto) => (
-    <option key={p.id} value={p.id}>{p.emoji} {p.nome} — R${p.preco.toFixed(2)}</option>
-  ))}
-</select>
+                <label style={lbl}>Produto</label>
+                <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                  <button onClick={() => { setModoEntrada("catalogo"); setForm({ ...form, produto: "", produtoId: undefined }); }}
+                    style={{
+                      flex: 1, padding: "11px 10px", borderRadius: 12, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                      border: `2px solid ${modoEntrada === "catalogo" ? C.verde : C.borda}`,
+                      background: modoEntrada === "catalogo" ? C.verdeCl : C.card,
+                      color: modoEntrada === "catalogo" ? C.verdeText : C.muted,
+                      fontFamily: "'Nunito', sans-serif",
+                    }}>📋 Do Catálogo</button>
+                  <button onClick={() => { setModoEntrada("manual"); setForm({ ...form, produtoId: undefined }); }}
+                    style={{
+                      flex: 1, padding: "11px 10px", borderRadius: 12, cursor: "pointer", fontSize: 13, fontWeight: 700,
+                      border: `2px solid ${modoEntrada === "manual" ? C.verde : C.borda}`,
+                      background: modoEntrada === "manual" ? C.verdeCl : C.card,
+                      color: modoEntrada === "manual" ? C.verdeText : C.muted,
+                      fontFamily: "'Nunito', sans-serif",
+                    }}>✏️ Digitar</button>
+                </div>
 
-                {!form.produtoId && (
-                  <>
-                    <label style={lbl}>Nome do Produto *</label>
-                    <input style={{ ...inp, marginBottom: 12 }} placeholder="Ex: Dipirona 500mg"
-                      value={form.produto} onChange={e => setForm({ ...form, produto: e.target.value })} />
-                  </>
+                {modoEntrada === "catalogo" && (
+                  <select value={form.produtoId || ""} onChange={e => {
+                    const id = parseInt(e.target.value);
+                    const p = produtos.find(p => p.id === id);
+                    setForm({ ...form, produtoId: isNaN(id) ? undefined : id, produto: p ? p.nome : "" });
+                  }} style={{ ...inp, marginBottom: 12 }}>
+                    <option value="">— Selecione um produto —</option>
+                    {produtos.map((p: Produto) => (
+                      <option key={p.id} value={p.id}>{p.emoji} {p.nome} — R${p.preco.toFixed(2)}</option>
+                    ))}
+                  </select>
                 )}
 
-                {/* Preços */}
+                {modoEntrada === "manual" && (
+                  <input style={{ ...inp, marginBottom: 12 }} placeholder="Ex: Dipirona 500mg"
+                    value={form.produto} onChange={e => setForm({ ...form, produto: e.target.value })} />
+                )}
+
                 {form.tipo === "desconto" && (
                   <>
                     <label style={lbl}>Preço Original (R$)</label>
@@ -445,13 +440,11 @@ Crie um post envolvente para Instagram.`;
                     <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                       <div style={{ flex: 1 }}>
                         <label style={lbl}>Leve (qtd)</label>
-                        <input style={inp} type="number" value={form.leveQtd}
-                          onChange={e => setForm({ ...form, leveQtd: e.target.value })} />
+                        <input style={inp} type="number" value={form.leveQtd} onChange={e => setForm({ ...form, leveQtd: e.target.value })} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <label style={lbl}>Pague (qtd)</label>
-                        <input style={inp} type="number" value={form.pagueQtd}
-                          onChange={e => setForm({ ...form, pagueQtd: e.target.value })} />
+                        <input style={inp} type="number" value={form.pagueQtd} onChange={e => setForm({ ...form, pagueQtd: e.target.value })} />
                       </div>
                     </div>
                     <label style={lbl}>Preço Total Promocional (R$)</label>
@@ -482,8 +475,7 @@ Crie um post envolvente para Instagram.`;
                   ))}
                 </div>
 
-                {/* Checkbox adicionar ao catálogo */}
-                {form.produtoId && (
+                {modoEntrada === "catalogo" && form.produtoId && (
                   <div style={{ background: C.verdeCl, borderRadius: 12, padding: 14, marginBottom: 16, border: `2px solid ${C.verde}` }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
                       <input type="checkbox" checked={form.adicionarCatalogo}
@@ -491,12 +483,12 @@ Crie um post envolvente para Instagram.`;
                         style={{ width: 20, height: 20, cursor: "pointer" }} />
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: C.verdeText }}>🛍️ Adicionar ao catálogo</div>
-                        <div style={{ fontSize: 12, color: C.muted }}>Aparece em "Ofertas da Semana" para todos os clientes</div>
+                        <div style={{ fontSize: 12, color: C.muted }}>Aparece em "Ofertas da Semana" para os clientes</div>
                       </div>
                     </label>
                     {form.adicionarCatalogo && (
                       <div style={{ marginTop: 12 }}>
-                        <label style={lbl}>Quantidade mínima para ativar promoção</label>
+                        <label style={lbl}>Quantidade mínima para ativar</label>
                         <input style={inp} type="number" min="1" value={form.quantidadeCatalogo}
                           onChange={e => setForm({ ...form, quantidadeCatalogo: e.target.value })} />
                       </div>
@@ -504,20 +496,20 @@ Crie um post envolvente para Instagram.`;
                   </div>
                 )}
 
-                <button style={btnVerde} onClick={gerarPromocao}>✨ Gerar Promoção</button>
+                <button style={{ ...btnVerde, opacity: podeProsseguir ? 1 : 0.5 }}
+                  onClick={gerarPromocao} disabled={!podeProsseguir}>
+                  ✨ Gerar Promoção
+                </button>
               </div>
             )}
 
             {etapa === "resultado" && (
               <div>
-                {imagemGerada && (
-                  <img src={imagemGerada} style={{ width: "100%", borderRadius: 12, marginBottom: 14 }} alt="Promoção" />
-                )}
+                {imagemGerada && <img src={imagemGerada} style={{ width: "100%", borderRadius: 12, marginBottom: 14 }} alt="Promoção" />}
                 <div style={{ background: C.card, borderRadius: 14, padding: 14, marginBottom: 12, border: `2px solid ${C.borda}` }}>
                   <p style={{ ...lbl, marginBottom: 8 }}>📝 Texto para WhatsApp:</p>
                   <pre style={{ color: C.texto, fontSize: 13, whiteSpace: "pre-wrap", margin: 0, fontFamily: "inherit" }}>{textoGerado}</pre>
                 </div>
-
                 <button style={btnVerde} onClick={() => { navigator.clipboard.writeText(textoGerado); setCopiado(true); setTimeout(() => setCopiado(false), 2000); }}>
                   {copiado ? "✅ Copiado!" : "📋 Copiar Texto"}
                 </button>
@@ -529,7 +521,6 @@ Crie um post envolvente para Instagram.`;
                   onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(textoGerado)}`, "_blank")}>
                   📱 Compartilhar no WhatsApp
                 </button>
-
                 {form.adicionarCatalogo && form.produtoId && (
                   <div style={{ marginBottom: 10 }}>
                     <button style={{ ...btnVerde, background: "linear-gradient(135deg, #c62828, #b71c1c)" }}
@@ -543,7 +534,6 @@ Crie um post envolvente para Instagram.`;
                     )}
                   </div>
                 )}
-
                 <button onClick={() => { setEtapa("form"); setImagemGerada(""); setMsgCatalogo(""); }}
                   style={{ width: "100%", padding: 13, borderRadius: 14, border: `2px solid ${C.borda}`, background: C.card, color: C.muted, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
                   ← Criar Nova Promoção
@@ -553,7 +543,7 @@ Crie um post envolvente para Instagram.`;
           </>
         )}
 
-        {/* ══ ABA INSTAGRAM ══ */}
+        {/* ══ INSTAGRAM ══ */}
         {aba === "instagram" && (
           <>
             <div style={{ display: "flex", background: "#fff", borderRadius: 12, marginBottom: 16, overflow: "hidden", border: `2px solid ${C.borda}` }}>
@@ -576,8 +566,7 @@ Crie um post envolvente para Instagram.`;
                     <button key={t.value} onClick={() => setTipoPost(t.value)} style={{
                       padding: "10px 12px", borderRadius: 12, cursor: "pointer", textAlign: "left",
                       border: `2px solid ${tipoPost === t.value ? C.verde : C.borda}`,
-                      background: tipoPost === t.value ? C.verdeCl : C.card,
-                      fontFamily: "'Nunito', sans-serif",
+                      background: tipoPost === t.value ? C.verdeCl : C.card, fontFamily: "'Nunito', sans-serif",
                     }}>
                       <div style={{ fontSize: 13, fontWeight: 700, color: tipoPost === t.value ? C.verdeText : "#374151" }}>{t.label}</div>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{t.desc}</div>
@@ -591,8 +580,7 @@ Crie um post envolvente para Instagram.`;
                     <button key={t.value} onClick={() => setTom(t.value)} style={{
                       flex: 1, padding: "10px 8px", borderRadius: 12, cursor: "pointer", textAlign: "center",
                       border: `2px solid ${tom === t.value ? C.verde : C.borda}`,
-                      background: tom === t.value ? C.verdeCl : C.card,
-                      fontFamily: "'Nunito', sans-serif",
+                      background: tom === t.value ? C.verdeCl : C.card, fontFamily: "'Nunito', sans-serif",
                     }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: tom === t.value ? C.verdeText : "#374151" }}>{t.label}</div>
                       <div style={{ fontSize: 10, color: C.muted }}>{t.desc}</div>
@@ -601,8 +589,7 @@ Crie um post envolvente para Instagram.`;
                 </div>
 
                 <label style={lbl}>Produto <span style={{ fontWeight: 400, textTransform: "none", fontSize: 11 }}>(opcional)</span></label>
-                <select value={produtoSelecionado} onChange={e => setProdutoSelecionado(e.target.value)}
-                  style={{ ...inp, marginBottom: 12 }}>
+                <select value={produtoSelecionado} onChange={e => setProdutoSelecionado(e.target.value)} style={{ ...inp, marginBottom: 12 }}>
                   <option value="">— Sem produto específico —</option>
                   {produtos.map((p: Produto) => (
                     <option key={p.id} value={`${p.emoji} ${p.nome} (R$${p.preco.toFixed(2)})`}>
@@ -623,20 +610,16 @@ Crie um post envolvente para Instagram.`;
                   {loadingIG ? "⏳ Gerando com IA..." : "✨ Gerar Post com IA"}
                 </button>
 
-                {erroIG && (
-                  <div style={{ background: "#ffebee", borderRadius: 12, padding: "12px 14px", color: C.vermelho, fontSize: 13, fontWeight: 600, marginBottom: 16 }}>
-                    ⚠️ {erroIG}
-                  </div>
-                )}
+                {erroIG && <div style={{ background: "#ffebee", borderRadius: 12, padding: "12px 14px", color: C.vermelho, fontSize: 13, fontWeight: 600, marginBottom: 16 }}>⚠️ {erroIG}</div>}
 
                 {resultadoIG && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div style={{ background: C.card, borderRadius: 16, padding: 16, border: `2px solid #86efac` }}>
+                    <div style={{ background: C.card, borderRadius: 16, padding: 16, border: "2px solid #86efac" }}>
                       <p style={{ ...lbl, marginBottom: 8 }}>📝 Texto do Post</p>
                       <p style={{ fontSize: 14, color: C.texto, lineHeight: 1.6, whiteSpace: "pre-wrap", margin: 0 }}>{resultadoIG.texto}</p>
                     </div>
                     {resultadoIG.hashtags && (
-                      <div style={{ background: C.card, borderRadius: 16, padding: 16, border: `2px solid #86efac` }}>
+                      <div style={{ background: C.card, borderRadius: 16, padding: 16, border: "2px solid #86efac" }}>
                         <p style={{ ...lbl, marginBottom: 8 }}>🏷️ Hashtags</p>
                         <p style={{ fontSize: 13, color: C.verde, lineHeight: 1.8, margin: 0, wordBreak: "break-word" }}>{resultadoIG.hashtags}</p>
                       </div>
@@ -681,9 +664,7 @@ Crie um post envolvente para Instagram.`;
                   <div style={{ textAlign: "center", padding: 48 }}>
                     <p style={{ fontSize: 40 }}>📭</p>
                     <p style={{ color: C.muted, fontSize: 14 }}>Nenhum post gerado ainda.</p>
-                    <button onClick={() => setAbaIG("gerar")} style={{ marginTop: 12, padding: "10px 20px", borderRadius: 20, border: "none", background: C.verde, color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                      ✨ Gerar primeiro post
-                    </button>
+                    <button onClick={() => setAbaIG("gerar")} style={{ marginTop: 12, padding: "10px 20px", borderRadius: 20, border: "none", background: C.verde, color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>✨ Gerar primeiro post</button>
                   </div>
                 ) : historico.map((post, idx) => (
                   <div key={post.id} style={{ background: C.card, borderRadius: 16, padding: 16, marginBottom: 12, border: `2px solid ${idx === 0 ? "#86efac" : C.borda}` }}>
@@ -713,49 +694,34 @@ Crie um post envolvente para Instagram.`;
           </>
         )}
 
-        {/* ══ ABA PROMOÇÕES ATIVAS ══ */}
+        {/* ══ ATIVAS ══ */}
         {aba === "ativas" && (
           <div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
               <h3 style={{ fontSize: 15, fontWeight: 800, color: C.verdeText, margin: 0 }}>🔥 Ofertas no Catálogo</h3>
-              <button onClick={carregarPromocoesAtivas} style={{ padding: "7px 14px", borderRadius: 20, border: `2px solid ${C.verde}`, background: "none", color: C.verde, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                🔄 Atualizar
-              </button>
+              <button onClick={carregarPromocoesAtivas} style={{ padding: "7px 14px", borderRadius: 20, border: `2px solid ${C.verde}`, background: "none", color: C.verde, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>🔄 Atualizar</button>
             </div>
-
-            {carregandoPromos && (
-              <div style={{ textAlign: "center", padding: 32, color: C.muted }}>⏳ Carregando...</div>
-            )}
-
+            {carregandoPromos && <div style={{ textAlign: "center", padding: 32, color: C.muted }}>⏳ Carregando...</div>}
             {!carregandoPromos && promocoesAtivas.length === 0 && (
               <div style={{ textAlign: "center", padding: 48 }}>
                 <p style={{ fontSize: 40 }}>🏷️</p>
                 <p style={{ color: C.muted, fontSize: 14 }}>Nenhuma promoção ativa no catálogo.</p>
-                <button onClick={() => setAba("whatsapp")} style={{ marginTop: 12, padding: "10px 20px", borderRadius: 20, border: "none", background: C.verde, color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                  + Criar Promoção
-                </button>
+                <button onClick={() => setAba("whatsapp")} style={{ marginTop: 12, padding: "10px 20px", borderRadius: 20, border: "none", background: C.verde, color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>+ Criar Promoção</button>
               </div>
             )}
-
             {promocoesAtivas.map(p => (
-              <div key={p.id} style={{ background: C.card, borderRadius: 16, padding: 16, marginBottom: 12, border: `2px solid #fca5a5` }}>
+              <div key={p.id} style={{ background: C.card, borderRadius: 16, padding: 16, marginBottom: 12, border: "2px solid #fca5a5" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: C.texto }}>{p.emoji} {p.nome}</div>
                     <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>R${p.preco.toFixed(2)} unitário</div>
                   </div>
-                  <span style={{ background: "#ffebee", color: C.vermelho, fontSize: 11, fontWeight: 700, borderRadius: 20, padding: "3px 10px" }}>
-                    🔥 Ativa
-                  </span>
+                  <span style={{ background: "#ffebee", color: C.vermelho, fontSize: 11, fontWeight: 700, borderRadius: 20, padding: "3px 10px" }}>🔥 Ativa</span>
                 </div>
                 {p.promocao && (
                   <div style={{ background: "#fff5f5", borderRadius: 10, padding: "8px 12px", marginBottom: 12 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: C.vermelho }}>
-                      R${p.promocao.precoTotal.toFixed(2)} — {p.promocao.descricao}
-                    </div>
-                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-                      Mínimo: {p.promocao.quantidade} unidade(s)
-                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.vermelho }}>R${p.promocao.precoTotal.toFixed(2)} — {p.promocao.descricao}</div>
+                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Mínimo: {p.promocao.quantidade} unidade(s)</div>
                   </div>
                 )}
                 <button onClick={() => removerPromocao(p)} disabled={removendo === p.id}
