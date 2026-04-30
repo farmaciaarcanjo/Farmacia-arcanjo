@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import ChatbotLara from "@/pages/ChatbotLara";
-import InstagramGenerator from "@/pages/InstagramGenerator";
 import Catalogo from "@/pages/Catalogo";
 import SobreFarmacia from "@/pages/SobreFarmacia";
 import { trackVisita } from "@/lib/analytics";
