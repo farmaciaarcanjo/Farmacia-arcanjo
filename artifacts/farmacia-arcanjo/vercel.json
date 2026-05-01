@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @workspace/farmacia-arcanjo run build",
+  "buildCommand": "cd artifacts/farmacia-arcanjo && pnpm install && pnpm run build",
   "outputDirectory": "artifacts/farmacia-arcanjo/dist/public",
-  "installCommand": "pnpm install"
+  "framework": "vite"
 }
