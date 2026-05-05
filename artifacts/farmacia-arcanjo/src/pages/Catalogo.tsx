@@ -1388,40 +1388,40 @@ export default function CatalogoAdmin() {
         })}
 
         {/* ── GRADE ── */}
-        {viewProdutos === "grade" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {(filtroBarras === "todos" ? produtos : filtroBarras === "com" ? produtos.filter(p => !!p.codigoBarras) : produtos.filter(p => !p.codigoBarras)).map(p => {
-              const est = p.estoque;
-              const badge = est === undefined || est === null ? { bg: "#ffebee", cor: "#c62828", txt: "Sem info" }
-                : est === 0 ? { bg: "#ffebee", cor: "#c62828", txt: "Esgotado" }
-                : est <= 10 ? { bg: "#fff9c4", cor: "#f57f17", txt: `${est} un.` }
-                : { bg: "#e8f5e9", cor: "#2e7d32", txt: `${est} un.` };
-              return (
-                <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 10px 10px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: est !== undefined && est <= 5 ? "2px solid #ff9800" : "2px solid #f0f0f0", display: "flex", flexDirection: "column", alignItems: "center", overflow: "hidden" }}>
-                  <div style={{ fontSize: 28, marginBottom: 6 }}>{p.emoji}</div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", textAlign: "center", marginBottom: 5, lineHeight: 1.3, padding: "0 4px" }}>{p.nome}</div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: "#1565c0", marginBottom: 6 }}>R$ {p.preco.toFixed(2).replace(".", ",")}</div>
-                  <span style={{ background: badge.bg, color: badge.cor, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 700, marginBottom: 4 }}>📦 {badge.txt}</span>
-                  {!p.codigoBarras && <span style={{ background: "#f3e5f5", color: "#6a1b9a", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 800, marginBottom: 4 }}>📷 SEM CÓDIGO</span>}
-                  {p.codigoBarras && <span style={{ background: "#e8f5e9", color: "#2e7d32", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 700, marginBottom: 4, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>✅ {p.codigoBarras}</span>}
-                  {p.prescricao && <div style={{ fontSize: 9, color: "#e53935", marginBottom: 4 }}>⚠️ Receita</div>}
-                  {p.usoControlado && <div style={{ fontSize: 9, color: "#c62828", fontWeight: 800, marginBottom: 6 }}>🚫 Controlado</div>}
-                  <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
-                    <button onClick={() => imprimirEtiqueta(p)} title="Etiqueta" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 15, cursor: "pointer" }}>🏷️</button>
-                    {podeEditar && <button onClick={() => abrirScan(p)} title="Código de barras" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: p.codigoBarras ? "#e8f5e9" : "#f3e5f5", color: p.codigoBarras ? "#2e7d32" : "#6a1b9a", fontSize: 15, cursor: "pointer" }}>📷</button>}
-                    {podeEditar && <button onClick={() => abrirEstoque(p)} title="Ajustar estoque" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: p.estoque !== undefined && p.estoque > 0 ? "#e3f2fd" : "#fff3e0", color: p.estoque !== undefined && p.estoque > 0 ? "#1565c0" : "#e65100", fontSize: 15, cursor: "pointer" }}>📦</button>}
-                    {podeEditar && <button onClick={() => abrirForm(p)} title="Editar" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 15, cursor: "pointer" }}>✏️</button>}
-                    {podeDeletar && <button title="Excluir" onClick={() => {
-                      registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
-                      setProdutos(prev => prev.filter(x => x.id !== p.id));
-                      deletarProdutoFirebase(p.id).catch(() => {});
-                    }} style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#ffebee", color: "#c62828", fontSize: 15, cursor: "pointer" }}>🗑️</button>}
-                  </div>
-                </div>
-              );
-            })}
+{viewProdutos === "grade" && (
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+    {(filtroBarras === "todos" ? produtos : filtroBarras === "com" ? produtos.filter(p => !!p.codigoBarras) : produtos.filter(p => !p.codigoBarras)).map(p => {
+      const est = p.estoque;
+      const badge = est === undefined || est === null ? { bg: "#ffebee", cor: "#c62828", txt: "Sem info" }
+        : est === 0 ? { bg: "#ffebee", cor: "#c62828", txt: "Esgotado" }
+        : est <= 10 ? { bg: "#fff9c4", cor: "#f57f17", txt: `${est} un.` }
+        : { bg: "#e8f5e9", cor: "#2e7d32", txt: `${est} un.` };
+      return (
+        <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 10px 10px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: est !== undefined && est <= 5 ? "2px solid #ff9800" : "2px solid #f0f0f0", display: "flex", flexDirection: "column", alignItems: "center", overflow: "hidden" }}>
+          <div style={{ fontSize: 28, marginBottom: 6 }}>{p.emoji}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", textAlign: "center", marginBottom: 5, lineHeight: 1.3, padding: "0 4px" }}>{p.nome}</div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: "#1565c0", marginBottom: 6 }}>R$ {p.preco.toFixed(2).replace(".", ",")}</div>
+          <span style={{ background: badge.bg, color: badge.cor, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 700, marginBottom: 4 }}>📦 {badge.txt}</span>
+          {!p.codigoBarras && <span style={{ background: "#f3e5f5", color: "#6a1b9a", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 800, marginBottom: 4 }}>📷 SEM CÓDIGO</span>}
+          {p.codigoBarras && <span style={{ background: "#e8f5e9", color: "#2e7d32", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 700, marginBottom: 4, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>✅ {p.codigoBarras}</span>}
+          {p.prescricao && <div style={{ fontSize: 9, color: "#e53935", marginBottom: 4 }}>⚠️ Receita</div>}
+          {p.usoControlado && <div style={{ fontSize: 9, color: "#c62828", fontWeight: 800, marginBottom: 6 }}>🚫 Controlado</div>}
+          <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
+            <button onClick={() => imprimirEtiqueta(p)} title="Etiqueta" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#fff9c4", color: "#92400e", fontSize: 15, cursor: "pointer" }}>🏷️</button>
+            {podeEditar && <button onClick={() => abrirScan(p)} title="Código de barras" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: p.codigoBarras ? "#e8f5e9" : "#f3e5f5", color: p.codigoBarras ? "#2e7d32" : "#6a1b9a", fontSize: 15, cursor: "pointer" }}>📷</button>}
+            {podeEditar && <button onClick={() => abrirEstoque(p)} title="Ajustar estoque" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: p.estoque !== undefined && p.estoque > 0 ? "#e3f2fd" : "#fff3e0", color: p.estoque !== undefined && p.estoque > 0 ? "#1565c0" : "#e65100", fontSize: 15, cursor: "pointer" }}>📦</button>}
+            {podeEditar && <button onClick={() => abrirForm(p)} title="Editar" style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 15, cursor: "pointer" }}>✏️</button>}
+            {podeDeletar && <button title="Excluir" onClick={() => {
+              registrarLog({ acao: "produto_deletado", usuario: usuarioLogado?.nome ?? "Admin", userId: usuarioLogado?.id ?? "admin", produto: p.nome, ts: Date.now() });
+              setProdutos(prev => prev.filter(x => x.id !== p.id));
+              deletarProdutoFirebase(p.id).catch(() => {});
+            }} style={{ padding: "5px 8px", borderRadius: 8, border: "none", background: "#ffebee", color: "#c62828", fontSize: 15, cursor: "pointer" }}>🗑️</button>}
           </div>
-        )}
+        </div>
+      );
+    })}
+  </div>
+)}
 
         {/* ── Modal resultado importação ── */}
         {importResult && (
