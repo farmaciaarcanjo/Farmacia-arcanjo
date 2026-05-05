@@ -1769,7 +1769,7 @@ export default function CatalogoAdmin() {
                   const estoqueBaixo = p.estoque !== undefined && p.estoque > 0 && p.estoque <= 5;
                   const precoExibir = qty > 0 ? calcularPreco(p, qty) : p.preco;
                   return (
-                    <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: 14, boxShadow: p.promocao ? "0 0 0 2px #c62828, 0 4px 12px rgba(198,40,40,0.15)" : qty > 0 ? "0 0 0 2px #1565c0" : "0 2px 8px rgba(0,0,0,0.07)", border: "2px solid transparent", position: "relative", opacity: esgotado ? 0.6 : 1 }}>
+                    <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: 14, boxShadow: p.promocao ? "0 0 0 2px #c62828, 0 4px 12px rgba(198,40,40,0.15)" : qty > 0 ? "0 0 0 2px #1565c0" : "0 2px 8px rgba(0,0,0,0.07)", border: "2px solid transparent", position: "relative", opacity: esgotado ? 0.6 : 1, overflow: "hidden" }}>
                       {p.promocao && <div style={{ position: "absolute", top: 0, left: 0, background: "#c62828", color: "#fff", fontSize: 9, fontWeight: 800, padding: "3px 8px", borderRadius: "14px 0 10px 0" }}>🔥 PROMOÇÃO</div>}
                       {esgotado && <div style={{ position: "absolute", top: 8, right: 8, background: "#e53935", color: "#fff", fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 6 }}>Esgotado</div>}
                       {estoqueBaixo && <div style={{ position: "absolute", top: 8, right: 8, background: "#ff9800", color: "#fff", fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 6 }}>⚠️ Últimas</div>}
