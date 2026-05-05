@@ -1397,13 +1397,13 @@ export default function CatalogoAdmin() {
                 : est <= 10 ? { bg: "#fff9c4", cor: "#f57f17", txt: `${est} un.` }
                 : { bg: "#e8f5e9", cor: "#2e7d32", txt: `${est} un.` };
               return (
-                <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 10px 10px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: est !== undefined && est <= 5 ? "2px solid #ff9800" : "2px solid #f0f0f0", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div key={p.id} style={{ background: "#fff", borderRadius: 16, padding: "12px 10px 10px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", border: est !== undefined && est <= 5 ? "2px solid #ff9800" : "2px solid #f0f0f0", display: "flex", flexDirection: "column", alignItems: "center", overflow: "hidden" }}>
                   <div style={{ fontSize: 28, marginBottom: 6 }}>{p.emoji}</div>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", textAlign: "center", marginBottom: 5, lineHeight: 1.3, padding: "0 4px" }}>{p.nome}</div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: "#1565c0", marginBottom: 6 }}>R$ {p.preco.toFixed(2).replace(".", ",")}</div>
                   <span style={{ background: badge.bg, color: badge.cor, borderRadius: 20, padding: "2px 9px", fontSize: 10, fontWeight: 700, marginBottom: 4 }}>📦 {badge.txt}</span>
                   {!p.codigoBarras && <span style={{ background: "#f3e5f5", color: "#6a1b9a", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 800, marginBottom: 4 }}>📷 SEM CÓDIGO</span>}
-                  {p.codigoBarras && <span style={{ background: "#e8f5e9", color: "#2e7d32", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 700, marginBottom: 4 }}>✅ {p.codigoBarras}</span>}
+                  {p.codigoBarras && <span style={{ background: "#e8f5e9", color: "#2e7d32", borderRadius: 20, padding: "2px 8px", fontSize: 9, fontWeight: 700, marginBottom: 4, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>✅ {p.codigoBarras}</span>}
                   {p.prescricao && <div style={{ fontSize: 9, color: "#e53935", marginBottom: 4 }}>⚠️ Receita</div>}
                   {p.usoControlado && <div style={{ fontSize: 9, color: "#c62828", fontWeight: 800, marginBottom: 6 }}>🚫 Controlado</div>}
                   <div style={{ display: "flex", gap: 4, marginTop: "auto" }}>
