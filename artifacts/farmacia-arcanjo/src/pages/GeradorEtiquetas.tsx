@@ -116,14 +116,14 @@ body { font-family: 'Courier New', monospace; background: #fff; }
 .btn-close { background: #e0e0e0; color: #333; }
 .lista { display: flex; flex-direction: column; gap: 4mm; padding: 3mm; width: 74mm; }
 .etiqueta {
-  border-bottom: 1px dashed #ccc;
-  padding-bottom: 4mm;
+  border-bottom: 2px dashed #777;
+  padding-bottom: 5mm;
   text-align: center;
   page-break-inside: avoid;
 }
 .etiqueta:last-child { border-bottom: none; }
 .nome {
-  font-size: 11pt;
+  font-size: 13pt;
   font-weight: bold;
   line-height: 1.3;
   margin-bottom: 2mm;
@@ -132,33 +132,35 @@ body { font-family: 'Courier New', monospace; background: #fff; }
   letter-spacing: 0.3px;
 }
 .posologia {
-  font-size: 8pt;
-  color: #333;
+  font-size: 10pt;
+  font-weight: bold;
+  color: #222;
   margin-bottom: 2.5mm;
   line-height: 1.4;
-  font-style: italic;
 }
 .preco {
-  font-size: 22pt;
+  font-size: 26pt;
   font-weight: bold;
   margin-bottom: 1.5mm;
   letter-spacing: -0.5px;
 }
 .cod {
-  font-size: 7pt;
-  color: #666;
+  font-size: 9pt;
+  font-weight: bold;
+  color: #333;
   margin-bottom: 1.5mm;
   letter-spacing: 0.5px;
 }
 .rodape {
-  font-size: 7pt;
-  color: #555;
+  font-size: 9pt;
+  font-weight: bold;
+  color: #333;
   letter-spacing: 0.3px;
 }
 .separador {
   border: none;
-  border-top: 1px dotted #999;
-  margin: 1.5mm 0;
+  border-top: 2px dotted #666;
+  margin: 2mm 0;
 }
 </style>
 </head>
@@ -190,7 +192,6 @@ ${etiquetas.map(p => `  <div class="etiqueta">
     win.document.close();
   }
 
-  // Imprimir todas com modal de posologia global
   function solicitarImpressaoLista(lista: Produto[]) {
     if (lista.length === 0) return;
     setListaParaImprimir(lista);
@@ -198,7 +199,6 @@ ${etiquetas.map(p => `  <div class="etiqueta">
     setMostrarModalGlobal(true);
   }
 
-  // Imprimir produto individual com modal
   function solicitarImpressaoIndividual(produto: Produto) {
     setModalProduto(produto);
   }
@@ -223,7 +223,7 @@ ${etiquetas.map(p => `  <div class="etiqueta">
         />
       )}
 
-      {/* Modal posologia global (todas/selecionadas) */}
+      {/* Modal posologia global */}
       {mostrarModalGlobal && (
         <div style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
@@ -239,7 +239,7 @@ ${etiquetas.map(p => `  <div class="etiqueta">
             </p>
 
             <label style={{ fontSize: 12, fontWeight: 700, color: "#555", display: "block", marginBottom: 6, textTransform: "uppercase" as const }}>
-              Posologia (opcional — aparece em todas as etiquetas)
+              Posologia (opcional)
             </label>
             <textarea
               placeholder="Ex: Tomar 1 comprimido 2x ao dia após as refeições"
@@ -285,7 +285,6 @@ ${etiquetas.map(p => `  <div class="etiqueta">
 
       {/* Barra de ações */}
       <div style={{ background: "#fff", borderRadius: 16, padding: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.08)", marginBottom: 16 }}>
-
         <div style={{ marginBottom: 12 }}>
           <label style={{ fontSize: 12, fontWeight: 700, color: "#555", display: "block", marginBottom: 6 }}>
             QUANTIDADE DE CÓPIAS POR ETIQUETA
@@ -306,12 +305,12 @@ ${etiquetas.map(p => `  <div class="etiqueta">
             onClick={() => solicitarImpressaoLista(produtos.filter(p => selecionados.has(p.id)))}
             disabled={totalSelecionados === 0}
             style={{ padding: "12px", borderRadius: 12, border: "none", background: totalSelecionados === 0 ? "#e0e0e0" : "linear-gradient(135deg, #2e7d32, #388e3c)", color: totalSelecionados === 0 ? "#aaa" : "#fff", fontSize: 13, fontWeight: 800, cursor: totalSelecionados === 0 ? "not-allowed" : "pointer", fontFamily: f }}>
-            🖨️ Imprimir selecionadas ({totalSelecionados * quantidade})
+            🖨️ Selecionadas ({totalSelecionados * quantidade})
           </button>
         </div>
       </div>
 
-      {/* Filtro e lista */}
+      {/* Lista de produtos */}
       <div style={{ background: "#fff", borderRadius: 16, padding: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.08)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, cursor: "pointer", color: "#333" }}>
@@ -320,8 +319,8 @@ ${etiquetas.map(p => `  <div class="etiqueta">
             {todosSelecionados ? "Desmarcar todos" : "Selecionar todos"}
             <span style={{ fontSize: 11, color: "#888", fontWeight: 400 }}>({totalSelecionados}/{produtos.length})</span>
           </label>
-          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="🔍 Filtrar produto..."
-            style={{ ...inputStyle, width: 180, padding: "8px 12px", fontSize: 13 }} />
+          <input value={busca} onChange={e => setBusca(e.target.value)} placeholder="🔍 Filtrar..."
+            style={{ ...inputStyle, width: 160, padding: "8px 12px", fontSize: 13 }} />
         </div>
 
         <div style={{ maxHeight: 420, overflowY: "auto" }}>
@@ -336,7 +335,7 @@ ${etiquetas.map(p => `  <div class="etiqueta">
                 <span style={{ fontSize: 13, fontWeight: 800, color: "#1565c0", flexShrink: 0 }}>R$ {p.preco.toFixed(2).replace(".", ",")}</span>
                 <button
                   onClick={() => solicitarImpressaoIndividual(p)}
-                  title="Imprimir etiqueta deste produto"
+                  title="Imprimir etiqueta"
                   style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: "#e3f2fd", color: "#1565c0", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>
                   🏷️
                 </button>
@@ -352,15 +351,16 @@ ${etiquetas.map(p => `  <div class="etiqueta">
       {/* Preview */}
       <div style={{ marginTop: 16, padding: 14, background: "#f5f5f5", borderRadius: 14 }}>
         <div style={{ fontSize: 11, color: "#888", marginBottom: 8, fontWeight: 700 }}>PRÉVIA DA ETIQUETA (80mm):</div>
-        <div style={{ display: "inline-block", padding: "8px 10px", textAlign: "center", width: 160, background: "#fff", borderBottom: "1px dashed #ccc" }}>
-          <div style={{ fontSize: 10, fontWeight: 700, marginBottom: 4, fontFamily: "monospace", textTransform: "uppercase" as const }}>NOME DO PRODUTO</div>
-          <div style={{ fontSize: 9, color: "#555", fontFamily: "monospace", fontStyle: "italic", marginBottom: 4 }}>Tomar 1 comprimido 2x ao dia</div>
-          <div style={{ borderTop: "1px dotted #999", margin: "4px 0" }} />
-          <div style={{ fontSize: 20, fontWeight: 800, fontFamily: "monospace", marginBottom: 3 }}>R$ 0,00</div>
-          <div style={{ fontSize: 8, color: "#555", fontFamily: "monospace" }}>Farmácia Arcanjo — Meruoca-CE</div>
+        <div style={{ display: "inline-block", padding: "8px 10px", textAlign: "center", width: 180, background: "#fff", borderBottom: "2px dashed #777" }}>
+          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4, fontFamily: "monospace", textTransform: "uppercase" as const }}>NOME DO PRODUTO</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "#222", fontFamily: "monospace", marginBottom: 4 }}>Tomar 1 comprimido 2x ao dia</div>
+          <div style={{ borderTop: "2px dotted #666", margin: "4px 0" }} />
+          <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "monospace", marginBottom: 3 }}>R$ 0,00</div>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "#333", fontFamily: "monospace" }}>Farmácia Arcanjo — Meruoca-CE</div>
         </div>
-        <div style={{ fontSize: 11, color: "#888", marginTop: 8 }}>📄 Uma etiqueta por linha · posologia editável · 80mm</div>
+        <div style={{ fontSize: 11, color: "#888", marginTop: 8 }}>📄 Fontes maiores e em negrito para impressora térmica</div>
       </div>
     </div>
   );
-}
+            }
+                       
